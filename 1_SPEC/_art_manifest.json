@@ -1,0 +1,28 @@
+{
+  "all": {
+    "obj_pul": "a small arched stone bridge over a blue stream, seen from the side, warm grey stone with a thick dark brown outline, the bridge and its arch forming one single connected shape",
+    "obj_gud": "a stack of two rounded blocks of Indian jaggery (gud) in warm caramel brown, glossy, with a thick dark brown outline, the blocks touching so they form one connected shape",
+    "obj_sui": "a single large sewing needle in silver-grey metal, standing at a slight angle, with a bright red thread looped through its eye; thick dark outline, needle and thread joined as one connected shape",
+    "obj_mukut": "a golden crown with three rounded points and a red gem in the centre, thick dark orange outline; the points are FUSED onto the crown band so the whole crown is one solid continuous silhouette with no detached pieces",
+    "obj_phool": "a single bright yellow sunflower with rounded petals and a brown centre on a short green stem with two leaves, thick dark outline; petals fused to the centre so the flower is one connected shape. NOT a pink flower.",
+    "obj_doodh": "a tall glass filled with white milk, seen from the front, with a thick dark blue outline around the glass and around the milk surface so the white milk is clearly bounded and never merges with the background",
+    "obj_sooraj": "a cheerful sun drawn as ONE SINGLE CONNECTED SHAPE: a golden-yellow disc with a simple smiling face and pointed triangular rays FUSED DIRECTLY ONTO the disc, no detached pieces and no gaps between the rays and the disc, one thick dark orange outline around the whole silhouette",
+    "obj_tarbooj": "a thick wedge slice of watermelon, bright red flesh with a few dark seeds, a white rind line and a green rind edge, thick dark green outline, one connected shape",
+    "obj_kabootar": "a plump grey pigeon standing in side view, soft blue-grey body, small orange beak and feet, thick dark grey outline, wings folded against the body so the bird is one connected silhouette",
+    "obj_aaloo": "two rounded brown potatoes touching each other, warm tan-brown with a few darker spots and small dimples, thick dark brown outline, forming one connected shape",
+    "obj_dhanush": "a simple archery bow in warm brown wood, held upright and slightly curved, with a taut pale string and one arrow nocked against it; thick dark brown outline, bow, string and arrow FUSED into one single connected silhouette with no detached pieces",
+    "obj_khush": "the head and shoulders of a happy Indian child smiling broadly with closed curved eyes and rosy cheeks, dark hair, warm brown skin, wearing a bright coral top; thick dark outline, one connected shape. NOT pale, NOT white.",
+    "obj_subah": "a sunrise over green hills: a golden-orange sun disc rising from BEHIND two rounded green hills so only its top half shows, with three short pointed rays above it in the sky; the sun and both hills FUSED into one single connected silhouette with a thick dark outline around the whole shape. Wide landscape composition, hills along the bottom. Saturated colours, never pale. NOT a sun on its own, NOT a sun in a bowl or basket, NOT a container.",
+    "scn_seema_khush": "FULL SCENE, not a cut-out: a happy Indian girl in a pink dress standing in a bright living room with both arms raised in delight, a sofa and a window behind her, warm daylight, soft storybook illustration style, full-bleed background — do NOT key this image",
+    "scn_subah_uthna": "FULL SCENE, not a cut-out: an Indian boy in blue pyjamas sitting up in bed stretching both arms, an alarm clock on the bedside table and a sunrise through the window behind him, soft storybook illustration style, full-bleed background — do NOT key this image",
+    "scn_bageecha": "FULL SCENE, not a cut-out: a garden bed full of pink, yellow and white flowers in bloom with green leaves, a wooden picket fence and a tree behind, blue sky, soft storybook illustration style, full-bleed background — do NOT key this image",
+    "scn_tarbooj_khana": "FULL SCENE, not a cut-out: an Indian boy in a yellow t-shirt sitting at a table outdoors holding a large slice of watermelon to his mouth and smiling, a plate of more slices in front of him, greenery behind, soft storybook illustration style, full-bleed background — do NOT key this image"
+  },
+  "pending": {},
+  "scenes_do_not_key": [
+    "scn_bageecha",
+    "scn_seema_khush",
+    "scn_subah_uthna",
+    "scn_tarbooj_khana"
+  ]
+}

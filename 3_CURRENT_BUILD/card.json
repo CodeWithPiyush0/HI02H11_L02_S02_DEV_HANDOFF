@@ -1,0 +1,926 @@
+{
+ "version": "0.1",
+ "skill_code": "HI02H11_L02_S02",
+ "lo_code": "HI02H11_L02",
+ "grade": "02",
+ "attribute": "H11",
+ "skill_type": "CORE",
+ "part_label": "भाग 1",
+ "medium": "hi",
+ "title": {
+  "hi": "मात्राओं की रेल",
+  "en": "Matra train — the u / oo matras"
+ },
+ "subtitle_hi": "",
+ "theme": "toybox",
+ "skill_description_hi": "उ, ऊ मात्रा वाले शब्द पढ़ता है। शब्दों में आने वाली मात्रा पहचानता है।",
+ "landing_audio": "vo_landing",
+ "landing_hero": {
+  "kind": "concept_strip",
+  "train": true,
+  "cells": [
+   {
+    "type": "letter",
+    "letter": "◌ु",
+    "label": "छोटी उ"
+   },
+   {
+    "type": "letter",
+    "letter": "◌ू",
+    "label": "बड़ी ऊ"
+   }
+  ]
+ },
+ "phase_transition_audio": {
+  "tutorial": "vo_pt_tutorial",
+  "guided": "vo_pt_guided",
+  "practice": "vo_pt_practice"
+ },
+ "phase_transition_title": {
+  "tutorial": "चलिए, रेल चलाएँ!",
+  "guided": "साथ में करें।",
+  "practice": "अब आपकी बारी।"
+ },
+ "phase_distribution": {
+  "tutorial": 5,
+  "guided": 5,
+  "practice": 7
+ },
+ "scaffold_rules": {
+  "nudge_timeout_ms": {
+   "guided": 6000,
+   "practice": 8000
+  },
+  "max_attempts": 3,
+  "hand_on_attempt": 2,
+  "reveal_on_attempt": null,
+  "silent_on_late_correct": true
+ },
+ "signals_expected": [
+  "slide_entered",
+  "slide_completed",
+  "intro_letter_tap",
+  "train_tap_first_try",
+  "matra_sort_item",
+  "matra_sort_first_try",
+  "word_build_item",
+  "word_build_first_try",
+  "sentence_complete_first_try",
+  "answer_wrong",
+  "hint_shown",
+  "phase_transition",
+  "mastery_score",
+  "lesson_completed"
+ ],
+ "_emoji_fallback": {
+  "obj_pul": "🌉",
+  "obj_gud": "🍯",
+  "obj_sui": "🪡",
+  "obj_mukut": "👑",
+  "obj_phool": "🌻",
+  "obj_doodh": "🥛",
+  "obj_sooraj": "☀",
+  "obj_tarbooj": "🍉",
+  "obj_kabootar": "🕊",
+  "obj_aaloo": "🥔",
+  "obj_dhanush": "🏹",
+  "obj_khush": "😊",
+  "obj_subah": "🌅",
+  "scn_seema_khush": "🙌",
+  "scn_subah_uthna": "🛌",
+  "scn_bageecha": "🌷",
+  "scn_tarbooj_khana": "😋"
+ },
+ "assets": {
+  "audio": {
+   "vo_ak_pa": "assets/Audio/vo_ak_pa.ogg",
+   "vo_ak_phool": "assets/Audio/vo_ak_phool.ogg",
+   "vo_ak_pul": "assets/Audio/vo_ak_pul.ogg",
+   "vo_ak_sui": "assets/Audio/vo_ak_sui.ogg",
+   "vo_base_pal": "assets/Audio/vo_base_pal.ogg",
+   "vo_base_phal": "assets/Audio/vo_base_phal.ogg",
+   "vo_cel_prompt": "assets/Audio/vo_cel_prompt.ogg",
+   "vo_g1_correct": "assets/Audio/vo_g1_correct.ogg",
+   "vo_g2_correct": "assets/Audio/vo_g2_correct.ogg",
+   "vo_g3_correct": "assets/Audio/vo_g3_correct.ogg",
+   "vo_g4_hint2": "assets/Audio/vo_g4_hint2.ogg",
+   "vo_g4_prompt": "assets/Audio/vo_g4_prompt.ogg",
+   "vo_g5_hint1": "assets/Audio/vo_g5_hint1.ogg",
+   "vo_g5_hint2": "assets/Audio/vo_g5_hint2.ogg",
+   "vo_g5_prompt": "assets/Audio/vo_g5_prompt.ogg",
+   "vo_landing": "assets/Audio/vo_landing.ogg",
+   "vo_matra_u": "assets/Audio/vo_matra_u.ogg",
+   "vo_matra_uu": "assets/Audio/vo_matra_uu.ogg",
+   "vo_meet_dhanush": "assets/Audio/vo_meet_dhanush.ogg",
+   "vo_meet_doodh": "assets/Audio/vo_meet_doodh.ogg",
+   "vo_meet_gud": "assets/Audio/vo_meet_gud.ogg",
+   "vo_meet_kabootar": "assets/Audio/vo_meet_kabootar.ogg",
+   "vo_name_aaloo": "assets/Audio/vo_name_aaloo.ogg",
+   "vo_name_doodh": "assets/Audio/vo_name_doodh.ogg",
+   "vo_name_gud": "assets/Audio/vo_name_gud.ogg",
+   "vo_name_kabootar": "assets/Audio/vo_name_kabootar.ogg",
+   "vo_name_khush": "assets/Audio/vo_name_khush.ogg",
+   "vo_name_mukut": "assets/Audio/vo_name_mukut.ogg",
+   "vo_name_phool": "assets/Audio/vo_name_phool.ogg",
+   "vo_name_pul": "assets/Audio/vo_name_pul.ogg",
+   "vo_name_sooraj": "assets/Audio/vo_name_sooraj.ogg",
+   "vo_name_subah": "assets/Audio/vo_name_subah.ogg",
+   "vo_name_sui": "assets/Audio/vo_name_sui.ogg",
+   "vo_name_tarbooj": "assets/Audio/vo_name_tarbooj.ogg",
+   "vo_ok_aaloo": "assets/Audio/vo_ok_aaloo.ogg",
+   "vo_ok_gud": "assets/Audio/vo_ok_gud.ogg",
+   "vo_ok_matra_u": "assets/Audio/vo_ok_matra_u.ogg",
+   "vo_ok_matra_uu": "assets/Audio/vo_ok_matra_uu.ogg",
+   "vo_ok_sooraj": "assets/Audio/vo_ok_sooraj.ogg",
+   "vo_ok_sui": "assets/Audio/vo_ok_sui.ogg",
+   "vo_okp_kabootar": "assets/Audio/vo_okp_kabootar.ogg",
+   "vo_okp_mukut": "assets/Audio/vo_okp_mukut.ogg",
+   "vo_okp_pul": "assets/Audio/vo_okp_pul.ogg",
+   "vo_okp_tarbooj": "assets/Audio/vo_okp_tarbooj.ogg",
+   "vo_onset_phool": "assets/Audio/vo_onset_phool.ogg",
+   "vo_onset_pul": "assets/Audio/vo_onset_pul.ogg",
+   "vo_p1_hint1": "assets/Audio/vo_p1_hint1.ogg",
+   "vo_p1_hint2": "assets/Audio/vo_p1_hint2.ogg",
+   "vo_p1_prompt": "assets/Audio/vo_p1_prompt.ogg",
+   "vo_p2_hint2": "assets/Audio/vo_p2_hint2.ogg",
+   "vo_p2_prompt": "assets/Audio/vo_p2_prompt.ogg",
+   "vo_p3_correct": "assets/Audio/vo_p3_correct.ogg",
+   "vo_p4_correct": "assets/Audio/vo_p4_correct.ogg",
+   "vo_p5_correct": "assets/Audio/vo_p5_correct.ogg",
+   "vo_p6_correct": "assets/Audio/vo_p6_correct.ogg",
+   "vo_pair_u": "assets/Audio/vo_pair_u.ogg",
+   "vo_pair_uu": "assets/Audio/vo_pair_uu.ogg",
+   "vo_result_phool": "assets/Audio/vo_result_phool.ogg",
+   "vo_result_pul": "assets/Audio/vo_result_pul.ogg",
+   "vo_sc_hint1": "assets/Audio/vo_sc_hint1.ogg",
+   "vo_sc_hint2": "assets/Audio/vo_sc_hint2.ogg",
+   "vo_sc_prompt": "assets/Audio/vo_sc_prompt.ogg",
+   "vo_sort_hint_listen": "assets/Audio/vo_sort_hint_listen.ogg",
+   "vo_sounds_phool": "assets/Audio/vo_sounds_phool.ogg",
+   "vo_sounds_pul": "assets/Audio/vo_sounds_pul.ogg",
+   "vo_t1_prompt": "assets/Audio/vo_t1_prompt.ogg",
+   "vo_t2_prompt": "assets/Audio/vo_t2_prompt.ogg",
+   "vo_t3_prompt": "assets/Audio/vo_t3_prompt.ogg",
+   "vo_t4_prompt": "assets/Audio/vo_t4_prompt.ogg",
+   "vo_t5_prompt": "assets/Audio/vo_t5_prompt.ogg",
+   "vo_tap_hint1_u": "assets/Audio/vo_tap_hint1_u.ogg",
+   "vo_tap_hint1_uu": "assets/Audio/vo_tap_hint1_uu.ogg",
+   "vo_tap_hint2_u": "assets/Audio/vo_tap_hint2_u.ogg",
+   "vo_tap_hint2_uu": "assets/Audio/vo_tap_hint2_uu.ogg",
+   "vo_tap_prompt_u": "assets/Audio/vo_tap_prompt_u.ogg",
+   "vo_tap_prompt_uu": "assets/Audio/vo_tap_prompt_uu.ogg",
+   "vo_try_again": "assets/Audio/vo_try_again.ogg",
+   "vo_wb_phool": "assets/Audio/vo_wb_phool.ogg",
+   "vo_wb_pul": "assets/Audio/vo_wb_pul.ogg",
+   "vo_wb_sui": "assets/Audio/vo_wb_sui.ogg",
+   "vo_pt_tutorial": "assets/Audio/vo_pt_tutorial.ogg",
+   "vo_pt_guided": "assets/Audio/vo_pt_guided.ogg",
+   "vo_pt_practice": "assets/Audio/vo_pt_practice.ogg",
+   "sfx_celebrate": "assets/Audio/sfx_celebrate.ogg",
+   "sfx_correct": "assets/Audio/sfx_correct.ogg",
+   "sfx_wrong": "assets/Audio/sfx_wrong.ogg",
+   "sfx_tap": "assets/Audio/sfx_tap.ogg",
+   "sfx_pop": "assets/Audio/sfx_pop.ogg"
+  },
+  "audio_text": {
+   "vo_pair_u": "यह है उ। इसकी मात्रा है — ु।",
+   "vo_pair_uu": "यह है ऊ। इसकी मात्रा है — ू।",
+   "vo_t1_prompt": "आज हम छोटी उ और बड़ी ऊ की मात्रा वाले शब्द पढ़ेंगे।",
+   "vo_t2_prompt": "आइए, देखें कि छोटी उ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।",
+   "vo_base_pal": "यह शब्द देखिए — पल।",
+   "vo_onset_pul": "प के साथ छोटी उ की मात्रा लगाने पर पु बनता है।",
+   "vo_result_pul": "अब ल जुड़ने पर पुल बनता है।",
+   "vo_sounds_pul": "प। पु। पुल।",
+   "vo_meet_gud": "गुड़ — बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है।",
+   "vo_meet_dhanush": "धनुष — बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है।",
+   "vo_t3_prompt": "आइए, छोटी उ की मात्रा वाले कुछ शब्द देखें।",
+   "vo_t4_prompt": "आइए, देखें कि बड़ी ऊ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।",
+   "vo_base_phal": "यह शब्द देखिए — फल।",
+   "vo_onset_phool": "फ के साथ बड़ी ऊ की मात्रा लगाने पर फू बनता है।",
+   "vo_result_phool": "अब ल जुड़ने पर फूल बनता है।",
+   "vo_sounds_phool": "फ। फू। फूल।",
+   "vo_meet_doodh": "दूध — बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है।",
+   "vo_meet_kabootar": "कबूतर — बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है।",
+   "vo_t5_prompt": "आइए, बड़ी ऊ की मात्रा वाले कुछ शब्द देखें।",
+   "vo_tap_prompt_u": "जिस डिब्बे में छोटी उ की मात्रा वाला शब्द है, उस डिब्बे पर टैप कीजिए।",
+   "vo_tap_hint1_u": "फिर से सोचिए। छोटी उ की मात्रा वाला शब्द कौन-सा है?",
+   "vo_tap_hint2_u": "ध्यान से देखिए और छोटी उ की मात्रा वाले शब्द पर टैप कीजिए।",
+   "vo_g1_correct": "शाबाश! पुल शब्द में छोटी उ की मात्रा है।",
+   "vo_tap_prompt_uu": "जिस डिब्बे में बड़ी ऊ की मात्रा वाला शब्द है, उस डिब्बे पर टैप कीजिए।",
+   "vo_tap_hint1_uu": "फिर से सोचिए। बड़ी ऊ की मात्रा वाला शब्द कौन-सा है?",
+   "vo_tap_hint2_uu": "ध्यान से देखिए और बड़ी ऊ की मात्रा वाले शब्द पर टैप कीजिए।",
+   "vo_g2_correct": "शाबाश! फूल शब्द में बड़ी ऊ की मात्रा है।",
+   "vo_g3_correct": "शाबाश! सुई शब्द में छोटी उ की मात्रा है।",
+   "vo_sort_hint_listen": "फिर से सुनिए और सही मात्रा पहचानिए।",
+   "vo_ok_aaloo": "शाबाश! आलू शब्द में ऊ की मात्रा है।",
+   "vo_name_aaloo": "आलू",
+   "vo_ok_sooraj": "शाबाश! सूरज शब्द में ऊ की मात्रा है।",
+   "vo_name_sooraj": "सूरज",
+   "vo_ok_sui": "शाबाश! सुई शब्द में उ की मात्रा है।",
+   "vo_name_sui": "सुई",
+   "vo_ok_gud": "शाबाश! गुड़ शब्द में उ की मात्रा है।",
+   "vo_name_gud": "गुड़",
+   "vo_g4_hint2": "ध्यान से देखिए, इस शब्द में कौन-सी मात्रा है?",
+   "vo_g4_prompt": "हर शब्द को उसकी सही मात्रा वाले डिब्बे में डालिए।",
+   "vo_ok_matra_u": "शाबाश! यह उ की मात्रा है।",
+   "vo_ok_matra_uu": "शाबाश! यह ऊ की मात्रा है।",
+   "vo_g5_hint1": "फिर से देखिए और सही मात्रा पहचानिए।",
+   "vo_g5_hint2": "ध्यान से देखिए, यह किसकी मात्रा है?",
+   "vo_g5_prompt": "सही मात्रा को उसके सही डिब्बे में डालिए।",
+   "vo_wb_pul": "शाबाश! पुल बन गया।",
+   "vo_ak_pul": "पु",
+   "vo_wb_phool": "शाबाश! फूल बन गया।",
+   "vo_ak_phool": "फू",
+   "vo_wb_sui": "शाबाश! सुई बन गई।",
+   "vo_ak_sui": "सु",
+   "vo_ak_pa": "पा",
+   "vo_p1_prompt": "चित्र देखकर सही अक्षर से शब्द पूरा कीजिए।",
+   "vo_p1_hint1": "फिर से सोचिए और चित्र को ध्यान से देखिए।",
+   "vo_p1_hint2": "ध्यान से देखिए, कौन-सा अक्षर लगाने से शब्द पूरा होगा?",
+   "vo_okp_mukut": "शाबाश! मुकुट में उ की मात्रा है।",
+   "vo_name_mukut": "मुकुट",
+   "vo_okp_pul": "शाबाश! पुल में उ की मात्रा है।",
+   "vo_name_pul": "पुल",
+   "vo_okp_tarbooj": "शाबाश! तरबूज में ऊ की मात्रा है।",
+   "vo_name_tarbooj": "तरबूज",
+   "vo_okp_kabootar": "शाबाश! कबूतर में ऊ की मात्रा है।",
+   "vo_name_kabootar": "कबूतर",
+   "vo_p2_hint2": "शब्द को ध्यान से सुनिए।",
+   "vo_p2_prompt": "चित्र को सुनिए और उसे सही मात्रा वाली बोगी में डालिए।",
+   "vo_name_khush": "खुश",
+   "vo_name_phool": "फूल",
+   "vo_sc_prompt": "चित्र देखकर सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "vo_sc_hint1": "फिर से सोचिए। कौन-सा शब्द वाक्य को पूरा करेगा?",
+   "vo_sc_hint2": "चित्र को ध्यान से देखिए और सही शब्द चुनिए।",
+   "vo_p3_correct": "शाबाश! सीमा आज बहुत खुश है।",
+   "vo_name_subah": "सुबह",
+   "vo_name_doodh": "दूध",
+   "vo_p4_correct": "शाबाश! मैंने सही शब्द चुनकर वाक्य पूरा किया।",
+   "vo_p5_correct": "शाबाश! बगीचे में सुंदर फूल खिले हैं।",
+   "vo_p6_correct": "शाबाश! मीठा तरबूज खाना अच्छा लगता है।",
+   "vo_cel_prompt": "शाबाश! आज हमने सीखा, छोटी उ और बड़ी ऊ की मात्रा पहचानना, और मात्रा वाले शब्द पढ़ना।",
+   "vo_matra_u": "छोटी उ की मात्रा",
+   "vo_matra_uu": "बड़ी ऊ की मात्रा",
+   "vo_landing": "हेलो दोस्त! मैं हूँ स्विफ्टी। आज हम मात्राओं के बारे में जानेंगे।",
+   "vo_try_again": "एक बार फिर सुनिए।"
+  },
+  "image": {
+   "obj_aaloo": "assets/Images/obj_aaloo.png",
+   "obj_dhanush": "assets/Images/obj_dhanush.png",
+   "obj_doodh": "assets/Images/obj_doodh.png",
+   "obj_gud": "assets/Images/obj_gud.png",
+   "obj_kabootar": "assets/Images/obj_kabootar.png",
+   "obj_khush": "assets/Images/obj_khush.png",
+   "obj_mukut": "assets/Images/obj_mukut.png",
+   "obj_phool": "assets/Images/obj_phool.png",
+   "obj_pul": "assets/Images/obj_pul.png",
+   "obj_sooraj": "assets/Images/obj_sooraj.png",
+   "obj_subah": "assets/Images/obj_subah.png",
+   "obj_sui": "assets/Images/obj_sui.png",
+   "obj_tarbooj": "assets/Images/obj_tarbooj.png",
+   "scn_bageecha": "assets/Images/scn_bageecha.png",
+   "scn_seema_khush": "assets/Images/scn_seema_khush.png",
+   "scn_subah_uthna": "assets/Images/scn_subah_uthna.png",
+   "scn_tarbooj_khana": "assets/Images/scn_tarbooj_khana.png"
+  },
+  "audio_ext": "ogg",
+  "img_ext": "png"
+ },
+ "slides": [
+  {
+   "id": "T1",
+   "phase": "tutorial",
+   "eis": "enactive",
+   "type": "MATRA_INTRO",
+   "prompt_hi": "आज हम छोटी उ और बड़ी ऊ की मात्रा वाले शब्द पढ़ेंगे।",
+   "audio": {
+    "prompt": "vo_t1_prompt"
+   },
+   "data": {
+    "pairs": [
+     {
+      "letter": "उ",
+      "matra": "ु",
+      "audio": "vo_pair_u"
+     },
+     {
+      "letter": "ऊ",
+      "matra": "ू",
+      "audio": "vo_pair_uu"
+     }
+    ],
+    "phonemes": {
+     "ु": "vo_matra_u",
+     "ू": "vo_matra_uu"
+    },
+    "auto": true,
+    "train": true
+   }
+  },
+  {
+   "id": "T2",
+   "phase": "tutorial",
+   "eis": "symbolic",
+   "type": "MATRA_BUILD",
+   "prompt_hi": "आइए, देखें कि छोटी उ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।",
+   "audio": {
+    "prompt": "vo_t2_prompt",
+    "base": "vo_base_pal",
+    "matra_name": "vo_matra_u",
+    "onset": "vo_onset_pul",
+    "result": "vo_result_pul",
+    "sounds": "vo_sounds_pul"
+   },
+   "data": {
+    "base_word": "पल",
+    "consonant": "प",
+    "matra": "ु",
+    "syllable": "पु",
+    "result_word": "पुल",
+    "result_img": "obj_pul",
+    "result_emoji": "🌉",
+    "travel": "down",
+    "base_img": null,
+    "base_emoji": null,
+    "cap_base": null,
+    "cap_mid": null,
+    "cap_result": null
+   }
+  },
+  {
+   "id": "T3",
+   "phase": "tutorial",
+   "eis": "iconic",
+   "type": "MEET_PAIR",
+   "prompt_hi": "आइए, छोटी उ की मात्रा वाले कुछ शब्द देखें।",
+   "audio": {
+    "prompt": "vo_t3_prompt"
+   },
+   "data": {
+    "examples": [
+     {
+      "word": "गुड़",
+      "matra": "ु",
+      "img": "obj_gud",
+      "emoji": "🍯",
+      "audio_line": "vo_meet_gud",
+      "matra_audio": null
+     },
+     {
+      "word": "धनुष",
+      "matra": "ु",
+      "img": "obj_dhanush",
+      "emoji": "🏹",
+      "audio_line": "vo_meet_dhanush",
+      "matra_audio": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "T4",
+   "phase": "tutorial",
+   "eis": "symbolic",
+   "type": "MATRA_BUILD",
+   "prompt_hi": "आइए, देखें कि बड़ी ऊ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।",
+   "audio": {
+    "prompt": "vo_t4_prompt",
+    "base": "vo_base_phal",
+    "matra_name": "vo_matra_uu",
+    "onset": "vo_onset_phool",
+    "result": "vo_result_phool",
+    "sounds": "vo_sounds_phool"
+   },
+   "data": {
+    "base_word": "फल",
+    "consonant": "फ",
+    "matra": "ू",
+    "syllable": "फू",
+    "result_word": "फूल",
+    "result_img": "obj_phool",
+    "result_emoji": "🌻",
+    "travel": "down",
+    "base_img": null,
+    "base_emoji": null,
+    "cap_base": null,
+    "cap_mid": null,
+    "cap_result": null
+   }
+  },
+  {
+   "id": "T5",
+   "phase": "tutorial",
+   "eis": "iconic",
+   "type": "MEET_PAIR",
+   "prompt_hi": "आइए, बड़ी ऊ की मात्रा वाले कुछ शब्द देखें।",
+   "audio": {
+    "prompt": "vo_t5_prompt"
+   },
+   "data": {
+    "examples": [
+     {
+      "word": "दूध",
+      "matra": "ू",
+      "img": "obj_doodh",
+      "emoji": "🥛",
+      "audio_line": "vo_meet_doodh",
+      "matra_audio": null
+     },
+     {
+      "word": "कबूतर",
+      "matra": "ू",
+      "img": "obj_kabootar",
+      "emoji": "🕊",
+      "audio_line": "vo_meet_kabootar",
+      "matra_audio": null
+     }
+    ]
+   }
+  },
+  {
+   "id": "G1",
+   "phase": "guided",
+   "eis": "symbolic",
+   "type": "TRAIN_TAP",
+   "prompt_hi": "छोटी उ की मात्रा वाले शब्द पर टैप कीजिए।",
+   "audio": {
+    "prompt": "vo_tap_prompt_u",
+    "hint1": "vo_tap_hint1_u",
+    "hint2": "vo_tap_hint2_u",
+    "correct": "vo_g1_correct"
+   },
+   "data": {
+    "target": "पुल",
+    "matra": "ु",
+    "coaches": [
+     {
+      "word": "पुल",
+      "correct": true
+     },
+     {
+      "word": "दूध",
+      "correct": false
+     },
+     {
+      "word": "सूरज",
+      "correct": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "G2",
+   "phase": "guided",
+   "eis": "symbolic",
+   "type": "TRAIN_TAP",
+   "prompt_hi": "बड़ी ऊ की मात्रा वाले शब्द पर टैप कीजिए।",
+   "audio": {
+    "prompt": "vo_tap_prompt_uu",
+    "hint1": "vo_tap_hint1_uu",
+    "hint2": "vo_tap_hint2_uu",
+    "correct": "vo_g2_correct"
+   },
+   "data": {
+    "target": "फूल",
+    "matra": "ू",
+    "coaches": [
+     {
+      "word": "गुड़",
+      "correct": false
+     },
+     {
+      "word": "मुकुट",
+      "correct": false
+     },
+     {
+      "word": "फूल",
+      "correct": true
+     }
+    ]
+   }
+  },
+  {
+   "id": "G3",
+   "phase": "guided",
+   "eis": "symbolic",
+   "type": "TRAIN_TAP",
+   "prompt_hi": "छोटी उ की मात्रा वाले शब्द पर टैप कीजिए।",
+   "audio": {
+    "prompt": "vo_tap_prompt_u",
+    "hint1": "vo_tap_hint1_u",
+    "hint2": "vo_tap_hint2_u",
+    "correct": "vo_g3_correct"
+   },
+   "data": {
+    "target": "सुई",
+    "matra": "ु",
+    "coaches": [
+     {
+      "word": "तरबूज",
+      "correct": false
+     },
+     {
+      "word": "सुई",
+      "correct": true
+     },
+     {
+      "word": "कबूतर",
+      "correct": false
+     }
+    ]
+   }
+  },
+  {
+   "id": "G4",
+   "phase": "guided",
+   "eis": "enactive",
+   "type": "TRAIN_SORT",
+   "prompt_hi": "हर शब्द को उसकी सही मात्रा वाले डिब्बे में डालिए।",
+   "audio": {
+    "prompt": "vo_g4_prompt",
+    "hint1": "vo_sort_hint_listen",
+    "hint2": "vo_g4_hint2"
+   },
+   "data": {
+    "kind": "word",
+    "bins": [
+     {
+      "key": "ु",
+      "label": "उ (ु)"
+     },
+     {
+      "key": "ू",
+      "label": "ऊ (ू)"
+     }
+    ],
+    "cards": [
+     {
+      "bin": "ू",
+      "word": "आलू",
+      "img": "obj_aaloo",
+      "emoji": "🥔",
+      "audio": "vo_name_aaloo",
+      "correct_audio": "vo_ok_aaloo"
+     },
+     {
+      "bin": "ू",
+      "word": "सूरज",
+      "img": "obj_sooraj",
+      "emoji": "☀",
+      "audio": "vo_name_sooraj",
+      "correct_audio": "vo_ok_sooraj"
+     },
+     {
+      "bin": "ु",
+      "word": "सुई",
+      "img": "obj_sui",
+      "emoji": "🪡",
+      "audio": "vo_name_sui",
+      "correct_audio": "vo_ok_sui"
+     },
+     {
+      "bin": "ु",
+      "word": "गुड़",
+      "img": "obj_gud",
+      "emoji": "🍯",
+      "audio": "vo_name_gud",
+      "correct_audio": "vo_ok_gud"
+     }
+    ],
+    "single": false
+   }
+  },
+  {
+   "id": "G5",
+   "phase": "guided",
+   "eis": "enactive",
+   "type": "TRAIN_SORT",
+   "prompt_hi": "सही मात्रा को सही डिब्बे में डालिए।",
+   "audio": {
+    "prompt": "vo_g5_prompt",
+    "hint1": "vo_g5_hint1",
+    "hint2": "vo_g5_hint2"
+   },
+   "data": {
+    "kind": "matra",
+    "bins": [
+     {
+      "key": "ु",
+      "label": "उ"
+     },
+     {
+      "key": "ू",
+      "label": "ऊ"
+     }
+    ],
+    "cards": [
+     {
+      "bin": "ु",
+      "word": "◌ु",
+      "audio": "vo_matra_u",
+      "correct_audio": "vo_ok_matra_u"
+     },
+     {
+      "bin": "ू",
+      "word": "◌ू",
+      "audio": "vo_matra_uu",
+      "correct_audio": "vo_ok_matra_uu"
+     }
+    ],
+    "single": true
+   }
+  },
+  {
+   "id": "P1",
+   "phase": "practice",
+   "eis": "enactive",
+   "type": "WORD_BUILD",
+   "prompt_hi": "चित्र देखकर सही अक्षर खींचकर शब्द पूरा कीजिए।",
+   "audio": {
+    "prompt": "vo_p1_prompt",
+    "hint1": "vo_p1_hint1",
+    "hint2": "vo_p1_hint2"
+   },
+   "data": {
+    "slots": [
+     {
+      "word": "पुल",
+      "head": "पु",
+      "tail": "ल",
+      "matra": "ु",
+      "img": "obj_pul",
+      "emoji": "🌉",
+      "correct_audio": "vo_wb_pul"
+     },
+     {
+      "word": "फूल",
+      "head": "फू",
+      "tail": "ल",
+      "matra": "ू",
+      "img": "obj_phool",
+      "emoji": "🌻",
+      "correct_audio": "vo_wb_phool"
+     },
+     {
+      "word": "सुई",
+      "head": "सु",
+      "tail": "ई",
+      "matra": "ु",
+      "img": "obj_sui",
+      "emoji": "🪡",
+      "correct_audio": "vo_wb_sui"
+     }
+    ],
+    "options": [
+     {
+      "akshar": "पु",
+      "audio": "vo_ak_pul"
+     },
+     {
+      "akshar": "फू",
+      "audio": "vo_ak_phool"
+     },
+     {
+      "akshar": "सु",
+      "audio": "vo_ak_sui"
+     },
+     {
+      "akshar": "पा",
+      "audio": "vo_ak_pa"
+     }
+    ]
+   }
+  },
+  {
+   "id": "P2",
+   "phase": "practice",
+   "eis": "enactive",
+   "type": "TRAIN_SORT",
+   "prompt_hi": "चित्र को सुनिए और उसे सही मात्रा वाली बोगी में डालिए।",
+   "audio": {
+    "prompt": "vo_p2_prompt",
+    "hint1": "vo_sort_hint_listen",
+    "hint2": "vo_p2_hint2"
+   },
+   "data": {
+    "kind": "picture",
+    "bins": [
+     {
+      "key": "ु",
+      "label": "उ"
+     },
+     {
+      "key": "ू",
+      "label": "ऊ"
+     }
+    ],
+    "cards": [
+     {
+      "bin": "ु",
+      "word": "मुकुट",
+      "img": "obj_mukut",
+      "emoji": "👑",
+      "audio": "vo_name_mukut",
+      "correct_audio": "vo_okp_mukut"
+     },
+     {
+      "bin": "ु",
+      "word": "पुल",
+      "img": "obj_pul",
+      "emoji": "🌉",
+      "audio": "vo_name_pul",
+      "correct_audio": "vo_okp_pul"
+     },
+     {
+      "bin": "ू",
+      "word": "तरबूज",
+      "img": "obj_tarbooj",
+      "emoji": "🍉",
+      "audio": "vo_name_tarbooj",
+      "correct_audio": "vo_okp_tarbooj"
+     },
+     {
+      "bin": "ू",
+      "word": "कबूतर",
+      "img": "obj_kabootar",
+      "emoji": "🕊",
+      "audio": "vo_name_kabootar",
+      "correct_audio": "vo_okp_kabootar"
+     }
+    ],
+    "single": false
+   }
+  },
+  {
+   "id": "P3",
+   "phase": "practice",
+   "eis": "symbolic",
+   "type": "SENTENCE_COMPLETE",
+   "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "audio": {
+    "prompt": "vo_sc_prompt",
+    "hint1": "vo_sc_hint1",
+    "hint2": "vo_sc_hint2",
+    "correct": "vo_p3_correct"
+   },
+   "data": {
+    "scene_img": "scn_seema_khush",
+    "scene_emoji": "🙌",
+    "sentence_pre": "सीमा आज बहुत ",
+    "sentence_post": " है।",
+    "answer": "खुश",
+    "options": [
+     {
+      "word": "खुश",
+      "img": "obj_khush",
+      "emoji": "😊",
+      "audio": "vo_name_khush"
+     },
+     {
+      "word": "फूल",
+      "img": "obj_phool",
+      "emoji": "🌻",
+      "audio": "vo_name_phool"
+     },
+     {
+      "word": "तरबूज",
+      "img": "obj_tarbooj",
+      "emoji": "🍉",
+      "audio": "vo_name_tarbooj"
+     }
+    ]
+   }
+  },
+  {
+   "id": "P4",
+   "phase": "practice",
+   "eis": "symbolic",
+   "type": "SENTENCE_COMPLETE",
+   "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "audio": {
+    "prompt": "vo_sc_prompt",
+    "hint1": "vo_sc_hint1",
+    "hint2": "vo_sc_hint2",
+    "correct": "vo_p4_correct"
+   },
+   "data": {
+    "scene_img": "scn_subah_uthna",
+    "scene_emoji": "🛌",
+    "sentence_pre": "मैं ",
+    "sentence_post": " जल्दी उठता हूँ।",
+    "answer": "सुबह",
+    "options": [
+     {
+      "word": "सुबह",
+      "img": "obj_subah",
+      "emoji": "🌅",
+      "audio": "vo_name_subah"
+     },
+     {
+      "word": "दूध",
+      "img": "obj_doodh",
+      "emoji": "🥛",
+      "audio": "vo_name_doodh"
+     },
+     {
+      "word": "मुकुट",
+      "img": "obj_mukut",
+      "emoji": "👑",
+      "audio": "vo_name_mukut"
+     }
+    ]
+   }
+  },
+  {
+   "id": "P5",
+   "phase": "practice",
+   "eis": "symbolic",
+   "type": "SENTENCE_COMPLETE",
+   "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "audio": {
+    "prompt": "vo_sc_prompt",
+    "hint1": "vo_sc_hint1",
+    "hint2": "vo_sc_hint2",
+    "correct": "vo_p5_correct"
+   },
+   "data": {
+    "scene_img": "scn_bageecha",
+    "scene_emoji": "🌷",
+    "sentence_pre": "बगीचे में सुंदर ",
+    "sentence_post": " खिले हैं।",
+    "answer": "फूल",
+    "options": [
+     {
+      "word": "फूल",
+      "img": "obj_phool",
+      "emoji": "🌻",
+      "audio": "vo_name_phool"
+     },
+     {
+      "word": "तरबूज",
+      "img": "obj_tarbooj",
+      "emoji": "🍉",
+      "audio": "vo_name_tarbooj"
+     },
+     {
+      "word": "सुबह",
+      "img": "obj_subah",
+      "emoji": "🌅",
+      "audio": "vo_name_subah"
+     }
+    ]
+   }
+  },
+  {
+   "id": "P6",
+   "phase": "practice",
+   "eis": "symbolic",
+   "type": "SENTENCE_COMPLETE",
+   "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "audio": {
+    "prompt": "vo_sc_prompt",
+    "hint1": "vo_sc_hint1",
+    "hint2": "vo_sc_hint2",
+    "correct": "vo_p6_correct"
+   },
+   "data": {
+    "scene_img": "scn_tarbooj_khana",
+    "scene_emoji": "😋",
+    "sentence_pre": "मीठा ",
+    "sentence_post": " खाना अच्छा लगता है।",
+    "answer": "तरबूज",
+    "options": [
+     {
+      "word": "तरबूज",
+      "img": "obj_tarbooj",
+      "emoji": "🍉",
+      "audio": "vo_name_tarbooj"
+     },
+     {
+      "word": "फूल",
+      "img": "obj_phool",
+      "emoji": "🌻",
+      "audio": "vo_name_phool"
+     },
+     {
+      "word": "खुश",
+      "img": "obj_khush",
+      "emoji": "😊",
+      "audio": "vo_name_khush"
+     }
+    ]
+   }
+  },
+  {
+   "id": "CEL",
+   "phase": "practice",
+   "eis": "iconic",
+   "type": "CELEBRATION",
+   "prompt_hi": "शाबाश! आज हमने सीखा, छोटी उ और बड़ी ऊ की मात्रा पहचानना, और मात्रा वाले शब्द पढ़ना।",
+   "audio": {
+    "prompt": "vo_cel_prompt"
+   },
+   "data": {}
+  }
+ ]
+}
