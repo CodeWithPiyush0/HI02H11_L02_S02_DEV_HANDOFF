@@ -396,3 +396,49 @@ three-coach artwork and part 3 is simply never drawn.
    train mid-arrival, outside the stage, which is where a train arriving from the right is meant
    to be. With the settle raised past the travel: 0 of 17. Any harness that measures this lesson
    must wait out `TRAIN_TRAVEL_MS`.
+
+---
+
+# ROUND 3c — VO clashes, and the cover matched to the sibling properly
+
+## The clash, measured rather than guessed
+
+Nothing in this bundle checks the house rule "never overlap two VO clips", and it is invisible to
+every other test: each clip exists, is the right length and plays. So `play()` was instrumented
+with the clips' REAL durations, every interval recorded, and any pair overlapping by more than
+120 ms reported. Two causes came out, and one of them was mine:
+
+1. **The prompt talked over the arriving train.** Every train module fired its prompt VO at mount,
+   while the train spent 3.4 s pulling in under a whistle and a chug bed — on all seven train
+   screens. The SME's ordering is explicit: "Train comes through animation from right to left.
+   Train stops at the centre of the screen." and only then "VO: जिस डिब्बे में …".
+   **Fixed:** `buildTrain()` exposes `whenParked(fn)`, fed by TrainChrome's `on_enter`, and every
+   train module now gates its opening prompt on it. (The sibling does the same thing through
+   `state.promptGate`, which *this* engine sets but never reads — it has no such hook.)
+
+2. **A stale chain could speak over the next screen.** Every module drives a chain of clips that
+   call each other's callbacks, and a chain has no idea the screen under it has changed. Measured:
+   two concurrent MATRA_INTRO mounts put `vo_pair_u` on top of *itself* for 2.1 s.
+   **Fixed:** `newVoEpoch()` at the top of every mount, and `say()` drops any callback whose epoch
+   has moved on. One chain at a time, ever — a re-mount, a replay or a fast आगे can no longer
+   produce two voices.
+
+**A caution about the measurement itself.** The first run reported 9 clashes and *most were the
+harness's own fault*: it re-mounted slide 0 (which the start button had already mounted, so two
+copies of the module ran), and it allowed 14 s per slide when the longest teach chain runs ~24 s,
+so one screen's tail landed on the next. Both were fixed in the harness before drawing any
+conclusion. A test that creates the defect it reports is worse than no test.
+
+## The cover, actually matched this time
+
+Three concrete differences from the sibling's cover remained after round 3b:
+
+| | was | now |
+|---|---|---|
+| scale | `maxH 220` → k=0.372, a chunky train crowding the card | `maxH 174`, i.e. the sibling's own per-part scale of 634/2155 = 0.294 |
+| rail | a track ran under the cover train | **no rail** — the sibling's cover has none. The track belongs to the activity screens, where the train arrives along it; on the cover it cut the card in half |
+| matras | **the coaches photographed EMPTY** | they are revealed from `on_enter` at 3.4 s, so anything looking earlier saw two blank coaches — which is what the round-3b review deck shipped. A 5 s backstop now reveals them regardless, and the capture waits out the arrival |
+
+The tray cards were also matched to the sibling's `.tt-card` (paler border, flatter shadow, roomier
+padding) and the activity trains raised to `maxH 270` — the sibling uses 300 and carries no heading
+band, which this lesson does.

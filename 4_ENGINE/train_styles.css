@@ -52,11 +52,15 @@
    this lesson instead of a painted cover and a drawn everything-else. The 3695 characters
    of coach/car/wheel CSS that drew the old one are removed rather than left dead. */
 /* ---------- the card tray ---------- */
-.tr-tray{ display:flex; gap:16px; justify-content:center; flex-wrap:nowrap; margin-top:22px; }
-.tr-card{ width:112px; min-height:112px; border-radius:15px; background:#fff;
-  border:3px solid #8BBFFF; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:2px; cursor:grab; touch-action:none; position:relative; z-index:2;
-  box-shadow:0 5px 0 rgba(11,61,140,.12); padding:5px; }
+/* the sibling's tray sits lower under the train and is allowed to wrap */
+.tr-tray{ display:flex; gap:16px; justify-content:center; align-items:center; flex-wrap:wrap;
+  margin-top:30px; max-width:1120px; }
+/* the tray card, matched to the sibling's `.tt-card` so the two lessons' trays are the same
+   object: paler border, a flatter shadow, and roomier padding than the round-3 version had */
+.tr-card{ width:112px; min-height:112px; border-radius:14px; background:#FFFFFF;
+  border:3px solid #CFE3FA; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:6px; cursor:grab; touch-action:none; position:relative; z-index:2;
+  box-shadow:0 3px 0 rgba(11,61,140,.10); padding:10px 14px; }
 .tr-card.tr-seq-hidden{ opacity:0; pointer-events:none; }
 .tr-card.dragging{ z-index:50; cursor:grabbing; }
 .tr-card.snapped{ width:86px; min-height:86px; box-shadow:none; border-width:2px; cursor:default; }
@@ -688,3 +692,11 @@
   color:#12796E; font-weight:800; opacity:.95;
   transition:transform .42s cubic-bezier(.34,1.1,.5,1), opacity .42s ease; }
 @media (prefers-reduced-motion:reduce){ .sc-fly{ display:none; } }
+
+/* ---------- the cover's train has no rail ----------
+   On the activity screens the track is the line the train arrives along and it reads as a
+   railway. On the cover — where the train is really the title illustration — it cut the card in
+   half, and the sibling's cover does not have one. Scoped to `.lt-cover` so the seven activity
+   screens keep theirs. */
+.train-shell.lt-cover .train-track{ display:none; }
+.train-shell.lt-cover{ margin-bottom:6px; }

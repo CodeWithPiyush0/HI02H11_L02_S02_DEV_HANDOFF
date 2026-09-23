@@ -128,6 +128,24 @@ cd .. && PYTHONUTF8=1 python 1_SPEC/build_skill_HI02H11_L02_S02.py
 cd 3_CURRENT_BUILD && PYTHONUTF8=1 python ../1_SPEC/_verify_assets.py
 ```
 
+### Checking that no two clips ever sound at once
+
+The house rule is that VO never overlaps, and nothing in the engine enforces it — each clip
+exists, is the right length and plays, so every other check passes while the child hears two
+voices. `1_SPEC/_verify_vo_overlap.py` instruments `play()` with the clips' real durations and
+flags any pair overlapping by more than 120 ms:
+
+```bash
+PYTHONUTF8=1 python 1_SPEC/_verify_vo_overlap.py     http://localhost:8901/HI02H11_L02_S02.html 3_CURRENT_BUILD/card.json out.txt
+```
+
+Current: **0 clashes across all 18 screens.** Read the header comment before trusting a red run —
+the harness can manufacture clashes of its own in two specific ways.
+
+**Serve with a THREADED server when two browsers are running.** `python -m http.server` is
+single-threaded, so a second headless browser starves the first and assets come back
+`ERR_CONNECTION_REFUSED` — which reads exactly like a missing-asset bug and is not one.
+
 ### The two truncation checks, and why there are two
 
 `_verify_assets.py` is the only thing that catches a **truncated** voice clip — one that exists, is

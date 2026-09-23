@@ -32,6 +32,9 @@ for a in ("--headless=new", "--window-size=1400,900", "--force-device-scale-fact
 d = webdriver.Chrome(options=o)
 d.set_window_size(1400, 900)
 d.get(URL); time.sleep(2.5)
+# the cover train takes 3.4s to pull in and its matras land after that; shooting
+# earlier photographs an empty train, which is what the first round-3b deck did.
+time.sleep(5.0)
 d.execute_script(FREEZE); time.sleep(0.4)
 d.save_screenshot("%s/01_landing.png" % SHOTS); print("  shot 01_landing.png")
 d.find_element("id", "sgBtn").click(); time.sleep(3.5)

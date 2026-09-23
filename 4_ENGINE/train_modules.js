@@ -56,9 +56,21 @@
      can never stall a chain — the same belt-and-braces sortSeqReveal uses.
      `src` may be a path OR a bare clip id; clip() normalises it, so no caller can reintroduce
      the 404-on-a-bare-id bug described above. */
+  /* ONE CHAIN AT A TIME, EVER.
+     Every module here drives a chain of clips that call each other's callbacks, and a chain has
+     no idea the screen under it has changed. Mount a slide while a previous chain is still in
+     flight — a re-mount, a replay, a fast आगे — and the two talk over each other. Measured on
+     this bundle: two concurrent MATRA_INTRO mounts put `vo_pair_u` on top of itself for 2.1s.
+     So every chain carries the epoch it started in, and a callback whose epoch has moved on is
+     simply dropped. Nothing else has to know about it. */
+  let _voGen = 0;
+  function newVoEpoch(){ return ++_voGen; }
   function say(src, next){
+    const gen = _voGen;
     let done = false;
-    const go = () => { if(done) return; done = true; if(next) next(); };
+    const go = () => { if(done) return; done = true;
+      if(gen !== _voGen) return;                 // the screen moved on; this chain is stale
+      if(next) next(); };
     try { play(clip(src) || null, go); } catch(e){ go(); return; }
     setTimeout(go, 9000);
   }
@@ -504,7 +516,11 @@
       let _promptGo = null, _parked = false;
       const _afterPrompt = ()=>{ if(typeof cfg.on_prompt_done === "function") cfg.on_prompt_done(); };
       const _release = (go)=> go(_afterPrompt);
-      state.promptGate = (go)=>{ if(_parked) _release(go); else _promptGo = go; };
+      /* the sibling's engine reads state.promptGate to hold its auto prompt chain until the train
+       parks. THIS engine has no such hook — it is set and never read — and the modules here gate
+       their own prompts through buildTrain's whenParked() instead. Left assigned (harmless, and
+       it keeps the ported block diffable against the sibling) but nothing depends on it. */
+    state.promptGate = (go)=>{ if(_parked) _release(go); else _promptGo = go; };
       const settle = ()=>{
         rail.classList.remove("tr-entering");
         shell.classList.add("tc-parked");               /* drops the sprite layer, reveals the png */
@@ -587,14 +603,30 @@
          painted slice and is the drop target. */
   function buildTrain(host, opts){
     const n = opts.coaches;
+    /* THE PROMPT MUST NOT TALK OVER THE TRAIN. The train takes 3.4s to pull in, with a whistle
+       and a chug bed under it, and every module used to fire its prompt VO at mount — so the
+       child heard the instruction under a moving train on all seven train screens. The SME's own
+       ordering is explicit: "Train comes through animation from right to left. Train stops at the
+       centre of the screen." and only then "VO: जिस डिब्बे में …". `whenParked` is the gate; the
+       sibling does the same thing through state.promptGate. */
+    let parked = false, waiting = [];
+    /* THE EPOCH HAS TO BE CAPTURED HERE, NOT INSIDE say(). A deferred callback — whenParked, a
+       setTimeout, anything that runs later — calls say() fresh, and say() reads the epoch at CALL
+       time, which by then is the NEW screen's. So the previous slide's held prompt sailed through
+       the guard and spoke over the next screen: measured, T1's pair chain landing on top of T3.
+       Capturing the mount's epoch and checking it before running the callback closes that. */
+    const myGen = _voGen;
     const tc = TrainChrome.mount(host, {
       coaches: n,
       coach_label: (opts.labels || []).map(h => (h == null || h === "") ? null : { html: h }),
       coach_body:  (opts.bodies || []).map(h => ({ html: h || "" })),
       drop_zone:   !!opts.dropZone,
       multi:       !!opts.multi,
-      maxH:        opts.maxH || 250,
-      on_enter:    opts.on_enter
+      maxH:        opts.maxH || 270,
+      on_enter:    ()=>{ parked = true;
+                         const q = waiting; waiting = [];
+                         q.forEach(fn => fn());
+                         if(typeof opts.on_enter === "function") opts.on_enter(); }
     });
     const coaches = tc.coachEls.map((el, i) => {
       const body = tc.body(i);
@@ -604,6 +636,10 @@
     });
     return {
       wrap: tc.shell, rail: tc.rail, coaches, chrome: tc,
+      /* run `fn` once the train has stopped — immediately if it already has, and never at all
+         if the screen has moved on in the meantime */
+      whenParked(fn){ const run = ()=>{ if(myGen !== _voGen) return; fn(); };
+                      if(parked) run(); else waiting.push(run); },
       /* [28f] THE GUIDING HAND IS PHASE-GATED and handOnAnswer() is the one place that can
          enforce it: tutorial and guided get the hand, practice gets the coach glow only. */
       nudge(i, slide){ const c = coaches[i]; if(!c) return;
@@ -673,6 +709,7 @@
   SlideModules.TRAIN_TAP = {
     mount(host, slide){
       const d = slide.data;
+      newVoEpoch();          /* any chain still running from a previous mount is now stale */
       const correctIdx = d.coaches.findIndex(c => c.correct);
       /* SME, on all three tap screens: "Train comes through animation from right to left. Train
          stops at the centre of the screen. **After the train stops**, the three coaches पुल, दूध,
@@ -710,8 +747,9 @@
           }
         };
       });
-      /* instruction is VOICE only — the SME asks for no on-screen text on every test screen */
-      say(A(slide, "prompt"), ()=>{});
+      /* instruction is VOICE only — the SME asks for no on-screen text on every test screen,
+         and it waits for the train to stop so it is never spoken under the arrival. */
+      train.whenParked(()=> say(A(slide, "prompt"), ()=>{}));
     }
   };
 
@@ -724,6 +762,7 @@
   SlideModules.TRAIN_SORT = {
     mount(host, slide){
       const d = slide.data;
+      newVoEpoch();          /* any chain still running from a previous mount is now stale */
       /* SME, word and picture rounds: "More than one word can be placed inside each coach."
          `multi` is what lets the painted coach's cream panel hold two cards side by side instead
          of stacking the second on top of the first. The matra round is `single` — "Only one matra
@@ -843,7 +882,7 @@
          listen-before-you-act contract sortSeqReveal gives the stock sort. */
       state.revealing = true;
       [...tray.children].forEach(t => t.classList.add("tr-seq-hidden"));
-      say(A(slide, "prompt"), ()=>{
+      train.whenParked(()=> say(A(slide, "prompt"), ()=>{
         const tiles = [...tray.children];
         let i = 0;
         (function step(){
@@ -852,9 +891,9 @@
           say(clip(t.dataset.audio),
               ()=> setTimeout(step, 160));
         })();
-      });
+      }));
       setTimeout(()=>{ state.revealing = false;
-        [...tray.children].forEach(t => t.classList.remove("tr-seq-hidden")); }, 16000);
+        [...tray.children].forEach(t => t.classList.remove("tr-seq-hidden")); }, 20000);
     }
   };
 
@@ -866,6 +905,7 @@
   SlideModules.MATRA_FILL = {
     mount(host, slide){
       const d = slide.data;
+      newVoEpoch();          /* any chain still running from a previous mount is now stale */
       const train = buildTrain(host, {
         coaches: d.slots.length,
         labels: d.slots.map(s => imgOrEmoji(s.img, s.emoji, "tr-slotpic", "tr-emoji")),
@@ -948,6 +988,7 @@
   SlideModules.MATRA_BUILD = {
     mount(host, slide){
       const d = slide.data;
+      newVoEpoch();          /* any chain still running from a previous mount is now stale */
       const wrap = document.createElement("div");
       wrap.className = "mb-stage";
       /* Laid out to the SME's own mockup (_SME_MOCKUPS/slide05_image5.png): each of the three
@@ -1056,6 +1097,7 @@
   SlideModules.MEET_PAIR = {
     mount(host, slide){
       const d = slide.data;
+      newVoEpoch();          /* any chain still running from a previous mount is now stale */
       const wrap = document.createElement("div");
       wrap.className = "mp-stage";
       host.appendChild(wrap);
@@ -1139,6 +1181,7 @@
   SlideModules.CONTRAST_PAIR = {
     mount(host, slide){
       const d = slide.data;
+      newVoEpoch();          /* any chain still running from a previous mount is now stale */
       const wrap = document.createElement("div");
       wrap.className = "cp-stage";
       const side = (s, cls)=>
@@ -1201,6 +1244,7 @@
   SlideModules.MATRA_INTRO = {
     mount(host, slide){
       const d = slide.data;
+      newVoEpoch();          /* any chain still running from a previous mount is now stale */
       /* ROUND 3: the SME asks to "keep the train-theme continuity by showing each pair inside a
          train-style card / bogie / box", and round 3b makes that the SAME painted train the cover
          and every test screen use — one train through the whole lesson, which is the point of the
@@ -1247,7 +1291,7 @@
       };
       /* `instruction` is optional in round 3 — the SME's VO list for this screen is the intro
          line and then the two pair lines, nothing between them. */
-      say(A(slide, "prompt"), ()=> sayOpt(A(slide, "instruction"), step));
+      train.whenParked(()=> say(A(slide, "prompt"), ()=> sayOpt(A(slide, "instruction"), step)));
       setTimeout(()=>{ if(state.demoRunning) done(); }, 30000);
     }
   };
@@ -1272,6 +1316,7 @@
   SlideModules.POEM_SEARCH = {
     mount(host, slide){
       const d = slide.data;
+      newVoEpoch();          /* any chain still running from a previous mount is now stale */
       const wrap = document.createElement("div");
       wrap.className = "ps-stage";
       const card = document.createElement("div");
@@ -1532,6 +1577,7 @@
   SlideModules.WORD_BUILD = {
     mount(host, slide){
       const d = slide.data;
+      newVoEpoch();          /* any chain still running from a previous mount is now stale */
       const train = buildTrain(host, {
         coaches: d.slots.length,
         /* SME: "Show related pictures above each coach" — the picture IS the question here, so
@@ -1648,7 +1694,7 @@
         });
         tray.classList.add("wb-trayin");
       });
-      say(A(slide, "prompt"), ()=>{});
+      train.whenParked(()=> say(A(slide, "prompt"), ()=>{}));
     }
   };
 
@@ -1673,6 +1719,7 @@
   SlideModules.SENTENCE_COMPLETE = {
     mount(host, slide){
       const d = slide.data;
+      newVoEpoch();          /* any chain still running from a previous mount is now stale */
       const wrap = document.createElement("div");
       wrap.className = "sc-stage";
       wrap.innerHTML =
@@ -1848,7 +1895,10 @@
          them "one by one" AFTER the arrival, so they land on a coach that is standing still */
       coach_body: ms.map(m => ({ html: '<span class="lt-matra lt-pending">' + matraGlyph(m) + "</span>" })),
       drop_zone: false,
-      maxH: 220,
+      /* the sibling's landing train is 634px wide for a locomotive and THREE coaches, i.e. a
+         per-part scale of 634/2155 = 0.294. Matching that scale rather than a width budget is
+         what makes the two covers read as the same train: 0.294 * the 592px ink band = 174. */
+      maxH: 174,
       on_enter: ()=>{
         [...el.querySelectorAll(".lt-matra")].forEach((sp, i)=> setTimeout(()=>{
           sp.classList.remove("lt-pending"); sp.classList.add("lt-pop");
@@ -1856,7 +1906,19 @@
         }, 220 + i * 520));
       }
     });
+    /* NEVER LEAVE THE COACHES EMPTY. The matras are revealed from on_enter, which fires when the
+       train parks 3.4s in — so anything that looks at this screen earlier (a review capture, a
+       slow first paint, a stalled arrival) sees two blank coaches, which is exactly what the
+       round-3b review deck shipped. This is the backstop: by 5s the matras are up regardless of
+       whether the arrival ever completed. */
+    setTimeout(()=> [...el.querySelectorAll(".lt-matra.lt-pending")].forEach(sp =>
+      sp.classList.remove("lt-pending")), 5000);
     el.classList.add("show");          // boot() only adds this for hero kinds it knows
+    /* THE SIBLING'S COVER HAS NO RAIL. On the activity screens the track is the line the train
+       arrives along and it reads as railway; on the cover it cut the card in half under a train
+       that is really a title illustration. Marked here rather than hidden globally, because the
+       activity screens still want it. */
+    (tc.shell || el).classList.add("lt-cover");
     void tc;
     return true;
   }
