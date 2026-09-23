@@ -111,16 +111,16 @@ for i, s in enumerate(slides):
     t, sid = s["type"], s["id"]
 
     if t == "TRAIN_TAP":
-        coaches = d.find_elements("css selector", ".tr-coach")
+        coaches = d.find_elements("css selector", ".train-coach")
         right = d.execute_script(
-            "return [...document.querySelectorAll('.tr-coach')].findIndex("
+            "return [...document.querySelectorAll('.train-coach')].findIndex("
             "  (c,i)=>CARD.slides[arguments[0]].data.coaches[i].correct);", i)
         wrongs = [c for n, c in enumerate(coaches) if n != right]
         d.execute_script(CLICK, wrongs[0]); time.sleep(0.6)
-        a1 = logs(); hand1 = d.execute_script("return document.querySelectorAll('.tr-coach.is-nudge').length;")
+        a1 = logs(); hand1 = d.execute_script("return document.querySelectorAll('.train-coach.is-nudge').length;")
         d.execute_script("window.__log=[];")
         d.execute_script(CLICK, wrongs[1]); time.sleep(0.8)
-        a2 = logs(); hand2 = d.execute_script("return document.querySelectorAll('.tr-coach.is-nudge').length;")
+        a2 = logs(); hand2 = d.execute_script("return document.querySelectorAll('.train-coach.is-nudge').length;")
         d.execute_script("window.__log=[];")
         d.execute_script(CLICK, coaches[right]); time.sleep(0.9)
         a3 = logs()
@@ -162,10 +162,10 @@ for i, s in enumerate(slides):
         want = t0.get_attribute("data-bin")
         wrong_i = 0 if bins[0] != want else 1
         drag(t0, bodies[wrong_i]); time.sleep(0.7)
-        a1 = logs(); h1 = d.execute_script("return document.querySelectorAll('.tr-coach.is-nudge').length;")
+        a1 = logs(); h1 = d.execute_script("return document.querySelectorAll('.train-coach.is-nudge').length;")
         d.execute_script("window.__log=[];")
         drag(t0, bodies[wrong_i]); time.sleep(0.9)
-        a2 = logs(); h2 = d.execute_script("return document.querySelectorAll('.tr-coach.is-nudge').length;")
+        a2 = logs(); h2 = d.execute_script("return document.querySelectorAll('.train-coach.is-nudge').length;")
         d.execute_script("window.__log=[];")
         ok_i = bins.index(want)
         drag(t0, bodies[ok_i]); time.sleep(0.8)
@@ -178,7 +178,7 @@ for i, s in enumerate(slides):
             time.sleep(0.5)
         d.execute_script("window.__log=[];"); time.sleep(0.8)
         done = d.execute_script("return {snap:document.querySelectorAll('.tr-card.snapped').length,"
-                                "finish:!!document.querySelector('.tr-wrap.tr-done'),"
+                                "finish:!!document.querySelector('.train-shell.complete'),"
                                 "nav:!document.getElementById('navBtn').classList.contains('disabled')};")
         note("%-4s %-18s miss1 vo=%s hand=%d | miss2 vo=%s hand=%d | win vo=%s snapped=%d | all=%s"
              % (sid, t, a1, h1, a2, h2, a3, snapped, json.dumps(done)))
@@ -201,11 +201,11 @@ for i, s in enumerate(slides):
                 break
         bad = next(n for n in range(len(slots)) if n != home)
         drag(t0, blank(bad)); time.sleep(0.7)
-        a1 = logs(); h1 = d.execute_script("return document.querySelectorAll('.tr-coach.is-nudge').length;")
+        a1 = logs(); h1 = d.execute_script("return document.querySelectorAll('.train-coach.is-nudge').length;")
         d.execute_script("window.__log=[];")
         drag(t0, blank(bad)); time.sleep(0.9)
         a2 = logs()
-        h2 = d.execute_script("return {coach:document.querySelectorAll('.tr-coach.is-nudge').length,"
+        h2 = d.execute_script("return {coach:document.querySelectorAll('.train-coach.is-nudge').length,"
                               "blank:document.querySelectorAll('.wb-blank.wb-pulse').length};")
         d.execute_script("window.__log=[];")
         drag(t0, blank(home)); time.sleep(1.0)
@@ -224,7 +224,7 @@ for i, s in enumerate(slides):
         fin = d.execute_script("return {words:[...document.querySelectorAll('.tr-doneword')]"
                                ".map(e=>e.dataset.mhWord||e.textContent),"
                                "ov:document.querySelectorAll('.tr-doneword .mh-ov').length,"
-                               "finish:!!document.querySelector('.tr-wrap.tr-done'),"
+                               "finish:!!document.querySelector('.train-shell.complete'),"
                                "nav:!document.getElementById('navBtn').classList.contains('disabled')};")
         note("%-4s %-18s miss1 vo=%s hand=%d | miss2 vo=%s nudge=%s | win vo=%s built=%s | all=%s"
              % (sid, t, a1, h1, a2, json.dumps(h2), a3, w1, json.dumps(fin)))

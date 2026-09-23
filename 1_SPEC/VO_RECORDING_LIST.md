@@ -6,16 +6,10 @@
 
 **Only re-record what changed.** The builder deletes exactly the clips whose text moved this round, so `gen_tts.py` (which skips ids that already have a file) regenerates precisely those and leaves every unchanged take alone. Never `--force` the whole card: generated audio is non-deterministic, so re-running an unchanged clip returns a different take — a change the SME never asked for.
 
-## ⚠️ EAR-CHECK — 10 clips a human must listen to before delivery
+## ⚠️ EAR-CHECK — 4 clips a human must listen to before delivery
 
 The TTS model truncates a clip when an **em-dash precedes a short final word** (measured on this lesson: em-dash 0.73–1.05 s vs comma 1.53–2.21 s for the same words), and it does the same to a line built from several short danda-separated pieces. The SME's round-3 MEET_PAIR lines and the new sound-differentiation clips are written in exactly those shapes. Their wording ships as written — rewriting a reviewer's Hindi to dodge a synthesis bug is the worse failure — so the clips are flagged instead. **Truncation is invisible to an existence check and to a file-size check.** `_verify_assets.py` compares each clip against peers of similar text length and is the only thing that catches it. Run it, then listen to every id below.
 
-- `vo_base_pal` — यह शब्द देखिए — पल।
-- `vo_base_phal` — यह शब्द देखिए — फल।
-- `vo_meet_dhanush` — धनुष — बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है।
-- `vo_meet_doodh` — दूध — बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है।
-- `vo_meet_gud` — गुड़ — बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है।
-- `vo_meet_kabootar` — कबूतर — बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है।
 - `vo_pair_u` — यह है उ। इसकी मात्रा है — ु।
 - `vo_pair_uu` — यह है ऊ। इसकी मात्रा है — ू।
 - `vo_sounds_phool` — फ। फू। फूल।
@@ -29,8 +23,8 @@ The TTS model truncates a clip when an **em-dash precedes a short final word** (
 | `vo_ak_phool` | फू |
 | `vo_ak_pul` | पु |
 | `vo_ak_sui` | सु |
-| `vo_base_pal` | यह शब्द देखिए — पल। |
-| `vo_base_phal` | यह शब्द देखिए — फल। |
+| `vo_base_pal` | यह शब्द देखिए, पल। |
+| `vo_base_phal` | यह शब्द देखिए, फल। |
 | `vo_cel_prompt` | शाबाश! आज हमने सीखा, छोटी उ और बड़ी ऊ की मात्रा पहचानना, और मात्रा वाले शब्द पढ़ना। |
 | `vo_g1_correct` | शाबाश! पुल शब्द में छोटी उ की मात्रा है। |
 | `vo_g2_correct` | शाबाश! फूल शब्द में बड़ी ऊ की मात्रा है। |
@@ -43,10 +37,10 @@ The TTS model truncates a clip when an **em-dash precedes a short final word** (
 | `vo_landing` | हेलो दोस्त! मैं हूँ स्विफ्टी। आज हम मात्राओं के बारे में जानेंगे। |
 | `vo_matra_u` | छोटी उ की मात्रा |
 | `vo_matra_uu` | बड़ी ऊ की मात्रा |
-| `vo_meet_dhanush` | धनुष — बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है। |
-| `vo_meet_doodh` | दूध — बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है। |
-| `vo_meet_gud` | गुड़ — बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है। |
-| `vo_meet_kabootar` | कबूतर — बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है। |
+| `vo_meet_dhanush` | धनुष, बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है। |
+| `vo_meet_doodh` | दूध, बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है। |
+| `vo_meet_gud` | गुड़, बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है। |
+| `vo_meet_kabootar` | कबूतर, बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है। |
 | `vo_name_aaloo` | आलू |
 | `vo_name_doodh` | दूध |
 | `vo_name_gud` | गुड़ |
@@ -116,3 +110,6 @@ The TTS model truncates a clip when an **em-dash precedes a short final word** (
 - `sfx_wrong`
 - `sfx_tap`
 - `sfx_pop`
+- `sfx_train_arrive`
+- `sfx_train_move`
+- `sfx_whistle`

@@ -8,22 +8,27 @@ the game, or to rebuild it.
 
 ---
 
-## Status — ROUND 3 IS BUILT
+## Status — ROUND 3 IS COMPLETE
 
-`3_CURRENT_BUILD/` is now **round 3**: every change in the SME's deck of 2026-09-22 is
-implemented. What is *not* done is the asset generation that round 3 created work for.
+`3_CURRENT_BUILD/` is round 3, built and fully assetted: every change in the SME's deck of
+2026-09-22 is implemented, all 17 pictures are drawn and all 80 voice clips are recorded.
 
 | | state |
 |---|---|
-| Card + engine changes | **done** — 18 screens; every row of the change checklist implemented or explicitly flagged |
+| Card + engine changes | **done** — 18 screens; of 155 checklist rows: **150 ✅**, 3 flagged for the SME, 2 N/C, 0 pending |
 | Mechanics | **driven and verified**, wrong → wrong → right, on all 11 test screens |
-| Voice-over | **61 of 80 clips pending** — they need a Gemini TTS run; until then those beats are silent |
-| Art | **7 of 17 pictures pending** — they render as the emoji fallback until generated |
-| Asset receipt | **2 FAIL** — both are the above, quoted verbatim in `CHANGES.md` |
+| Voice-over | **80/80 recorded** (Gemini TTS, voice Leda) — see Q8, which wants a human ear |
+| Art | **17/17** — 13 keyed cut-outs and 4 full-bleed scenes |
+| Landing train | **painted**, ported from the sibling lesson and cropped from three coaches to two |
+| Asset receipt | **0 FAIL · 1 WARN** (the WARN is a standing risk, not a defect — Q6) |
 
 **The one thing to read first is [`CHANGES.md`](CHANGES.md)** — every ask in the deck as a numbered
 row, with its status and the evidence for it. It is the contract this round was built against and
 the scorecard it was checked against; they are the same document on purpose.
+
+**Five things still want the SME**, all in that file's Open questions: the WORD_BUILD distractor
+(Q2), the hand on practice screens (Q3), the register split with the sibling (Q5), a punctuation
+change forced by measurement (Q6), screen 14's first-person praise line (Q7), and the voice (Q8).
 
 ---
 
@@ -101,32 +106,56 @@ every lesson.** Never hand-edit the compiled HTML; it is generated.
 
 ---
 
-## Finishing round 3 — the two jobs left
+## Regenerating assets
 
-Both need a Gemini API key, which the build machine did not have.
+Both need a Gemini key. `3_CURRENT_BUILD/.env` holds one and is **git-ignored**; `.env.example`
+documents the variable names. The generators read the PROCESS environment, not the file:
 
 ```bash
-# 1. VOICE-OVER — 61 clips. gen_tts SKIPS ids that already have a file, and the builder has
-#    already deleted exactly the stale ones, so this regenerates precisely what changed.
-#    Never --force the whole card: a re-run of an unchanged clip returns a DIFFERENT take.
-python <skill>/scripts/gen_tts.py 3_CURRENT_BUILD/card.json --ext ogg --voice <the shipped voice>
+cd 3_CURRENT_BUILD && set -a && . ./.env && set +a && export GEMINI_KEY="$GKEY"
 
-# 2. ART — 7 pictures. `1_SPEC/_art_manifest.json` carries the prompts; its `pending` block is the
-#    list. The four scn_* SCENES must NOT go through the magenta chroma key — 1_SPEC/ART_BRIEF.md
-python <skill>/scripts/gen_objects.py 3_CURRENT_BUILD/assets/Images --manifest <pending objects>
+# VOICE-OVER. gen_tts SKIPS ids that already have a file, and the builder deletes exactly the
+# clips whose TEXT changed — so this re-records precisely what moved and nothing else.
+# Never --force the whole card: a re-run of an unchanged clip returns a DIFFERENT take.
+python <skill>/scripts/gen_tts.py card.json --voice Leda --ext ogg
+
+# ART. `1_SPEC/_art_manifest.json` carries every prompt; `pending` is empty while all 17 exist.
+# The four scn_* SCENES must NOT go through the magenta chroma key — see 1_SPEC/ART_BRIEF.md.
+python <skill>/scripts/gen_objects.py assets/Images --manifest <the objects you want>
 
 # then, always:
-PYTHONUTF8=1 python 1_SPEC/build_skill_HI02H11_L02_S02.py        # picks the new assets up by itself
+cd .. && PYTHONUTF8=1 python 1_SPEC/build_skill_HI02H11_L02_S02.py
 cd 3_CURRENT_BUILD && PYTHONUTF8=1 python ../1_SPEC/_verify_assets.py
 ```
 
-`_verify_assets.py` is the **only** check that catches a truncated voice clip. The TTS model cuts a
-clip short when an em-dash precedes a short final word (0.73–1.05 s against a 1.53–2.21 s peer
-median), and the truncation is invisible to existence and file-size checks. **Four round-3 lines
-are written in exactly that shape and they are the SME's own wording** — see the EAR-CHECK list at
-the top of `1_SPEC/VO_RECORDING_LIST.md`, and `CHANGES.md` for the open question about them.
+### The two truncation checks, and why there are two
 
----
+`_verify_assets.py` is the only thing that catches a **truncated** voice clip — one that exists, is
+valid, is the right size, and stops after the first word. It now runs two independent tests:
+
+1. **peer comparison** — group clips by text length, flag any under 55% of its group median;
+2. **corpus rate** — flag any clip under 40% of the duration its character count predicts.
+
+Test 1 alone reported a clean sweep over four clips that were all truncated: the four MEET_PAIR
+lines are 54–56 characters, so they were each other's only peers, and when every member of a group
+fails, the median fails with it. Test 2 caught them at once. **Keep both.**
+
+## ⚠️ Before this ships: the bundle is 3x the delivery cap
+
+`3_CURRENT_BUILD/` is **31 MB**. The cap is ~10 MB, and this has not been optimised — deliberately,
+because the optimise step rewrites every asset and is better done once, after the SME has signed
+off, than repeatedly during review.
+
+| | size | what to do |
+|---|---|---|
+| `assets/Audio` | 13 MB | the clips are raw WAV inside `.ogg` containers (that is what Gemini returns, and Chromium sniffs the content so it plays). Re-encode to **Opus 32k mono** — this is where almost all the saving is |
+| `assets/UI` | 6.5 MB | mostly inherited chrome the card never references (dead `sw_lg_*` stills and similar). Delete every `assets/UI` file whose basename does not appear in the built HTML |
+| `_review_shots` | 8 MB | **dev-only.** Git-ignored already, and must not go in a child-facing zip |
+| `assets/Images` | 2.7 MB | already trimmed — the four scenes were cropped, resized and palette-quantised 5.2 MB → 1.1 MB |
+
+Do it on a **copy**, smoke-test that copy (serve it, sweep every slide, 0 errors) and zip that —
+never the working folder. `package_bundle.py --netlify` in the revise skill does the dropping of
+dev-only files (`card.json`, `*.xlsx`, `README*`, `CHANGES.md`, `_review_shots/`).
 
 ## Five things that will cost you a day if you do not know them
 

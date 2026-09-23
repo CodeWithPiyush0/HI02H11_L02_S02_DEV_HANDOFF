@@ -38,7 +38,7 @@ d.find_element("id", "sgBtn").click(); time.sleep(3.5)
 d.execute_script(FREEZE)
 n = d.execute_script("return CARD.slides.length")
 for i in range(n):
-    d.execute_script("mountSlide(arguments[0]);", i); time.sleep(1.1)
+    d.execute_script("mountSlide(arguments[0]);", i); time.sleep(4.0)   # the train takes 3.4s to pull in and park
     d.execute_script(SETTLE); time.sleep(0.35)
     t = d.execute_script("return CARD.slides[arguments[0]].type;", i)
     name = "%02d_%s.png" % (i + 2, t)

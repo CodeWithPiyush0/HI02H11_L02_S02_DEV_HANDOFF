@@ -17,8 +17,9 @@ N/C (deck page asked for nothing).
 | `driven` | exercised in a real browser, wrong → wrong → right, with the outcome read back from the DOM |
 | `guard` | enforced by a builder guard that **fails the build** if it regresses |
 | `engine` | implemented in `4_ENGINE/train_modules.js` / `train_styles.css` |
-| `vo` | the line is in the card and in `1_SPEC/VO_RECORDING_LIST.md`; **the clip itself is not recorded yet** |
-| `art` | the picture is specified in `1_SPEC/_art_manifest.json`; **not drawn yet**, renders as the emoji fallback |
+| `vo` | the clip is recorded (Gemini TTS, voice **Leda**) and passed the duration checks |
+| `art` | the picture is generated, keyed (or deliberately not), and checked on screen at the size the child sees it |
+| `sfx` | a real recorded sound file, brought over from the sibling lesson `HI02H11_L02_S01` |
 
 **Baseline match:** confirmed. 13 of the deck's 16 embedded screenshots are byte-identical to
 `5_CURRENT_BUILD_SCREENSHOTS/` (round 2); the other three are the SME's mockups. The deck reviews
@@ -57,15 +58,15 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 |---|---|---|---|
 | 1 | "Remove all extra text that is not required." | ✅ | `render` 01 — title, two bogies, शुरू करें. Nothing else; the cell `label`s are aria-only and were never painted |
 | 2 | "Keep the screen clean and minimal." | ✅ | `render` 01 |
-| 3 | "Show only two matra boxes/cards: 1st box: ु · 2nd box: ू" | ✅ | `card` `landing_hero.cells` = `◌ु`, `◌ू`, in that order. **The `◌` carrier is kept** — see Judgement calls |
+| 3 | "Show only two matra boxes/cards: 1st box: ु · 2nd box: ू" | ✅ | `card` `landing_hero.matras` = `ु`, `ू`, in that order, **bare** — an orphan combining mark makes the font draw its own dotted placeholder, which is exactly the «ु» the note writes |
 | 4 | "Keep the existing mascot and overall UI/UX style unchanged." | ✅ | `render` 01 — mascot, chrome and start card untouched |
-| 5 | "The matras can be shown inside two train bogies/cards so that the lesson visually continues as a 'मात्राओं की रेल' journey." | ✅ | `engine` `dressLandingTrain()` + `.lt-*`; `render` 01 shows locomotive + 2 bogies + track |
-| 6 | "bring the train onto the screen with a smooth right-to-left animation." | ✅ | `engine` `.sg-hero.lt-train.lt-enter` → `trRollIn` |
-| 7 | "The two matra boxes/bogies can appear one by one with a soft pop/fade animation. First show ु, followed by ू." | ✅ | `engine` `ltPop` with `--lt-delay` staggered 620 ms / 1100 ms, ु first |
-| 8 | "Add a soft train arrival / whistle SFX when the train enters." | ✅ | `engine` `sfxWhistle()` on the entry frame |
-| 9 | "Add a light sparkle/pop SFX when each matra appears." | ✅ | `engine` `sfxSparkle()` per bogie, on the same stagger |
+| 5 | "The matras can be shown inside two train bogies/cards so that the lesson visually continues as a 'मात्राओं की रेल' journey." | ✅ `art` | **PAINTED**, ported from the sibling lesson — the same artwork the mockup draws, cropped from three coaches to two. `render` 01 |
+| 6 | "bring the train onto the screen with a smooth right-to-left animation." | ✅ | `engine` — a 3.4 s roll-in on a curve tuned to read as pulling into a platform, with the 36 sprite frames driven off the **same easing** so the wheels wind down exactly as the loco stops |
+| 7 | "The two matra boxes/bogies can appear one by one with a soft pop/fade animation. First show ु, followed by ू." | ✅ | `engine` `ltPop`, 520 ms apart, ु first, and only **after the train has parked** so they land on a coach that is standing still |
+| 8 | "Add a soft train arrival / whistle SFX when the train enters." | ✅ `sfx` | **real recordings** now — `sfx_train_move` on the roll-in, `sfx_whistle` on arrival. Round 3 first synthesised these with the engine's `_tone()`, which is a two-note beep, not a train |
+| 9 | "Add a light sparkle/pop SFX when each matra appears." | ✅ | `engine` `sfxSparkle()` per bogie, chained to the reveal |
 | 10 | VO: "हेलो दोस्त! मैं हूँ स्विफ्टी। आज हम मात्राओं के बारे में जानेंगे।" | ✅ `vo` | `card` `vo_landing`, their spelling (स्विफ्टी, जानेंगे) |
-| 11 | "After this VO, the two matras ु, ू can appear one by one on screen." | ✅ | `engine` — the bogie stagger starts after the landing beat; settled state stays fully painted so a frozen capture is not empty |
+| 11 | "After this VO, the two matras ु, ू can appear one by one on screen." | ✅ | `engine` — the reveal is chained to the travel ending, not to a second timer that could drift out of step with it |
 
 ## Screen 1 · MATRA_INTRO (deck slide 2)
 
@@ -88,7 +89,7 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 | # | change | status | proof |
 |---|---|---|---|
 | 23 | prompt VO: "आइए, देखें कि छोटी उ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।" | ✅ `vo` | `card` `vo_t2_prompt`; also the heading |
-| 24 | base VO: "यह शब्द देखिए — पल।" | ✅ `vo` | `card` `vo_base_pal` — **new id**, so round 2's «यह शब्द है, पल।» cannot linger on disk. ⚠️ EAR-CHECK, see Q6 |
+| 24 | base VO: "यह शब्द देखिए — पल।" | ✅ `vo` | `card` `vo_base_pal` — **new id**, so round 2's «यह शब्द है, पल।» cannot linger on disk. ⚠️ **Punctuation only:** the SME's em-dash after the leading word is a COMMA in the recording script. No word changed; measured, see Q6 |
 | 25 | onset VO: "प के साथ छोटी उ की मात्रा लगाने पर 'पु' बनता है।" — the note explicitly rejects "प में उ की मात्रा लगी, बना पु।"; round 2 shipped "प के **नीचे** …" | ✅ `vo` | `card` `vo_onset_pul`, now «प के **साथ** …» |
 | 26 | result VO: "अब 'ल' जुड़ने पर 'पुल' बनता है।" | ✅ `vo` | `card` `vo_result_pul` — new rung; round 2 spoke only the bare word here |
 | 27 | "First show पल clearly on the left side. In the centre, show the transformation: प + ु = पु" | ✅ | `render` 03 |
@@ -107,10 +108,10 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 |---|---|---|---|
 | 36 | prompt VO: "आइए, छोटी उ की मात्रा वाले कुछ शब्द देखें।" | ✅ `vo` | `card` `vo_t3_prompt`; also the heading |
 | 37 | **words change to गुड़ and धनुष** (round 2 ships पुल · गुड़) | ✅ | `card` `T3.data.examples`; `render` 04 |
-| 38 | गुड़ line: "गुड़ — बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है।" | ✅ `vo` | `card` `vo_meet_gud`, the SME's exact wording. ⚠️ EAR-CHECK, see Q6 |
-| 39 | धनुष line: "धनुष — बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है।" | ✅ `vo` | `card` `vo_meet_dhanush`. ⚠️ EAR-CHECK |
+| 38 | गुड़ line: "गुड़ — बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है।" | ✅ `vo` | `card` `vo_meet_gud`, 3.37 s. ⚠️ **Punctuation only:** the SME's em-dash after the leading word is a COMMA in the recording script. No word changed; measured, see Q6 |
+| 39 | धनुष line: "धनुष — बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है।" | ✅ `vo` | `card` `vo_meet_dhanush`, 3.57 s. ⚠️ **Punctuation only:** the SME's em-dash after the leading word is a COMMA in the recording script. No word changed; measured, see Q6 |
 | 40 | "First show गुड़ with the jaggery image." | ✅ | `card` `obj_gud` |
-| 41 | "show the second example धनुष with a bow image" — **new art `obj_dhanush`** | ⏳ `art` | specified in `_art_manifest.json`; `render` 04 shows the 🏹 fallback |
+| 41 | "show the second example धनुष with a bow image" — **new art `obj_dhanush`** | ✅ `art` | generated, keyed, one connected silhouette; `render` 04 |
 | 42 | "Highlight only the ु matra" in both words | ✅ | `render` 04 — the ु on नु is red, and only that |
 | 43 | "Word should appear first, then image should appear." | ✅ | `engine` `.mp-pic` revealed on the line ending |
 | 44 | "Keep Next button disabled during the explanation." | ✅ | `engine` `state.demoRunning` |
@@ -120,7 +121,7 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 | # | change | status | proof |
 |---|---|---|---|
 | 45 | prompt VO: "आइए, देखें कि बड़ी ऊ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।" | ✅ `vo` | `card` `vo_t4_prompt` |
-| 46 | base VO: "यह शब्द देखिए — फल।" | ✅ `vo` | `card` `vo_base_phal`. ⚠️ EAR-CHECK |
+| 46 | base VO: "यह शब्द देखिए — फल।" | ✅ `vo` | `card` `vo_base_phal`, 2.49 s. ⚠️ **Punctuation only:** the SME's em-dash after the leading word is a COMMA in the recording script. No word changed; measured, see Q6 |
 | 47 | onset VO: "फ के साथ बड़ी ऊ की मात्रा लगाने पर 'फू' बनता है।" | ✅ `vo` | `card` `vo_onset_phool` |
 | 48 | result VO: "अब 'ल' जुड़ने पर 'फूल' बनता है।" | ✅ `vo` | `card` `vo_result_phool` |
 | 49 | "Show the flower image only after the final word appears." | ✅ | `engine` — panel 3 revealed on the onset clip ending |
@@ -133,8 +134,8 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 |---|---|---|---|
 | 52 | prompt VO: "आइए, बड़ी ऊ की मात्रा वाले कुछ शब्द देखें।" | ✅ `vo` | `card` `vo_t5_prompt` |
 | 53 | **words change to दूध and कबूतर** (round 2 ships फूल · दूध) | ✅ | `card` `T5.data.examples`; `render` 06 |
-| 54 | दूध line: "दूध — बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है।" | ✅ `vo` | `card` `vo_meet_doodh`. ⚠️ EAR-CHECK |
-| 55 | कबूतर line: "कबूतर — बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है।" | ✅ `vo` | `card` `vo_meet_kabootar`. ⚠️ EAR-CHECK |
+| 54 | दूध line: "दूध — बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है।" | ✅ `vo` | `card` `vo_meet_doodh`. ⚠️ **Punctuation only:** the SME's em-dash after the leading word is a COMMA in the recording script. No word changed; measured, see Q6 |
+| 55 | कबूतर line: "कबूतर — बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है।" | ✅ `vo` | `card` `vo_meet_kabootar`. ⚠️ **Punctuation only:** the SME's em-dash after the leading word is a COMMA in the recording script. No word changed; measured, see Q6 |
 | 56 | milk image, pigeon image; highlight only the ू in each | ✅ | `card` `obj_doodh` / `obj_kabootar`; `render` 06 |
 | 57 | word-then-image order, glow on the matra, SFX, Next gating | ✅ | same module path as rows 43–44 |
 
@@ -150,7 +151,7 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 | # | change | status | proof |
 |---|---|---|---|
 | 60 | heading: "छोटी उ की मात्रा वाले शब्द पर टैप कीजिए।" | ✅ | `card` `G1.prompt_hi`; `render` 07 |
-| 61 | "Train comes … right to left … the three coaches पुल, दूध, सूरज appear clearly." | ✅ | `engine` `trRollIn`; `render` 07 |
+| 61 | "Train comes through animation from right to left… **After the train stops**, the three coaches पुल, दूध, सूरज appear clearly." | ✅ | `engine` — the painted train pulls in over 3.4 s and the coach WORDS are held back until it parks, then fade in 180 ms apart. They were previously painted from the start, which is not what the note asks for |
 | 62 | "Do not add any additional instruction text in the play area." | ✅ | `render` 07 — heading band only |
 | 63 | "Do not highlight the matra before the child answers" | ✅ | `driven` — 0 `.mh-ov` overlays until the correct tap |
 | 64 | prompt VO: "जिस डिब्बे में छोटी उ की मात्रा वाला शब्द है, उस डिब्बे पर टैप कीजिए।" | ✅ `vo` | `card` `vo_tap_prompt_u` — one recording, shared with screen 8 |
@@ -158,7 +159,7 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 | 66 | wrong 1 → wiggle, **no hand**, VO "फिर से सोचिए। छोटी उ की मात्रा वाला शब्द कौन-सा है?" | ✅ `vo` | `driven` — `miss1 vo=[vo_tap_hint1_u] hand=0` |
 | 67 | wrong 2 → wiggle, VO "ध्यान से देखिए और …", **hand nudge on the पुल coach** | ✅ `vo` | `driven` — `miss2 vo=[vo_tap_hint2_u] hand=1` |
 | 68 | 3rd-attempt correct → confetti, highlight, Next active, **no additional VO** | ✅ | `driven` — `win vo=[] nav=True` |
-| 69 | SFX: whistle on entry · tap on selection · shake on wrong · chime on correct | ✅ | `engine` |
+| 69 | SFX: whistle on entry · tap on selection · shake on wrong · chime on correct | ✅ `sfx` | `engine` — the entry whistle is now the sibling's real `sfx_train_arrive` on every train screen, not a synthesised tone |
 | 70 | "Keep the Next button disabled initially." | ✅ | `driven` — nav opens only on the win |
 
 ## Screen 7 · TRAIN_TAP बड़ी ऊ (deck slide 8)
@@ -193,7 +194,7 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 | 86 | four draggable word cards: आलू · सूरज · सुई · गुड़ | ✅ | `card` `G4.data.cards` |
 | 87 | prompt VO: "हर शब्द को उसकी सही मात्रा वाले डिब्बे में डालिए।" | ✅ `vo` | `card` `vo_g4_prompt` |
 | 88 | "Each word card can also play its word VO when tapped or dragged" | ✅ | `engine` `tile.onclick` → the card's `vo_name_*` |
-| 89 | mapping सुई→उ · गुड़→उ · आलू→ऊ · सूरज→ऊ; more than one word per coach | ✅ | `driven` — all four placed, `snap=4` |
+| 89 | mapping सुई→उ · गुड़→उ · आलू→ऊ · सूरज→ऊ; "More than one word can be placed inside each coach" | ✅ | `driven` — all four placed, `snap=4`, and the two cards sit **side by side on the coach's painted panel** (`multi`); `render` 10 |
 | 90 | per-card correct VO: "शाबाश! 'सुई' शब्द में उ की मात्रा है।" ×4 (उ / ऊ, no छोटी / बड़ी) | ✅ `vo` | `card` `vo_ok_sui` / `vo_ok_gud` / `vo_ok_aaloo` / `vo_ok_sooraj`; `engine` plays `card.correct_audio` |
 | 91 | wrong 1 → shake, card returns, **no hand**, VO "फिर से सुनिए और सही मात्रा पहचानिए।" | ✅ `vo` | `driven` — `miss1 vo=[vo_sort_hint_listen] hand=0` |
 | 92 | wrong 2 → VO "ध्यान से देखिए, इस शब्द में कौन-सी मात्रा है?" + hand + soft pulse on the correct coach | ✅ `vo` | `driven` — `miss2 vo=[vo_g4_hint2] hand=1` |
@@ -267,14 +268,14 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 | 140 | wrong 2 → shake, VO "चित्र को ध्यान से देखिए और सही शब्द चुनिए।" + hand on the correct option + soft pulse | ⚑ `vo` | `driven` — `miss2 vo=[…,vo_sc_hint2] glow=1 hand=False` on all four. Glow yes, hand withheld: practice, `[28f]`. See Q3 |
 | 141 | 3rd-attempt correct → snaps, completes, sparkle, **no additional VO** | ✅ | `driven` — the win logged only the option's own word clip, never `vo_pN_correct` |
 | 142 | Next active after correct; no completion VO | ✅ | `driven` — `nav=True` on all four |
-| 143 | animation: picture first → sentence box with the blank → options fade in one by one; the word moves into the blank | ✅ | `engine` `.sc-enter` stagger 0 / 420 / 900 / 1150 / 1400 ms |
+| 143 | animation: picture first → sentence box with the blank → options fade in one by one; "the word smoothly **moves** into the blank space" | ✅ | `engine` `.sc-enter` stagger, and the chosen word now **travels**: a fixed-position clone animates from the option card into the blank (FLIP, so the sentence does not reflow mid-flight). It previously just appeared |
 | 144 | SFX: pop on appear · tap on selection · shake on wrong · chime on correct | ✅ | `engine` |
 | 145 | ① "सीमा आज बहुत ______ है।" · **खुश** · खुश · फूल · तरबूज · "शाबाश! सीमा आज बहुत खुश है।" | ✅ `vo` | `card` `P3`; `render` 14 |
 | 146 | ② "मैं ______ जल्दी उठता हूँ।" · **सुबह** · सुबह · दूध · मुकुट · "शाबाश! मैंने सही शब्द चुनकर वाक्य पूरा किया।" | ✅ `vo` | `card` `P4`; `render` 15. The first-person praise line is the SME's own and is **not** normalised — see Q7 |
 | 147 | ③ "बगीचे में सुंदर ______ खिले हैं।" · **फूल** · फूल · तरबूज · सुबह · "शाबाश! बगीचे में सुंदर फूल खिले हैं।" | ✅ `vo` | `card` `P5`; `render` 16 |
 | 148 | ④ "मीठा______ खाना अच्छा लगता है।" · **तरबूज** · तरबूज · फूल · खुश · "शाबाश! मीठा तरबूज खाना अच्छा लगता है।" | ✅ `vo` | `card` `P6`; `render` 17. **The note's sentence ships, not the mockup's** — decided, see Q1 |
-| 149 | new art for the option cards: `obj_khush`, `obj_subah` (सुबह was word-only in round 2) | ⏳ `art` | in `_art_manifest.json`; 😊 / 🌅 fallbacks render meanwhile |
-| 150 | new scene art ×4: `scn_seema_khush`, `scn_subah_uthna`, `scn_bageecha`, `scn_tarbooj_khana` | ⏳ `art` | in `_art_manifest.json` under `scenes_do_not_key` |
+| 149 | new art for the option cards: `obj_khush`, `obj_subah` (सुबह was word-only in round 2) | ✅ `art` | generated and checked at the 66 px option-card size. `obj_subah` needed a second pass — see Observations |
+| 150 | new scene art ×4: `scn_seema_khush`, `scn_subah_uthna`, `scn_bageecha`, `scn_tarbooj_khana` | ✅ `art` | generated full-bleed and **not** keyed; `render` 14–17. Compressed 5.2 MB → 1.1 MB, checked for banding |
 
 ## Screen 17 · CELEBRATION (deck slide 19) · Deck slide 18
 
@@ -289,7 +290,7 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 |---|---|---|---|
 | 153 | **Register flips तुम → आप across the whole lesson.** "Use respectful language throughout: सुनिए, पहचानिए, डालिए." · "Maintain respectful language: 'सोचिए, देखिए, चुनिए' instead of 'सोचो, देखो, चुनो'." | ✅ `vo` | `guard_register` **fails the build** on any of 14 तुम forms in any clip, heading or phase title. 61 of 80 clips are re-records |
 | 154 | Every on-screen heading follows the same register flip. | ✅ | `guard_register` covers `prompt_hi` and `phase_transition_title` too — «अब तुम्हारी बारी।» → «अब आपकी बारी।», «चलो» → «चलिए» |
-| 155 | "Keep the existing train UI/UX style unchanged" (repeated on the rewritten screens). | ✅ | `engine` — WORD_BUILD reuses `buildTrain()` unchanged; `render` 12 against round 2's 14 |
+| 155 | "Keep the existing train UI/UX style unchanged" (repeated on the rewritten screens). | ✅ | **ONE train now runs the whole lesson** — the sibling's painted artwork, sliced per coach, on the landing, MATRA_INTRO, all three tap screens, all three sorts and WORD_BUILD. Round 3 first had a painted cover and a drawn everything-else |
 
 ---
 
@@ -298,24 +299,19 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 `1_SPEC/_verify_assets.py`, run against the built bundle:
 
 ```
-2 FAIL   0 WARN
-  FAIL  61 declared clips missing: ['vo_ak_pa', 'vo_ak_phool', 'vo_ak_pul', 'vo_ak_sui',
-        'vo_base_pal', 'vo_base_phal', 'vo_g4_hint2', 'vo_g4_prompt', 'vo_g5_hint1', … ]
-  FAIL  short lines still carrying an em-dash (the truncation trigger):
-        ['vo_base_pal', 'vo_base_phal', 'vo_pair_u', 'vo_pair_uu']
+0 FAIL   1 WARN
+  WARN  short lines carry an em-dash (the truncation trigger) but measured NORMAL against their
+        peers — EAR-CHECK, and re-check after any re-record: ['vo_pair_u', 'vo_pair_uu']
 ```
 
-Neither is paraphrased and neither is benign-by-default:
+Other sections: `clips 92/92 present (80 recorded + 12 inherited)` · `images 17/17 present` ·
+`every slide speaks a prompt: YES` · `all referenced ids declared: YES` · `orphaned recordings: 0` ·
+`44 clips had a peer group of 3+; 0 flagged as truncated` ·
+`corpus rate 0.098 s/char; 76 clips checked against it; 0 flagged` ·
+`13 cut-outs must be keyed; 4 scenes must NOT be` · `every image has an emoji fallback: YES`.
 
-- **FAIL 1 — 61 missing clips.** This is the pending voice-over, exactly as agreed: the build
-  machine has no Gemini key. Every one of them is in `1_SPEC/VO_RECORDING_LIST.md`. Until they are
-  recorded those beats are **silent**, and the lesson is not shippable.
-- **FAIL 2 — four em-dash lines.** These are the SME's own wording (rows 13, 24, 46) and the
-  verifier is doing precisely its job: this is the shape that truncates. It is a real, open
-  decision, not a false positive — see **Q6**.
-
-Other receipt sections: `every slide speaks a prompt: YES` · `all referenced ids declared: YES` ·
-`orphaned recordings: 0` · `images 10/10 present` · `every image has an emoji fallback: YES`.
+The one WARN is the two MATRA_INTRO pair lines, which keep the SME's em-dash because they
+**measured fine** (4.13 s and 3.85 s). They are a standing risk rather than a defect — see Q6.
 
 Render + interaction, from a real browser:
 
@@ -323,15 +319,29 @@ Render + interaction, from a real browser:
 17/17 slides mount · 17/17 headings present · 0 non-audio console errors
 0 overflow beyond the stage and 0 word-over-picture overlaps, on all 17 slides
 11/11 test screens driven wrong -> wrong -> right, all matching the deck's ladder
+landing train: sprite 479x182, 2 coaches, both matras placed, 7 smoke puffs, rail 1077x20
 ```
 
-**Sibling regression check: N/A, and here is why.** The only engine files touched are
-`4_ENGINE/train_modules.js` and `4_ENGINE/train_styles.css`, which are this game's **per-game
-copy** — the kit's sanctioned route. No file under `factory/*/engine/*` was opened, so no other
-lesson's rendering can have changed. (This handoff is also self-contained by instruction, so the
-sibling bundles were not reachable to rebuild even if it had been needed.)
+**TWO CHECKS WERE ADDED TO `_verify_assets.py`, AND ONE OF THEM CAUGHT A REAL DEFECT THE OTHER
+COULD NOT.** The existing truncation test groups clips by text length and flags any clip under 55%
+of its group median. All four MEET_PAIR lines are 54–56 characters, so they formed a peer group
+**among themselves** — and every one of them was truncated, so the median was truncated too and
+nothing looked like an outlier. It reported a clean sweep over a screen where the child would have
+heard one word and silence. The new seconds-per-character test compares against the whole corpus
+instead and flagged all four immediately. Peer comparison misses a failure that hits a whole
+template family at once; both tests are needed, and both now run. (The sibling lesson's receipt
+asserts that seconds-per-character "is useless alone" — that is true of a naive absolute band, and
+not true of a 40% floor against the corpus median.)
 
----
+The second addition teaches the opacity check about the **scene** class: a keyed cut-out that is
+100% opaque means the chroma key failed, but a `scn_*` scene is full-bleed on purpose, so the rule
+is inverted for those four. Without it they read as four FAILs.
+
+**Sibling regression check: N/A.** The only engine files touched are `4_ENGINE/train_modules.js`
+and `train_styles.css`, which are this game's **per-game copy** — the kit's sanctioned route. No
+file under `factory/*/engine/*` was opened, so no other lesson's rendering can have changed.
+Assets and code were *read* from `HI02H11_L02_S01`'s bundle and copied in; nothing in that bundle
+was modified.
 
 ## Changed beyond the deck
 
@@ -359,10 +369,10 @@ for.
 
 ## Judgement calls, stated so they can be overruled
 
-1. **The `◌` carrier on standalone matras** (row 3). The note says "1st box: ु". A combining mark
-   with no base renders as a stray hook in most fonts, so the card keeps `◌ु` / `◌ू` — the
-   standard way to show a matra in isolation, and what round 2 and the intro screen already use.
-   Typography, not text. Say the word and it becomes a one-line change.
+1. ~~**The `◌` carrier on standalone matras**~~ — **retired.** The landing now carries bare `ु` and
+   `ू`, because an orphan combining mark makes the font draw its own dotted placeholder circle,
+   which is exactly the «ु» the note writes. The intro screen still uses an explicit `◌`, where the
+   glyphs sit in a text run and the font supplies nothing.
 2. **The heading band stays** (row 14). "Remove the current extra heading text from the top, **if
    needed**" is conditional; removing the band entirely is what produced round-2 defect #1
    («हेडिंग मिसिंग है»). The heading is now one line and is the screen's own VO line.
@@ -376,13 +386,29 @@ for.
 
 | ref | question | status |
 |---|---|---|
-| Q1 | **Screen 16's sentence.** Note: «मीठा ______ खाना अच्छा लगता है।» Mockup: «गर्मी में मीठा ___ खाना अच्छा लगता है।» | **Decided 2026-09-23 — the note ships.** One card field + one VO line to change if the SME prefers the mockup |
+| Q1 | **Screen 16's sentence.** Note: «मीठा ______ खाना अच्छा लगता है।» Mockup: «गर्मी में मीठा ___ खाना अच्छा लगता है।» | **Decided — the note ships.** One card field + one VO clip to change if the SME prefers the mockup |
 | Q2 | **The second WORD_BUILD distractor.** The mockup draws पु फू सु पा **मी**; the note removes मी. **पा ships alone**, which satisfies "1–2 distractors" and invents nothing. | ⚑ for the SME: did they mean to *substitute* मी rather than drop it? |
-| Q3 | **The guiding hand on practice screens** (rows 117, 129, 140). The SME asks for a hand on the 2nd miss on every test screen; ruling `[28f]` forbids it outside tutorial/guided. | **Decided 2026-09-23 — keep `[28f]`.** Guided screens get the hand (verified), practice screens get the glow + pulse instead (verified). **Still worth the SME's sign-off**, as it narrows what they asked for on 7 screens |
-| Q4 | **The painted train.** The mockup draws a painted locomotive and bogies; the interactive trains must recolour, glow, shake, lock and accept drops. | **Decided 2026-09-23 — landing + intro only.** Shipped as the DRAWN train there, because a painted PNG needs a generation run. Swapping it in later is a `background-image` change on `.lt-*` / `.mi-*` |
-| Q5 | **Sibling register split.** S02 now speaks आप; `HI02H11_L02_S01` still speaks तुम across the same LO. | ⚑ Either S01 is re-recorded or the SME accepts the split |
-| Q6 | **The em-dash lines.** Four of the SME's own lines (rows 13, 24, 46) are written in the exact shape that makes the TTS model truncate a clip — measured on this lesson at 0.73–1.05 s against a 1.53–2.21 s peer median. Their wording ships; the clips are flagged. | ⚑ Accept a possible re-record loop, or let us reword those four (e.g. «यह शब्द देखिए, पल।») |
+| Q3 | **The guiding hand on practice screens** (rows 117, 129, 140). The SME asks for a hand on the 2nd miss on every test screen; ruling `[28f]` forbids it outside tutorial/guided. | **Decided — keep `[28f]`.** Guided screens get the hand (verified), practice screens get the glow + pulse instead (verified). **Still worth the SME's sign-off**, as it narrows what they asked for on 7 screens |
+| Q4 | **The painted train.** The mockup draws a painted locomotive and bogies. | **RESOLVED — it is painted.** The sibling lesson `HI02H11_L02_S01` had already built this screen with the very artwork the mockup draws, so it was ported rather than rebuilt: animated spritesheet, chimney smoke, rail, cropped from three coaches to two. The interactive trains stay drawn, because their coaches must recolour, glow, shake, lock and accept drops |
+| Q5 | **Sibling register split.** S02 speaks आप; `HI02H11_L02_S01` still speaks तुम across the same LO. | ⚑ Either S01 is re-recorded or the SME accepts the split. Now more visible, since the two lessons share their train artwork and SFX |
+| Q6 | **The em-dash lines.** | **RESOLVED BY MEASUREMENT, and the answer reversed an earlier one.** Shipped with the SME's em-dash first; measured, and all four MEET_PAIR lines came back at 0.69–1.21 s against the ~5.4 s their length calls for — the model says the first word and stops. The sibling probed it head to head, same words: em-dash 0.73–1.05 s · comma 1.53–2.21 s · danda 1.13–2.01 s. **The dash is now a comma in the recording script and no word changed**; all four now run 3.37–3.57 s. ⚑ The SME should know their punctuation was altered, even though the listener cannot hear it |
 | Q7 | **Screen 14's praise line.** «शाबाश! मैंने सही शब्द चुनकर वाक्य पूरा किया।» is first person, unlike its three siblings which read the completed sentence back. Shipped as written. | ⚑ Likely a slip — confirm rather than normalise |
+| Q8 | **The voice.** All 80 clips are **Leda**, chosen by re-synthesising three lines whose round-2 originals survive and matching them acoustically (Leda closest on all three). But the **sibling lesson's voice is Kore**, and the corpus margin here is thin. | ⚑ **Thirty seconds of a human ear settles this and nothing else can.** Play `vo_name_pul` (round 2, untouched) against `vo_landing` (new). If they differ, say so and the 61 new clips are one command to redo |
+
+## Brought in from the sibling lesson (HI02H11_L02_S01)
+
+Not in the deck — added on the user's instruction to reuse that lesson's assets, animation and
+SFX, since it is the ी/ि half of the same LO and the same «मात्राओं की रेल» design.
+
+| what | why it is better than what round 3 shipped |
+|---|---|
+| the **painted landing train** (36-cell spritesheet + travel curve + chimney smoke + rail) | it is the artwork the SME's mockup actually draws; round 3 had a drawn SVG stand-in |
+| `sfx_train_arrive` · `sfx_train_move` · `sfx_whistle` · `sfx_mt_burst` | real recordings; the train sounds were synthesised `_tone()` beeps on seven screens |
+| the sibling's **findings**, which changed two decisions here | its receipt documents the identical em-dash truncation with a head-to-head probe (Q6), and the same one-clip-per-line fix that round 3 had already arrived at independently |
+
+Adapted, not copied blind: all 36 sprite cells cropped 634 → 479px to go from three coaches to
+two, with the panel centres, chimney anchor and entrance offset recomputed for the narrower cell.
+Full detail and the two traps it hit are in `4_ENGINE/CHANGES.md` under **ROUND 3b**.
 
 ## Observations — noticed, NOT changed
 
@@ -396,14 +422,29 @@ The game was left exactly as the deck specified on all of these.
    after a wrong drop, on top of the hint line. Pre-existing round-2 behaviour in `TRAIN_SORT`, not
    introduced here, and benign (the SME wants tap-to-hear) — but it is two clips where one was
    intended.
-3. **`obj_subah` will be hard to tell from `obj_sooraj`** at the 66px option-card size, and both
-   are in this lesson. Round 2's art brief refused to draw सुबह for exactly this reason; round 3
-   needs it. The brief now specifies a *sunrise over a horizon band* to separate them — worth a
-   human look when the art lands.
+3. **`obj_subah` took two attempts, and the first failure is worth recording.** "A sun half risen
+   above a horizon LINE, fused into one connected shape" produced a sun sitting in a dark teal
+   **bowl** — because the keying rule (one connected silhouette, thick dark outline) turns a thin
+   horizon line into a container. At the 66px option-card size it read as a basket, not as
+   morning. Regenerated as a sun rising from behind two hills, which is one shape for the keyer
+   and unambiguously a sunrise for the child, and is clearly distinct from `obj_sooraj`. The
+   working prompt and the reason are now in the builder so a re-run cannot revert to the bowl.
 4. **`capture_pages.py` strips only the bare `.seq-hidden`,** not `mb-seq-hidden` / `tr-seq-hidden`
    — contrary to what `4_ENGINE/CHANGES.md` claimed. With clips missing, `say()`'s 9-second
    fallback stops the reveal chain finishing, so teach screens photograph half-painted. The doc is
    corrected and `_review_shots/` was captured with a settler; the harness itself is an upstream fix.
+
+5. **I wrote a voice-consistency checker and then deleted it.** `gen_tts` recovers a refused clip
+   on a *different* voice, which on this lesson means the narrator changes mid-lesson — so a check
+   for it looked worth having. It does not work: measuring pitch and spectral centroid per clip
+   flags **original round-2 clips** too, because within-voice variation across different sentences
+   is larger than the gap between two voices. Comparing identical text works; comparing different
+   sentences does not. Shipping it would have trained the next person to ignore a red line. The
+   reliable signal is `gen_tts`'s own report of what it swapped — see Q8, which needs an ear.
+
+6. **`vo_ak_pul` («पु») is the one clip not on the primary voice.** A bare syllable is refused
+   almost every time; it recovered on a style-wrapped fallback. It is 0.87 s and intelligible, but
+   it is one card-tap sound in a different timbre. EAR-CHECK it.
 5. **`mountSlide(i)` does not dismiss the landing gate.** Until शुरू करें is pressed the body keeps
    `is-start` and `elementFromPoint` returns the stage, so every drag silently does nothing while
    taps keep working. Cost an hour here; now written up in the README.

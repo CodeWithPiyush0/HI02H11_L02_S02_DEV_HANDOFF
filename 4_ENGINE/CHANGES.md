@@ -314,3 +314,85 @@ That is a **capture artefact, not a render bug** — the same screens are comple
 it means the review deck cannot be trusted while any clip is missing. Until the harness is fixed
 upstream, capture with a settler that strips **every** `*seq-hidden` variant and re-applies the
 settled classes; `_review_shots/` in this bundle was produced that way.
+
+---
+
+# ROUND 3b — the painted train, ported from the sibling lesson
+
+The SME's landing mockup draws a **painted** locomotive with the matras inside its bogies. Round 3
+shipped a drawn SVG stand-in on the grounds that painted art needed a generation run. That was the
+wrong call for a reason nobody had checked: **the sibling lesson `HI02H11_L02_S01` had already
+built exactly this screen and shipped it.**
+
+## What came across, and what was changed
+
+| | |
+|---|---|
+| ported verbatim | the `matra_train` landing: 6×6 spritesheet, travel curve, chimney smoke, ink-centred matras, the rail, and every measurement comment |
+| adapted | **three coaches → two.** All 36 cells cropped 634 → 479px |
+| adapted | panel centres 41.17% / 64.27% of 634 → **54.49% / 85.07%** of 479; chimney 8.4% → **11.12%** |
+| adapted | entrance `translateX(136%)` → **168%** — that percentage is of the wrap's own width |
+| replaced | the synthesised `_tone()` train sounds → the sibling's **real recordings** |
+
+**Why the cells are cropped rather than the third coach simply left empty.** The note says "Show
+only two matra boxes/cards". A third, empty coach reads as a lesson that lost its third matra.
+The cut is at x=479, which is inside the coach-2/3 coupling (its ink-height minimum is at
+x=476–480) and clear of the pink coach, whose first painted column across **all 36 frames** is
+x=481. Cutting at 484 — which looked right on a single frame — left a pink sliver visible on the
+landing.
+
+## Two traps this port hit, both worth knowing
+
+1. **The extracted CSS began mid-comment.** Lifting a line range out of the sibling's engine
+   started the block inside a comment, so it opened with orphaned prose and a stray `*/`. The CSS
+   parser read that as a bad selector and ate the rules after it — `.lt-clip` and `.lt-track`
+   never applied, the clip stayed 478px wide instead of 1080, and **the rail rendered with height
+   0**. Nothing errored; the train simply had no track under it. When lifting a block out of
+   another file, cut on a rule boundary, not on a line number.
+2. **`sfxWhistle` is shared.** `buildTrain()` calls it on every train screen, so repointing it at
+   a real file changes seven screens, not just the landing. That is wanted here — the SME asks for
+   the arrival sound on all of them — but it is the kind of edit that looks local and is not.
+
+## The SFX are real recordings now
+
+`sfx_train_arrive`, `sfx_train_move`, `sfx_whistle` and `sfx_mt_burst` are the sibling's own files.
+`sfxFile()` plays them and falls back to the old `_tone()` synthesis if one is ever missing, so a
+stripped bundle still makes a sound rather than going quiet.
+
+## Which train is painted, and which is not
+
+Only the **landing**. The in-slide trains on TRAIN_TAP / TRAIN_SORT / WORD_BUILD stay drawn,
+because their coaches have to recolour per screen, glow, shake, lock and accept drops — none of
+which a flat sprite can do. MATRA_INTRO also stays drawn: its coach body carries a whole
+«उ → ◌ु» pair, which does not fit the painted coach's matra panel. This is the (a) option from the
+round-3 change request §4, now with real art where the mockup actually shows it.
+
+## ROUND 3b, second pass — the port was only half done
+
+The first pass repainted the LANDING and left `buildTrain()` drawing an SVG train on the seven
+activity screens. That is precisely the defect the sibling's `[r7]` note describes, reintroduced:
+a painted cover and a drawn everything-else.
+
+`TrainChrome` is now ported in full and `buildTrain()` is a thin adapter over it, so TRAIN_TAP,
+TRAIN_SORT, WORD_BUILD, MATRA_INTRO **and** the landing all mount the same train. Two
+compatibility details keep seven modules working unchanged: `.coach-body` also carries the old
+`.tr-body` class and `data-idx` (makeDraggable hit-tests it), and `coaches[i].body` is the
+`.coach-face` — the painted cream panel — because that is where content belongs.
+
+Slicing also retired the cropped two-coach sprite sheet: a two-coach train is parts 0..2 of the
+three-coach artwork and part 3 is simply never drawn.
+
+### Three things this second pass found and fixed
+
+1. **Sorted cards were appended to the coach BODY, not its panel.** `zone.closest(".tr-body")`
+   returns the body — correct as a drop target, wrong as a parent — so two cards landed at the
+   body's top-left and spilled out of the coach. They go to `.coach-face` now, and a snapped card
+   is sized to fit two across a 162px panel.
+2. **The coach words appeared with the train.** The note says "After the train stops, the three
+   coaches पुल, दूध, सूरज appear clearly" — so the words are held on `tt-hold` and revealed from
+   `on_enter`, 180 ms apart.
+3. **The geometry sweep reported 8 of 17 slides overflowing, and every one was a false alarm.**
+   It measured 0.9 s after mount while the train takes 3.4 s to pull in, so it was catching the
+   train mid-arrival, outside the stage, which is where a train arriving from the right is meant
+   to be. With the settle raised past the travel: 0 of 17. Any harness that measures this lesson
+   must wait out `TRAIN_TRAVEL_MS`.

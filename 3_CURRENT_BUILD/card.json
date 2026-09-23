@@ -16,19 +16,10 @@
  "skill_description_hi": "उ, ऊ मात्रा वाले शब्द पढ़ता है। शब्दों में आने वाली मात्रा पहचानता है।",
  "landing_audio": "vo_landing",
  "landing_hero": {
-  "kind": "concept_strip",
-  "train": true,
-  "cells": [
-   {
-    "type": "letter",
-    "letter": "◌ु",
-    "label": "छोटी उ"
-   },
-   {
-    "type": "letter",
-    "letter": "◌ू",
-    "label": "बड़ी ऊ"
-   }
+  "kind": "matra_train",
+  "matras": [
+   "ु",
+   "ू"
   ]
  },
  "phase_transition_audio": {
@@ -180,27 +171,30 @@
    "sfx_correct": "assets/Audio/sfx_correct.ogg",
    "sfx_wrong": "assets/Audio/sfx_wrong.ogg",
    "sfx_tap": "assets/Audio/sfx_tap.ogg",
-   "sfx_pop": "assets/Audio/sfx_pop.ogg"
+   "sfx_pop": "assets/Audio/sfx_pop.ogg",
+   "sfx_train_arrive": "assets/Audio/sfx_train_arrive.ogg",
+   "sfx_train_move": "assets/Audio/sfx_train_move.ogg",
+   "sfx_whistle": "assets/Audio/sfx_whistle.ogg"
   },
   "audio_text": {
    "vo_pair_u": "यह है उ। इसकी मात्रा है — ु।",
    "vo_pair_uu": "यह है ऊ। इसकी मात्रा है — ू।",
    "vo_t1_prompt": "आज हम छोटी उ और बड़ी ऊ की मात्रा वाले शब्द पढ़ेंगे।",
    "vo_t2_prompt": "आइए, देखें कि छोटी उ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।",
-   "vo_base_pal": "यह शब्द देखिए — पल।",
+   "vo_base_pal": "यह शब्द देखिए, पल।",
    "vo_onset_pul": "प के साथ छोटी उ की मात्रा लगाने पर पु बनता है।",
    "vo_result_pul": "अब ल जुड़ने पर पुल बनता है।",
    "vo_sounds_pul": "प। पु। पुल।",
-   "vo_meet_gud": "गुड़ — बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है।",
-   "vo_meet_dhanush": "धनुष — बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है।",
+   "vo_meet_gud": "गुड़, बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है।",
+   "vo_meet_dhanush": "धनुष, बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है।",
    "vo_t3_prompt": "आइए, छोटी उ की मात्रा वाले कुछ शब्द देखें।",
    "vo_t4_prompt": "आइए, देखें कि बड़ी ऊ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।",
-   "vo_base_phal": "यह शब्द देखिए — फल।",
+   "vo_base_phal": "यह शब्द देखिए, फल।",
    "vo_onset_phool": "फ के साथ बड़ी ऊ की मात्रा लगाने पर फू बनता है।",
    "vo_result_phool": "अब ल जुड़ने पर फूल बनता है।",
    "vo_sounds_phool": "फ। फू। फूल।",
-   "vo_meet_doodh": "दूध — बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है।",
-   "vo_meet_kabootar": "कबूतर — बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है।",
+   "vo_meet_doodh": "दूध, बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है।",
+   "vo_meet_kabootar": "कबूतर, बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है।",
    "vo_t5_prompt": "आइए, बड़ी ऊ की मात्रा वाले कुछ शब्द देखें।",
    "vo_tap_prompt_u": "जिस डिब्बे में छोटी उ की मात्रा वाला शब्द है, उस डिब्बे पर टैप कीजिए।",
    "vo_tap_hint1_u": "फिर से सोचिए। छोटी उ की मात्रा वाला शब्द कौन-सा है?",

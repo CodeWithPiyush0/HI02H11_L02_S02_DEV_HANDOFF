@@ -57,7 +57,7 @@ THREE THINGS THIS BUILD DELIBERATELY DOES NOT DO
      and those two ship as the DRAWN train now, because a painted PNG needs a generation run.
      Swapping it in later is a background-image change on `.lt-*` / `.mi-*` and nothing else.
   3. **Rewriting the SME's Hindi to dodge a TTS bug.** Their MEET_PAIR lines are written
-     «गुड़ — बोलकर देखिए। इसमें …», the exact em-dash-before-a-short-word shape that makes the
+     «गुड़, बोलकर देखिए। इसमें …», the exact em-dash-before-a-short-word shape that makes the
      model truncate a clip (measured: 0.73–1.05 s against a 1.53–2.21 s peer median). Their
      wording ships; the clips are flagged for the duration check instead. `_verify_assets.py` is
      the only thing that catches a truncated clip — run it.
@@ -102,8 +102,13 @@ TRAIN_MODULES = ["TRAIN_TAP", "TRAIN_SORT", "MATRA_FILL", "MATRA_BUILD",
                  "MEET_PAIR", "CONTRAST_PAIR", "POEM_SEARCH", "MATRA_INTRO",
                  "WORD_BUILD", "SENTENCE_COMPLETE"]
 STOCK_MODULES = ["CELEBRATION"]
+# Fixed clips that are not recorded for this lesson. The three sfx_train_*/whistle files are
+# REAL RECORDINGS brought over from the sibling lesson HI02H11_L02_S01; round 3 previously
+# synthesised the train sounds with the engine's _tone(), which gives a two-note beep rather than
+# the "soft train arrival / whistle SFX" the SME asks for on the landing and on every train screen.
 COPY_AUDIO = ["vo_pt_tutorial", "vo_pt_guided", "vo_pt_practice",
-              "sfx_celebrate", "sfx_correct", "sfx_wrong", "sfx_tap", "sfx_pop"]
+              "sfx_celebrate", "sfx_correct", "sfx_wrong", "sfx_tap", "sfx_pop",
+              "sfx_train_arrive", "sfx_train_move", "sfx_whistle"]
 
 U, UU = "ु", "ू"
 
@@ -266,7 +271,7 @@ def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, 
     a = {
         "prompt": vo("vo_%s_prompt" % sid.lower(),
                      "आइए, देखें कि %s की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।" % MATRA_NAME[matra]),
-        "base": vo("vo_base_" + base_slug, "यह शब्द देखिए — %s।" % base_word),
+        "base": vo("vo_base_" + base_slug, "यह शब्द देखिए, %s।" % base_word),
         "matra_name": MATRA_VO[matra],
         "onset": vo("vo_onset_" + g,
                     "%s के साथ %s की मात्रा लगाने पर %s बनता है।"
@@ -291,13 +296,19 @@ def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, 
 def s_pair(sid, words, lead, lines):
     """Two example words, one at a time, each with its picture and its matra called out.
 
-    ⚠️ THE LINES BELOW ARE THE SME'S OWN AND CARRY A KNOWN TTS TRAP. «गुड़ — बोलकर देखिए। इसमें …»
-    puts an em-dash straight after a short word, which is the shape that made the model truncate
-    round 2's clips (गुड़ came back at 0.89 s and मुकुट at 1.13 s against a ~2.9 s peer median, and
-    neither recovered across 14 takes). Round 2 worked around it by rewriting the line; round 3
-    ships the SME's wording and flags the clips for the duration check instead, because silently
-    rewriting a reviewer's Hindi is the worse failure. `_verify_assets.py` is the ONLY check that
-    catches a truncated clip — run it, and listen to the EAR-CHECK list in the VO recording list.
+    ⚠️ THE EM-DASH IS GONE FROM THESE LINES, AND IT IS A MEASURED DECISION, NOT A PREFERENCE.
+    The SME writes them as «गुड़, बोलकर देखिए। इसमें …», which puts an em-dash straight after a
+    short word. Round 3 first shipped exactly that wording, on the grounds that silently rewriting
+    a reviewer's Hindi is the worse failure — and then measured the result: all four came back at
+    0.69-1.21 s against the ~5.4 s their length calls for. The model speaks the first word and
+    stops. The sibling lesson HI02H11_L02_S01 hit the same wall and probed it head to head, same
+    words, three takes each: em-dash 0.73-1.05 s · comma 1.53-2.21 s · danda 1.13-2.01 s, with the
+    dash also carrying the worst refusal rate.
+
+    So the dash becomes a COMMA and nothing else changes. No word is altered and the listener
+    cannot hear the difference — the SME's sentence is intact. Verified on this lesson:
+    vo_base_pal went from 0.69 s to 2.65 s on the same voice with only that substitution.
+    Flagged to the SME as a punctuation change (CHANGES.md Q6); the sibling did exactly the same.
 
     The separate matra call-out clip is gone: round 3 folds it into the line itself.
     """
@@ -430,13 +441,13 @@ def build_slides():
     S.append(s_build("T2", "पल", "pal", "प", U, "पु", "पुल", "प। पु। पुल।"))   # deck slide 3
     S.append(s_pair("T3", ["गुड़", "धनुष"],                                    # deck slide 4
                     "आइए, छोटी उ की मात्रा वाले कुछ शब्द देखें।",
-                    ["गुड़ — बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है।",
-                     "धनुष — बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है।"]))
+                    ["गुड़, बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है।",
+                     "धनुष, बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है।"]))
     S.append(s_build("T4", "फल", "phal", "फ", UU, "फू", "फूल", "फ। फू। फूल।"))  # deck slide 5
     S.append(s_pair("T5", ["दूध", "कबूतर"],                                    # deck slide 6
                     "आइए, बड़ी ऊ की मात्रा वाले कुछ शब्द देखें।",
-                    ["दूध — बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है।",
-                     "कबूतर — बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है।"]))
+                    ["दूध, बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है।",
+                     "कबूतर, बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है।"]))
     # deck pages 7 and 8 carry no slide and no note -> CONTRAST_PAIR and the third MEET_PAIR are
     # DELETED. See the header.
 
@@ -541,16 +552,19 @@ def build_card(slides):
                                  "शब्दों में आने वाली मात्रा पहचानता है।"),
         "landing_audio": "vo_landing",
         # SME: "Show only two matra boxes/cards: 1st box ु, 2nd box ू … The matras can be shown
-        # inside two train bogies/cards." `train: true` turns the shared engine's concept strip
-        # into a locomotive + two bogies on a track (see dressLandingTrain in the module set).
-        # The ◌ carrier stays: a combining mark with no base renders as a stray hook in most
-        # fonts, and ◌ is the standard way to show a matra in isolation — typography, not text,
-        # and the same carrier is used on the intro screen. The labels are aria-only and are never
-        # painted, so "remove all extra text" is already satisfied on screen.
-        "landing_hero": {"kind": "concept_strip", "train": True, "cells": [
-            {"type": "letter", "letter": "◌" + U,  "label": "छोटी उ"},
-            {"type": "letter", "letter": "◌" + UU, "label": "बड़ी ऊ"},
-        ]},
+        # inside two train bogies/cards so that the lesson visually continues as a «मात्राओं की
+        # रेल» journey", with a right-to-left arrival, the bogies appearing one by one, a whistle
+        # on entry and a sparkle as each matra lands.
+        #
+        # `matra_train` is the PAINTED train ported from the sibling lesson HI02H11_L02_S01 — the
+        # same artwork the mockup draws, as a 36-cell spritesheet, cropped from three coaches to
+        # two for this lesson's two matras (634 -> 479px per cell). See the module set's dressLandingTrain().
+        #
+        # THE MATRAS ARE BARE HERE, not «◌ु». An orphan combining mark makes the font draw its own
+        # dotted placeholder circle, which is exactly the «ु» the note asks for and is how the
+        # sibling ships it. The intro screen still uses an explicit ◌ because its glyphs sit in a
+        # text run where the font does not supply one.
+        "landing_hero": {"kind": "matra_train", "matras": [U, UU]},
         "phase_transition_audio": {"tutorial": "vo_pt_tutorial", "guided": "vo_pt_guided",
                                    "practice": "vo_pt_practice"},
         # flipped to आप with everything else — these sit between the phases, next to the shared
@@ -620,6 +634,12 @@ def guard_engine(src):
         sys.exit("X  conceptTileHTML has no `letter` case — the landing strip would be empty")
     if "dressLandingTrain" not in src:
         sys.exit("X  the landing-train dressing is missing — the landing bogies would not render")
+    if 'kind !== "matra_train"' not in src:
+        sys.exit("X  the landing train is still the drawn version — re-run inject_train.py")
+    if "TrainChrome" not in src or "TRAIN_ART" not in src:
+        sys.exit("X  TrainChrome is missing — the activity screens would draw a SECOND, "
+                 "different locomotive beside the painted cover. "
+                 "Re-run 4_ENGINE/inject_train.py.")
     print("  OK  engine: %s  (4_ENGINE, pinned)" % ver)
     print("      modules present: %s" % ", ".join(TRAIN_MODULES))
     print("      train styles present; ु/ू correctly excluded from the in-word highlight")

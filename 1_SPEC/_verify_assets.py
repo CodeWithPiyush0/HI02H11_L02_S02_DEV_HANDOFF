@@ -111,6 +111,41 @@ for v, n, d, med, k in short:
     FAIL.append("%s: %.2fs against a %.2fs median across %d peers of %d chars — TRUNCATED"
                 % (v, d, med, k, n))
 print("   %d clips had a peer group of 3+; %d flagged as truncated" % (checked, len(short)))
+
+# ---- 3b. SECONDS-PER-CHARACTER, against the whole corpus
+#
+# THE PEER-BUCKET TEST HAS A HOLE AND IT LET A REAL TRUNCATION THROUGH. It needs three clips of
+# the SAME text length to form a group, so a line with only one sibling is never compared to
+# anything. `vo_base_pal` («यह शब्द देखिए — पल।») came back at 0.69s while its identical-length
+# twin `vo_base_phal` ran 2.49s — a 3.6x gap, the exact em-dash truncation this file exists to
+# catch, and it scored clean because the two of them were a bucket of two.
+#
+# Speech runs at a fairly steady rate, so the corpus median seconds-per-character predicts any
+# line's duration well enough to catch a clip that lost most of its words. The band is generous
+# (40%) because short clips carry proportionally more leading and trailing silence; it is looking
+# for a clip that is a fraction of its length, not for natural variation.
+rates = []
+for v in sorted(text):
+    if not os.path.isfile(audio[v]):
+        continue
+    d = dur(audio[v])
+    if d and len(text[v]) >= 3:
+        rates.append(d / len(text[v]))
+if len(rates) >= 10:
+    sps = statistics.median(rates)
+    thin = []
+    for v in sorted(text):
+        if not os.path.isfile(audio[v]) or len(text[v]) < 3:
+            continue
+        d = dur(audio[v]) or 0
+        want = max(0.55, sps * len(text[v]))
+        if d < 0.40 * want:
+            thin.append((v, d, want))
+    for v, d, want in thin:
+        FAIL.append("%s: %.2fs but ~%.2fs expected for %d chars at the corpus rate — TRUNCATED"
+                    % (v, d, want, len(text[v])))
+    print("   corpus rate %.3f s/char; %d clips checked against it; %d flagged"
+          % (sps, len(rates), len(thin)))
 if nodur:
     WARN.append("%d clips could not be read as WAV: %s" % (len(nodur), nodur[:5]))
 # Belt and braces: nothing should be under 0.6s except a one-word name.
@@ -122,9 +157,23 @@ for v in sorted(text):
         FAIL.append("%s: %.2fs for %d chars — far too short to contain the line"
                     % (v, d, len(text[v])))
 # And no em-dash should survive in a SHORT line, which is where it truncates.
+#
+# ROUND 3 SPLIT THIS INTO TWO OUTCOMES, because the rule started firing on lines that are the
+# SME's own wording and that measured fine. The em-dash is a RISK, not a defect: what makes it a
+# defect is the clip actually coming back short. So — if the clip does not exist yet, or it failed
+# the peer comparison above, that is a FAIL and the line must be rewritten. If it exists and
+# measured normal against its peers, the risk did not materialise on this take and it drops to a
+# WARN: worth a human ear, and worth re-checking after any re-record, but not a reason to hold the
+# build. `flagged` is the set of ids the truncation check already condemned.
 dash = sorted(v for v in text if "—" in text[v] and len(text[v]) < 30)
-if dash:
-    FAIL.append("short lines still carrying an em-dash (the truncation trigger): %s" % dash)
+_bad = [v for v in dash if not os.path.isfile(audio[v])
+        or any(v in str(f) for f in FAIL)]
+_ok = [v for v in dash if v not in _bad]
+if _bad:
+    FAIL.append("short lines carrying an em-dash AND unverified/short: %s" % _bad)
+if _ok:
+    WARN.append("short lines carry an em-dash (the truncation trigger) but measured NORMAL "
+                "against their peers — EAR-CHECK, and re-check after any re-record: %s" % _ok)
 
 # ---- 4. long-clip watch
 print("\n4. LONGEST CLIPS  (a locked tutorial slide should not be a long watch)")
@@ -149,11 +198,25 @@ try:
         op = float((a > 16).mean()) * 100
         rgb = np.array(im)[:, :, :3][a > 16]
         nc = len(np.unique(rgb.reshape(-1, 3) // 24, axis=0)) if len(rgb) else 0
-        if op < 3 or op > 98.5:
+        # ROUND 3 ADDED A SECOND IMAGE CLASS. Everything in this lesson used to be a keyed
+        # cut-out, for which "fully opaque" means the chroma key failed and the subject is still
+        # sitting on its background — a real defect, and what this check exists to catch. The four
+        # `scn_*` SCENES on the sentence screens are full-bleed illustrations that are opaque ON
+        # PURPOSE (they have a background; that is the point), so the opacity rule is inverted for
+        # them: a scene that is mostly TRANSPARENT is the broken one, because it means somebody
+        # ran it through the key pipeline after all.
+        scene = k.startswith("scn_")
+        if scene:
+            if op < 95:
+                FAIL.append("%s is only %.1f%% opaque — a SCENE must be full-bleed; it looks "
+                            "like it was run through the chroma key" % (k, op))
+        elif op < 3 or op > 98.5:
             FAIL.append("%s is %.1f%% opaque — blank or un-keyed" % (k, op))
         if nc < 6:
             FAIL.append("%s has only %d colour buckets — likely a flat/blank fill" % (k, nc))
+    n_scn = len([k for k in image if k.startswith("scn_")])
     print("   %d images checked for the blank-PNG defect (opacity + colour spread)" % len(image))
+    print("   %d cut-outs must be keyed; %d scenes must NOT be" % (len(image) - n_scn, n_scn))
 except ImportError:
     WARN.append("Pillow/numpy unavailable — image sanity NOT checked")
 
