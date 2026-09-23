@@ -105,7 +105,10 @@
      ever missing, so a stripped bundle still makes a noise rather than going silent. */
   function sfxFile(name, fallback){
     try{
-      const a = new Audio("assets/Audio/" + name + "." + AUDIO_EXT);
+      /* [r17] versioned like every other clip - see _av() in the engine */
+      const a = new Audio(typeof _av === "function"
+        ? _av("assets/Audio/" + name + "." + AUDIO_EXT)
+        : "assets/Audio/" + name + "." + AUDIO_EXT);
       a.volume = 0.55;
       a.play().catch(()=> fallback && fallback());
     }catch(e){ if(fallback) fallback(); }

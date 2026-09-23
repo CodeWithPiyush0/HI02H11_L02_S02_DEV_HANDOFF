@@ -74,6 +74,7 @@ RIGHT_SPACING_MATRAS, because that failure is silent and looks like the feature 
 
 Run:  PYTHONUTF8=1 python 1_SPEC/build_skill_HI02H11_L02_S02.py   (from the handoff root)
 """
+import hashlib
 import os, re, sys, json, argparse
 import contextlib, wave        # [r8] page-1 matra cue, measured off the clip
 
@@ -1205,6 +1206,17 @@ def main():
             sys.exit("X  could not inject the letter glow")
         print("  OK  letter-strip glow injected")
 
+
+    # [r17] AUDIO CACHE VERSION. Hash every clip's bytes, so the stamp moves when a recording
+    # changes and stays put when it does not. Without this a re-recorded clip keeps its filename,
+    # the browser serves the copy it already has, and the reviewer hears the take we just replaced
+    # - which is exactly what happened with vo_t3_prompt and vo_t5_prompt.
+    _h = hashlib.sha1()
+    for _f in sorted(os.listdir(AUD_DIR)):
+        if _f.endswith(".ogg"):
+            _h.update(_f.encode("utf-8"))
+            _h.update(open(os.path.join(AUD_DIR, _f), "rb").read())
+    html = html.replace("__AUDIO_V_STAMP__", _h.hexdigest()[:12])
     open(os.path.join(BUNDLE, CODE + ".html"), "w", encoding="utf-8").write(html)
     open(os.path.join(BUNDLE, "card.json"), "w", encoding="utf-8").write(payload + "\n")
 

@@ -1857,6 +1857,8 @@ body.is-start .phase-gate{
 
 
 
+
+
 /* == TRAIN STYLES :: BEGIN (engine_local, HI02H11_L02_S02) == */
 
 /* ==========================================================================================
@@ -3514,8 +3516,8 @@ body.is-end .sg-sky{
       "img": "obj_gud",
       "emoji": "🍯",
       "audio_line": "vo_meet_gud",
-      "pic_ms": 396,
-      "matra_ms": 1269,
+      "pic_ms": 647,
+      "matra_ms": 2072,
       "matra_audio": null
      },
      {
@@ -3524,8 +3526,8 @@ body.is-end .sg-sky{
       "img": "obj_dhanush",
       "emoji": "🏹",
       "audio_line": "vo_meet_dhanush",
-      "pic_ms": 415,
-      "matra_ms": 1328,
+      "pic_ms": 684,
+      "matra_ms": 2191,
       "matra_audio": null
      }
     ],
@@ -3580,8 +3582,8 @@ body.is-end .sg-sky{
       "img": "obj_doodh",
       "emoji": "🥛",
       "audio_line": "vo_meet_doodh",
-      "pic_ms": 351,
-      "matra_ms": 1318,
+      "pic_ms": 473,
+      "matra_ms": 1775,
       "matra_audio": null
      },
      {
@@ -4464,7 +4466,17 @@ function _chainMs(srcs, gapMs){
   });
   return total;
 }
+/* [r17] CACHE-BUST EVERY AUDIO URL. A re-recorded clip keeps its filename, so the browser has
+   no reason to fetch it again and the reviewer keeps hearing the previous take. __AUDIO_V is
+   stamped by the builder from the CONTENT of the audio folder, so it changes exactly when a clip
+   changes and not otherwise - a fresh URL on every build would defeat caching for no reason. */
+var __AUDIO_V = "bd2db54be7eb";
+function _av(src){
+  if(typeof src !== "string" || src.indexOf("assets/Audio/") < 0) return src;
+  return src.indexOf("?") >= 0 ? src : src + "?v=" + __AUDIO_V;
+}
 function play(src, onEnd){
+  src = _av(src);
   stopAudio(); setPlaying(true);
   const myGen=_audioGen;
   let done=false; const fire=()=>{ if(done || myGen!==_audioGen)return; done=true; currentVoiceSource=null; currentAudio=null; _curVoMs=null; setPlaying(false); if(onEnd) onEnd(); };
@@ -9292,7 +9304,10 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
      ever missing, so a stripped bundle still makes a noise rather than going silent. */
   function sfxFile(name, fallback){
     try{
-      const a = new Audio("assets/Audio/" + name + "." + AUDIO_EXT);
+      /* [r17] versioned like every other clip - see _av() in the engine */
+      const a = new Audio(typeof _av === "function"
+        ? _av("assets/Audio/" + name + "." + AUDIO_EXT)
+        : "assets/Audio/" + name + "." + AUDIO_EXT);
       a.volume = 0.55;
       a.play().catch(()=> fallback && fallback());
     }catch(e){ if(fallback) fallback(); }
@@ -12017,6 +12032,9 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
 
 
 
+
+
+
 /* ---------- 13. CONTROLLER ---------- */
 /* r4: gold star burst for the celebration finale (adopted from Shruti's build) */
 function starBurst(){
@@ -12387,7 +12405,11 @@ function warmCardAudio(){
     if(typeof PHASE_GATE_VO!=="undefined"&&PHASE_GATE_VO.tutorial)initialIds.add(PHASE_GATE_VO.tutorial);
     if(CARD.slides&&CARD.slides[0])_collectAudioIds(CARD.slides[0],initialIds);
     initialIds.forEach(id=>allIds.add(id));
-    const toSrc=id=>"assets/Audio/"+id+"."+AUDIO_EXT;
+    /* [r17] versioned here TOO, and not only for the cache. `_loadVoiceBuffer` keys its
+       decoded-buffer cache by URL, so preloading the unversioned path while play() asks
+       for the versioned one missed on every single clip - the warm-up was thrown away and
+       all 91 files were fetched twice. Same string both sides: one fetch, one buffer. */
+    const toSrc=id=>_av("assets/Audio/"+id+"."+AUDIO_EXT);
     const first=[...initialIds].map(toSrc);
     const rest=[...allIds].filter(id=>!initialIds.has(id)).map(toSrc);
     window.__voWarm=_voiceBuffers;
