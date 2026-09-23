@@ -81,6 +81,8 @@
   "obj_dhanush": "🏹",
   "obj_khush": "😊",
   "obj_subah": "🌅",
+  "obj_pal": "🕑",
+  "obj_phal": "🍎",
   "scn_seema_khush": "🙌",
   "scn_subah_uthna": "🛌",
   "scn_bageecha": "🌷",
@@ -270,6 +272,8 @@
    "obj_kabootar": "assets/Images/obj_kabootar.png",
    "obj_khush": "assets/Images/obj_khush.png",
    "obj_mukut": "assets/Images/obj_mukut.png",
+   "obj_pal": "assets/Images/obj_pal.png",
+   "obj_phal": "assets/Images/obj_phal.png",
    "obj_phool": "assets/Images/obj_phool.png",
    "obj_pul": "assets/Images/obj_pul.png",
    "obj_sooraj": "assets/Images/obj_sooraj.png",
@@ -340,8 +344,8 @@
     "result_img": "obj_pul",
     "result_emoji": "🌉",
     "travel": "down",
-    "base_img": null,
-    "base_emoji": null,
+    "base_img": "obj_pal",
+    "base_emoji": "🕑",
     "cap_base": null,
     "cap_mid": null,
     "cap_result": null,
@@ -365,6 +369,8 @@
       "img": "obj_gud",
       "emoji": "🍯",
       "audio_line": "vo_meet_gud",
+      "pic_ms": 396,
+      "matra_ms": 1269,
       "matra_audio": null
      },
      {
@@ -373,6 +379,8 @@
       "img": "obj_dhanush",
       "emoji": "🏹",
       "audio_line": "vo_meet_dhanush",
+      "pic_ms": 415,
+      "matra_ms": 1328,
       "matra_audio": null
      }
     ],
@@ -402,8 +410,8 @@
     "result_img": "obj_phool",
     "result_emoji": "🌻",
     "travel": "down",
-    "base_img": null,
-    "base_emoji": null,
+    "base_img": "obj_phal",
+    "base_emoji": "🍎",
     "cap_base": null,
     "cap_mid": null,
     "cap_result": null,
@@ -427,6 +435,8 @@
       "img": "obj_doodh",
       "emoji": "🥛",
       "audio_line": "vo_meet_doodh",
+      "pic_ms": 351,
+      "matra_ms": 1318,
       "matra_audio": null
      },
      {
@@ -435,6 +445,8 @@
       "img": "obj_kabootar",
       "emoji": "🕊",
       "audio_line": "vo_meet_kabootar",
+      "pic_ms": 781,
+      "matra_ms": 2214,
       "matra_audio": null
      }
     ],

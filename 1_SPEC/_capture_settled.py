@@ -55,8 +55,55 @@ SETTLE = """
 document.querySelectorAll('[class]').forEach(function(e){
   [...e.classList].forEach(function(c){ if(/seq-hidden$/.test(c)) e.classList.remove(c); });
 });
-document.querySelectorAll('.mb-panel,.mb-arrow,.mb-cons,.mb-matra,.mb-syl').forEach(function(e){ e.classList.add('mb-in'); });
+/* [r11] MATRA_BUILD's staging is `.mb-hidden` now, not a *seq-hidden class, so the strip above
+   no longer reveals it — a capture would photograph panel 1 alone and the review deck would show
+   «पल» with no transformation at all. Settle it the way finish() does: every panel shown, the
+   consonant lit, the slot filled, the syllable written, and the matra painted in both places.
+   The `.mb-in` line it replaces targeted the previous module's DOM, which no longer exists. */
+document.querySelectorAll('.mb-panel,.mb-arrow').forEach(function(e){ e.classList.remove('mb-hidden'); });
+(function(){
+  var row = document.querySelector('.mb-row'); if(!row) return;
+  var eq = row.querySelector('.mb-eq'); if(!eq) return;
+  var cons = row.querySelector('.mb-eq-line .mb-cons');
+  var c = cons ? cons.textContent.trim() : '';
+  var lit = row.querySelector('.mb-p1 .mb-c[data-ch="' + c + '"]');
+  if(lit) lit.classList.add('lit');
+  var slot = row.querySelector('.mb-slot');
+  if(slot && !slot.innerHTML.trim()){
+    var mk = (typeof CARD !== 'undefined' && CARD.slides[state.idx].data.matra) || '';
+    slot.innerHTML = '<span class="mb-dot">\\u25cc</span><span class="mb-mk">' + mk + '</span>';
+  }
+  if(slot){ slot.classList.remove('mb-slot-wait'); slot.classList.add('mb-slot-in'); }
+  var syl = row.querySelector('.mb-syl');
+  if(syl && !syl.textContent.trim()){
+    syl.textContent = (typeof CARD !== 'undefined' && CARD.slides[state.idx].data.syllable) || '';
+  }
+  if(typeof matraHLSoon === 'function'){
+    var m = (typeof CARD !== 'undefined' && CARD.slides[state.idx].data.matra) || '';
+    if(syl) matraHLSoon(syl, m, { glow:true });
+    var res = row.querySelector('.mb-result');
+    if(res) matraHLSoon(res, m, { glow:true });
+  }
+})();
+/* [r11] आगे is ACTIVE in the state these shots are meant to show. Every teach screen unlocks it
+   once its chain finishes, and that is the moment being photographed - so a greyed button in the
+   review deck describes a screen the child never sees. Only the teach screens: a test screen's
+   button is genuinely dead until the child answers, and forcing it there would be the same lie
+   in the other direction. */
+if(typeof CARD !== 'undefined' && CARD.slides[state.idx].phase === 'tutorial'
+   && typeof setNavActive === 'function') setNavActive(true);
 document.querySelectorAll('.mp-card,.mp-pic,.mp-callout').forEach(function(e){ e.classList.add('mp-in'); });
+/* [r13] MEET_PAIR now mounts STAGED - word visible, picture held - so the settler has to finish
+   it, exactly as the chain would: release the picture and light the matra. Previously the module
+   faked a settled end state at mount and the chain then undid it, which is the same capture
+   problem in reverse. */
+document.querySelectorAll('.mp-wait').forEach(function(e){ e.classList.remove('mp-wait'); });
+(function(){
+  var w = document.querySelector('.mp-word');
+  if(!w || w.querySelector('.mh-ov')) return;
+  var ex = (typeof CARD !== 'undefined' && (CARD.slides[state.idx].data.examples || [])[0]);
+  if(ex && typeof matraHLSoon === 'function') matraHLSoon(w, ex.matra, { glow:true });
+})();
 document.querySelectorAll('.mi-pair').forEach(function(e){ e.classList.remove('is-dim'); });
 /* Page 1's pairs are held by opacity in .mp-pair and revealed by .active/.shown - NOT by a
    *seq-hidden class, so the strip above never touched them. Settle them the way the chain would

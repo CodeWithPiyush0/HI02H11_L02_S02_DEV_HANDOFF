@@ -1,6 +1,6 @@
-# CHANGES — HI02H11_L02_S02 «मात्राओं की रेल» (उ / ऊ) · rounds 3–9
+# CHANGES — HI02H11_L02_S02 «मात्राओं की रेल» (उ / ऊ) · rounds 3–13
 
-> Rounds 4–9 are **not** from the review deck — they are direct asks to bring this
+> Rounds 4–13 are **not** from the review deck — they are direct asks to bring this
 > lesson into line with its sibling `HI02H11_L02_S01`. They live in their own sections at
 > the end; the deck contract above them is unchanged.
 
@@ -757,3 +757,296 @@ fallback and still pass.
 | ...starts the lesson | **yes**, one press opens the gate and mounts page 1 |
 | the सुनो chip still replays on demand | **yes** |
 | a genuinely blocked autoplay still recovers on a background tap | **yes** |
+
+---
+
+## Round 10 — one box size for every page
+
+> I noticed the size of my first page's main box and rest page is different — please ensure box of
+> each page remain same as pages, also the placement of button will also be same — you can refer
+> my previous file for this
+
+**Measured both builds before changing anything**, because the ask names the sibling as the
+reference:
+
+| | box (teach slides) | nav button |
+|---|---|---|
+| sibling `HI02H11_L02_S01`, every teach slide | `1130×561` | `x=606 y=559` |
+| this build, page 1 | `1130×561` ✅ | `x=606 y=559` ✅ |
+| this build, pages 2–5 | **`1130×521`** ❌ | `x=606 y=559` ✅ |
+
+**Page 1 was the correct one; pages 2–5 were 40px short.** The culprit was
+`.stage.no-band .slide-host{ padding-bottom:40px }` — mine, added while chasing the page-1
+centring so that heading-less teach content would clear the आगे button. But padding on the host
+shortens the **card**, and only on the screens that opted out of the heading, which is exactly how
+one lesson ended up with two card sizes.
+
+The sibling settles whether the clearance was ever needed: every teach slide there is 561px with
+**no** bottom padding and clears the button perfectly well. The padding is gone; the `.mp-center`
+override that cancelled it is gone with it.
+
+### The button was already right
+
+Measured on both builds, all 17 slides: `x=606 y=559` on every teach screen and `x=606 y=654` on
+every test screen — identical to the sibling. The two values are **by design**, not a discrepancy:
+teach screens use the blue rounded card (`.tut-card`), test screens the full-bleed layout
+(`.slide-stage`), and the sibling does the same. A check that demanded one number everywhere would
+be wrong about the product.
+
+### Verified — all 17 slides in both builds
+
+| check | result |
+|---|---|
+| teach: every page's box is the same size | **1130×561 on all 5** |
+| teach: nav button in the same place on every page | **x=606 y=559 on all 5** |
+| teach: box and button match the sibling | **identical** |
+| test: every page's box is the same size | **1329×598 on all 12** |
+| test: nav button in the same place on every page | **x=606 y=654 on all 12** |
+| test: box and button match the sibling | **identical** |
+
+---
+
+## Round 11 — page 2 rebuilt to the sibling's page 2
+
+> so now make the following change for page2: *(the SME's full recommendation)* — you can refer my
+> previous file … page2 of my previous file is exactly same as page2 of my current file (just
+> element, images changes rest animation, its flow it same) so try to match exactly with that file
+
+`MATRA_BUILD` is now the sibling's module, step for step. The previous build hit the same *beats*
+through four nested `say()` callbacks with hard class swaps — it had none of the motion.
+
+| beat | before | now |
+|---|---|---|
+| three panels | all present, opacity-toggled | revealed in turn with `mbIn` |
+| प highlighted in पल | a colour class on the whole word | the single `.mb-c` lights |
+| ◌ु arrives | appeared in place | **flies in**, parked on the slot's measured centre, overshoots, settles |
+| hand-over to the equation | — | **cross-fade**: the flier dissolves as the slot's glyph fades up |
+| प → पु | `textContent` swap between two frames | dissolves up, and the equation **nods** (`mb-settle`) |
+| पुल + bridge | class swap | panel arrives with the success sound |
+| three-sound contrast | clip only | the equation **pulses** (`mb-say`) under it |
+
+### Two things are deliberately NOT the sibling's, and both are forced by the matra
+
+1. **The highlight.** The sibling paints its matra with `_matraWordSVG`, which clips by **column** —
+   an x-range over the full height. That works for ा / ि / ी, which are **spacing** marks with an
+   advance of their own. **ु and ू have no advance**: they hang under the consonant, so the
+   consonant's advance and the cluster's advance are the same number and the column comes out
+   zero-width. This lesson's `matraHL` exists for exactly that — a 2-D clip, the cluster's x-range
+   intersected with the below-baseline band. Using the sibling's helper here would have silently
+   painted nothing, or painted the next letter.
+2. **The direction of travel.** The sibling sends ा / ी in from the RIGHT and ि from the LEFT,
+   because that is where those marks live. ु lives **underneath**, and the note says so: *"The ु
+   मात्रा should softly pop/slide into its correct position below प."* `data.travel` carries it,
+   so the flight is vertical here and the keyframes take both axes.
+
+### SFX: the note's three, and only those three
+
+A soft pop as the matra arrives, a light chime as प becomes पु, a small success sound as पुल
+completes. The sibling also chimes when the consonant lights; the note lists three and asks to
+"keep SFX subtle so the pronunciation remains clear", so that fourth one is left out.
+
+### One clip the sibling's flow has no place for
+
+`vo_matra_u` («छोटी उ की मात्रा») is not in the sibling's chain and not in the SME's ordered
+sequence either. It is already recorded here, and deleting a recorded line is a content change
+nobody asked for, so it plays **as the matra lands** — which is what it names. Say the word and it
+goes.
+
+### Retiring the old stylesheet took a live rule with it
+
+The previous module's `.mb-*` rules describe a DOM that no longer exists, so they were dropped to
+stop two stylesheets fighting over the same class names. **`.mb-seq-hidden` and `.mb-in` went with
+them and should not have**: `CONTRAST_PAIR` uses those two as generic show/hide on its own `.cp-*`
+elements, and the capture settler strips every `*seq-hidden` class. Caught by grepping the JS for
+every retired class before rebuilding; both restored.
+
+### Verified — the sequence watched at true speed, on both build screens
+
+| check | T2 «पल → पुल» | T4 «फल → फूल» |
+|---|---|---|
+| all 13 beats, in the SME's order | **25.6s** | **25.9s** |
+| प lit before the matra arrives | ✅ | ✅ |
+| the matra flies, then hands over to the slot | ✅ | ✅ |
+| प becomes पु only after it lands | ✅ | ✅ |
+| pop / chime / success at the right three beats | ✅ | ✅ |
+| ु highlighted inside पु **and** inside the finished word | ✅ | ✅ |
+| picture shown beside the finished word | ✅ | ✅ |
+| आगे unlocks only after the whole transformation | ✅ | ✅ |
+
+Order is asserted on **timestamps**, not list position: a MutationObserver mark arrives a
+microtask after the mutation that caused it, so two events in the same frame carry no order
+information. The first run of this check also reported the prompt "missing" — the hook was being
+installed after `?slide=N` had already mounted and started the chain. It installs before the
+document now.
+
+---
+
+## Round 12 — the supplied artwork, and "highlight only the matra"
+
+> I've added images that you can use in page1 to 5 — also in page2 when we highlighting the matra
+> then highlight only matra not any other letter, also there is extra (dotted matra) so remove
+> that as well
+
+### The artwork
+
+Two contact sheets, eight objects, mapping exactly onto pages 2–5's vocabulary:
+
+| sheet | objects |
+|---|---|
+| 1 | पल (clock+calendar) · पुल (bridge) · गुड़ (jaggery) · धनुष (bow) |
+| 2 | फल (fruit basket) · फूल (flower) · दूध (milk) · कबूतर (pigeon) |
+
+Both arrived as **transparent RGBA**, so there is no keying step — `gen_objects`' magenta
+chroma-key and its halo pass would only have risked eating edges that were already clean. Sliced
+on alpha gaps, autocropped, resized to 360px (2× the 180px display box) and palette-quantised:
+**1.75 MB → 575 KB for all eight**, which is *lighter* than the six files it replaces, so the
+bundle gets smaller while gaining two images.
+
+**पल and फल are the point.** They are the base words on pages 2 and 4 and had *no picture at all*
+— the builder skipped them because they carry no target matra and so are not in `OBJ`. They now
+live in a new `BASE_OBJ`, deliberately separate: `OBJ` is "words carrying exactly one target
+matra" and `guard_single_matra` audits it as such, so पल and फल must not enter it.
+
+A fixed gutter width could not split the sheets: the objects sit closer together than the gaps
+*inside* some of them (the bow's string, the basket handle). The slicer takes the N−1 **widest**
+gaps instead, the piece count being known.
+
+### The doubled dotted circle — mine, from round 11
+
+The chip was `<span class=mb-dot>◌</span><span class=mb-mk>ु</span>`, two spans so the placeholder
+could be greyed and the mark coloured. But **ु is a combining mark**: alone in its own span it has
+no base to attach to, so the renderer supplied **a dotted circle of its own**. Hence the grey one
+we asked for, followed by a second orange one carrying the matra. One span, one cluster, one
+circle.
+
+### "Only the matra" was three separate faults
+
+Blowing the equation up to 3× is what showed them; at normal size it just looked like a smudge.
+
+1. **The glow was flooding the clip box.** `.mh-glow` is a 14px-blur text-shadow, and the overlay
+   is clipped to a box drawn tight around the matra — the blur had nowhere to fade out, so it
+   saturated the rectangle and the clip edge turned it into a **hard orange block** over the
+   neighbouring letters. It read as "the highlight covers the other letters" because it did.
+   Now 3px, hugging the stroke.
+2. **The clip's floor cut the mark.** `y1` was the element's rect height, but these panels set
+   `line-height:1` and ु/ू descend **below** the content box — so the bottom of every mark was
+   left navy under an orange body. The band now reaches past the box; nothing else is down there.
+   The same widening was applied on the x axis: below-base marks curl a few px past their
+   cluster's advance, and that tail was being clipped off too.
+3. **The chip is not a word.** matraHL clips "below the baseline, within the cluster", and on the
+   isolated «◌ु» the **placeholder's** own lower dots sit in exactly that band — so they went
+   orange, which is the one thing the note asks to leave alone. There is nothing to separate on a
+   chip. It is coloured outright now, the way page 1 already draws its pairs, and matraHL is left
+   to real words.
+
+**Faults 1 and 2 are engine-wide** — every screen using matraHL had the same block, including the
+three tap screens.
+
+### The receipt caught what I missed
+
+Adding `BASE_OBJ` gave the two new images no **emoji fallback**: that map is built from `OBJ` and
+`SCENE`, and the new dictionary was in neither. `0 FAIL` went red on the sweep after the change,
+which is exactly what the receipt is for. Fixed at the source rather than by exempting the check.
+
+### Verified
+
+| check | T2 «पल → पुल» | T4 «फल → फूल» |
+|---|---|---|
+| the base word has a picture | ✅ | ✅ |
+| one dotted circle in the equation | ✅ | ✅ |
+| the matra is highlighted | ✅ | ✅ |
+| the highlight stays on the matra | **35%** of the word's width | **30%** |
+| the whole 13-beat sequence still runs in order | ✅ | ✅ |
+
+Receipt 0 FAIL · 1 WARN · geometry 0/17 · the tap screens still highlight on the win.
+
+One check of mine was wrong before it was right: it reported ू as *two* dotted circles because it
+split ink runs on a 3px gap, and ू is a broad double-curl with a real empty column inside it. Two
+circles side by side are separated by inter-character spacing, which is far wider — the threshold
+is 14px now.
+
+---
+
+## Round 13 — page 3 restaged, and the matra highlight rebuilt
+
+> now follow these for page3: *(the SME's full recommendation)* … page3 of my previous file is
+> exactly same as page3 of my current file … also I've told you earlier, when we highlight the
+> matra then highlight only the matra, currently many place some matra is half higlighted, some
+> are highlighted with the letter as well
+
+### The highlight — rebuilt, not tuned again
+
+Every version before this drew a **rectangle** around where the matra was calculated to be and
+painted whatever ink fell inside it. That is the source of *both* symptoms, and they are the same
+bug from opposite sides:
+
+| box | symptom |
+|---|---|
+| too small | the mark's tail or lower curl sits outside it and stays navy — **"half highlighted"** |
+| too large | it catches the consonant's foot or the next letter's stem — **"highlighted with the letter as well"** |
+
+Rounds 11 and 12 each moved the edges and traded one symptom for the other. **A below-base matra
+is not rectangular and no rectangle contains it exactly**, so no amount of edge-tuning could have
+finished the job.
+
+It now finds the pixels by **subtraction**: raster the word twice at the same origin — once as
+written, once with the matra deleted — and take the difference. Those pixels *are* the mark,
+whatever the font does with the cluster. The difference becomes a **mask** on the orange overlay,
+so the highlight is the mark's own silhouette. No geometry, no edges to tune.
+
+**Why this is sound for ु/ू and not for every matra.** They are *non-spacing*: they add no
+advance, so deleting one leaves every other glyph exactly where it was and the difference is
+purely the mark. A spacing matra (ा, ी) shifts the letters after it, and ि reorders — the
+difference would include half the word. Those keep the advance-based path, which is what the
+sibling uses and what is correct for them.
+
+**So "the previous file is perfect" was true for the matras that file teaches, and would not have
+transferred.** Porting its helper here would have painted nothing, or painted the wrong letter:
+ु/ू have zero advance, so its column clip comes out zero-width.
+
+Verified at 1.5× on all six highlighted words in the lesson — पु · पुल · धनुष · फू · फूल · कबूतर —
+every mark complete, no letter ink caught.
+
+### Page 3
+
+Restaged to the sibling's page 3 (`MEET_EXAMPLES`). **The order was inverted before**: the module
+spoke the whole line *first* and revealed the picture and the highlight on its callback, so the
+child heard «इसमें ग पर छोटी उ की मात्रा लगी है» while nothing on screen had changed, and the mark
+lit up after the sentence naming it had finished.
+
+Now: **word + pop → 520ms → picture fades in + pop → 380ms → matra lights + chime, then the line
+plays over the glow.**
+
+The «इस शब्द की मात्रा — ◌ु» callout is gone. It had been `display:none` since an earlier round —
+the mark is highlighted inside the word now, so the callout said twice what the word shows once —
+and the guiding hand that pointed at it went with it. It was pointing at an invisible element, and
+the sibling's page 3 has no hand either.
+
+`MEET_PAIR` also stops faking a settled end state at mount. It renders **staged** (word visible,
+picture held) and the capture settler finishes it, so the photographed state and the live beat are
+the same thing rather than a mount-time fake the chain then undoes.
+
+### Verified
+
+| check | page 3 «गुड़ → धनुष» | page 5 «दूध → कबूतर» |
+|---|---|---|
+| the sequence in the SME's order | **16.9s** | **18.5s** |
+| one example visible at a time | ✅ | ✅ |
+| word appears before its picture | +7448ms / +522ms | +6166ms / +522ms |
+| the matra lights after the picture | +431ms / +399ms | +417ms / +403ms |
+| the line plays with the glow, not before it | ✅ | ✅ |
+| आगे unlocks only after both examples | ✅ | ✅ |
+
+Receipt 0 FAIL · 1 WARN · geometry 0/17 · rounds 10–12 all still green · 11 mechanics driven.
+
+### Two harness traps, both about hooking `play()` early enough
+
+The check first reported the page-3 prompt "missing" while an 8-second gap in its own timeline
+proved it had played. `?slide=N` mounts during page load and the chain's first clip can fire
+before a polling hook attaches.
+
+Replacing the poll with an accessor on `window.play` made it **worse** — all logging vanished. The
+engine declares `function play(){}` at top level, and a global function declaration defines the
+property with a *data* descriptor, silently replacing the accessor. The fix is neither: load the
+lesson with no `?slide`, install the hook while nothing has mounted, then call `mountSlide()` by
+hand.

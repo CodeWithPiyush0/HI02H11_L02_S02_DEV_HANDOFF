@@ -97,47 +97,22 @@
 .tr-slotpic{ width:70px; height:70px; object-fit:contain; }
 
 /* ---------- MATRA_BUILD ---------- */
-.mb-stage{ display:flex; align-items:center; justify-content:center; gap:16px; width:100%;
   flex-wrap:nowrap; padding:6px 4px 16px; }
-.mb-panel{ background:#fff; border:3px solid #E4ECF7; border-radius:20px; padding:16px 20px;
   display:flex; flex-direction:column; align-items:center; gap:8px;
   box-shadow:0 8px 20px rgba(11,61,140,.10); }
 /* the middle panel is now a COLUMN: the equation row, then its one-line caption, exactly as
    the SME's mockup draws it. .mb-eqrow keeps the equation itself horizontal. */
-.mb-p2{ align-items:center; gap:6px; background:#F4F8FF; }
-.mb-eqrow{ display:flex; flex-direction:row; align-items:center; gap:10px; }
-.mb-arrow{ font-size:40px; color:#8BBFFF; font-weight:800; }
 /* panel captions — SME mockup: «यह शब्द देखिए — पल», «पल से बना पुल» */
-.mb-cap{ font-family:var(--font-hi); font-size:19px; font-weight:800; color:#5B7BA6;
   line-height:var(--hi-lh); text-align:center; max-width:230px; }
-.mb-p2 .mb-cap{ max-width:250px; color:#3E6FA8; }
-.mb-word{ font-family:var(--font-hi); font-size:60px; font-weight:800;
   color:var(--navy-dk,#0B3D8C); line-height:var(--hi-lh); }
-.mb-cons,.mb-syl{ font-family:var(--font-hi); font-size:54px; font-weight:800;
   color:var(--navy-dk,#0B3D8C); line-height:var(--hi-lh); }
-.mb-matra{ font-family:var(--font-hi); font-size:50px; font-weight:800;
   color:var(--wrong,#E8453C); line-height:var(--hi-lh); }
-.mb-plus,.mb-eq{ font-size:34px; color:#5B7BA6; font-weight:800; }
-.mb-cons.mb-hot{ color:var(--wrong,#E8453C); }
-.mb-img{ width:104px; height:104px; object-fit:contain; }
-.mb-emoji{ font-size:80px; line-height:1; }
 /* the result panel: word ABOVE its picture, with the descender cleared (OVERLAP-FIX #1) */
-.mb-p3{ gap:4px; padding:14px 18px; }
-.mb-p3 .mb-word{ font-size:52px; }
-.mb-p3 .mb-pic{ display:block; line-height:0; }
-.mb-p3 .mb-img{ width:88px; height:88px; }
-.mb-p3 .mb-emoji{ font-size:66px; }
 /* off/in: `mb-seq-hidden` is the only hidden state, and it is removed BEFORE the clip that reveals
    each piece, so a capture with animation disabled shows everything that has been revealed. */
-.mb-seq-hidden{ opacity:0; }
-.mb-in{ opacity:1; }
-.mb-pop{ animation:mbPop .4s cubic-bezier(.34,1.5,.6,1) both; }
 @keyframes mbPop{ from{ transform:scale(.6) } to{ transform:none } }
-.mb-fly.mb-travel-down{ animation:mbDown .5s cubic-bezier(.34,1.4,.6,1) both; }
 @keyframes mbDown{ from{ transform:translateY(-34px); opacity:0 } to{ transform:none; opacity:1 } }
-.mb-fly.mb-travel-left{ animation:mbLeft .5s cubic-bezier(.34,1.4,.6,1) both; }
 @keyframes mbLeft{ from{ transform:translateX(34px); opacity:0 } to{ transform:none; opacity:1 } }
-.mb-fly.mb-travel-right{ animation:mbRight .5s cubic-bezier(.34,1.4,.6,1) both; }
 @keyframes mbRight{ from{ transform:translateX(-34px); opacity:0 } to{ transform:none; opacity:1 } }
 
 /* ---------- MEET_PAIR ---------- */
@@ -215,7 +190,7 @@
 /* the overlay's text is an ATTRIBUTE painted by a pseudo-element, so the engine's
    centerInkGlyph() — which measures with textContent — never sees it. See matraHL(). */
 .mh-ov::before{ content:attr(data-w); }
-.mh-ov.mh-glow{ text-shadow:0 0 14px rgba(232,69,60,.55); }
+.mh-ov.mh-glow{ text-shadow:0 0 3px rgba(232,69,60,.55); }
 .mh-pulse{ animation:mhPulse 1.1s ease 2; }
 @keyframes mhPulse{ 0%,100%{ filter:none } 50%{ filter:brightness(1.35) drop-shadow(0 0 9px rgba(232,69,60,.7)) } }
 
@@ -270,8 +245,6 @@
 /* narrow-stage safety: the 3-coach trains are the widest thing in this lesson */
 @media (max-width:1180px){
   .tr-fill{ font-size:36px; } .tr-inmatra{ font-size:36px; } .tr-doneword{ font-size:38px; }
-  .mb-word{ font-size:52px; } .mb-cons,.mb-syl{ font-size:46px; }
-  .mb-p3 .mb-word{ font-size:46px; }
   .mp-word{ font-size:68px; }
   .cp-word{ font-size:62px; }
   .ps-w{ font-size:34px; }
@@ -804,15 +777,15 @@
    ========================================================================================== */
 
 /* --- the build screen loses its panels; the glyphs sit on the stage like the sibling's --- */
-.mb-panel{ background:none; border:0; box-shadow:none; padding:6px 10px; }
-.mb-p2{ background:rgba(233,241,252,.75); border-radius:18px; padding:10px 18px; }
 
 /* --- the matra is orange everywhere it is TAUGHT ---
    `--wrong` stays red for wrong answers; this is a different meaning and needs a different hue. */
 :root{ --matra-hi:#FF8A00; }
-.mb-matra{ color:var(--matra-hi); }
 .mh-ov{ color:var(--matra-hi); }
-.mh-ov.mh-glow{ text-shadow:0 0 14px rgba(255,138,0,.60); }
+/* [r12] 14px of blur inside a clip box tight around the matra had nowhere to fade out: it
+   saturated the box and the clip edge made it a hard orange RECTANGLE over the neighbouring
+   letters. 3px hugs the stroke, which is what "highlight the matra" means. */
+.mh-ov.mh-glow{ text-shadow:0 0 3px rgba(255,138,0,.55); }
 .mi-matra{ color:var(--matra-hi); }
 .mi-matra.mi-glow{ text-shadow:0 0 12px rgba(255,138,0,.60), 0 0 22px rgba(255,138,0,.30); }
 .tr-inmatra,.wb-inakshar{ color:var(--matra-hi); }
@@ -822,7 +795,6 @@
 /* --- the example screen loses the callout pill (the sibling has none) --- */
 .mp-callout{ display:none; }
 /* the isolated consonant is highlighted, not marked wrong — same reasoning as the matra */
-.mb-cons.mb-hot{ color:var(--matra-hi); }
 /* with the heading band gone the host has the full stage height; keep the teach content on the
    optical centre rather than letting it ride up under the removed band */
 /* [r10] NO BOTTOM PADDING. That 40px was mine, added so heading-less teach content would clear
@@ -1064,3 +1036,113 @@ body.is-end .sg-sky{
 .train-shell.lt-cover .train-track{
   left:50%; right:auto; width:1030px; transform:translateX(-50%);
 }
+
+
+/* ==========================================================================================
+   [r11] MATRA_BUILD — the sibling's page 2, step for step
+   Ported from HI02H11_L02_S01: three panels revealed in turn, the consonant lighting inside the
+   base word, the matra flying into the equation slot and handing over with a cross-fade, the
+   syllable dissolving up while the equation nods, and the equation pulsing under the three-sound
+   contrast. Geometry and timings are the sibling's, not re-invented.
+   ========================================================================================== */
+.mb-row{display:flex;align-items:center;justify-content:center;gap:22px;width:100%;}
+.mb-panel{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:210px;opacity:1;}
+.mb-panel.mb-hidden{opacity:0;pointer-events:none;}
+.mb-panel.mb-in{animation:mbIn 420ms ease-out both;}
+@keyframes mbIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+/* Both word rows are the SAME fixed height with the ink centred, so the gap between पल and its
+   picture equals the gap between पुल and its picture whatever the two words' own ink heights
+   are. पल has no picture of its own by design - it is the form BEFORE the matra, not vocabulary
+   - so its .mb-pic box is rendered empty rather than omitted, which is what keeps the two word
+   rows on the same line. */
+.mb-word{height:104px;font-size:84px;font-weight:800;color:var(--navy);line-height:1.1;
+  display:flex;align-items:center;justify-content:center;}
+.mb-word .mb-c{transition:color .25s ease,text-shadow .25s ease;}
+.mb-word .mb-c.lit{color:var(--matra-hi,#FF8A00);text-shadow:0 0 18px rgba(255,138,0,.45);}
+.mb-pic{width:180px;height:150px;display:flex;align-items:center;justify-content:center;}
+.mb-pic img{max-width:100%;max-height:100%;object-fit:contain;}
+.mb-pic .mb-emoji{font-size:96px;line-height:1;}
+.mb-arrow{font-size:46px;color:#3E86E0;flex:0 0 auto;min-width:0;}
+
+/* the centre equation panel - tinted card, as the SME mockup draws it */
+.mb-eq{position:relative;background:#EAF3FE;border-radius:20px;padding:20px 26px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;}
+.mb-eq-line{display:flex;align-items:center;gap:12px;font-size:76px;font-weight:800;
+  color:var(--navy);line-height:1;}
+.mb-eq-line .mb-op{color:#3E86E0;font-size:54px;}
+/* The ◌ is a PLACEHOLDER, not part of the matra, and the note is explicit: "highlight only
+   matra not any other letter". Colouring it by hand needed two spans, and splitting a combining
+   mark off its placeholder made the renderer add a SECOND dotted circle - see the module. The
+   chip is one cluster now and matraHL does the colouring, so the glyph stays navy and only the
+   mark under the baseline turns orange. */
+/* THE CHIP IS COLOURED OUTRIGHT, not clipped. «◌ु» is a placeholder plus the mark and no
+   other letter, so there is nothing for matraHL to separate - and run through it, the
+   PLACEHOLDER's own lower dots fall inside the below-baseline band and turn orange, which is
+   precisely the thing the note asks to leave alone. Page 1 draws its pairs the same way. */
+.mb-slot,.mb-fly{color:var(--matra-hi,#FF8A00);}
+.mb-eq.mb-say{animation:mbSay 900ms ease-in-out 3;}
+@keyframes mbSay{0%,100%{box-shadow:0 0 0 0 rgba(255,138,0,0);}
+                 50%{box-shadow:0 0 0 6px rgba(255,138,0,.28);}}
+
+/* THE FLYING MATRA. It is parked over the slot's measured centre by the module, so these
+   keyframes describe only the TRAVEL. Both axes are variables because ु and ू arrive from
+   BELOW - they hang under their consonant - where the sibling's spacing matras arrive from the
+   side. Ends held by `both`, so a frozen capture shows the settled state. */
+.mb-fly{position:absolute;left:0;top:0;font-size:76px;font-weight:800;
+  pointer-events:none;z-index:40;opacity:0;line-height:1;white-space:nowrap;}
+.mb-fly.mb-fly-go{animation:mbFly 760ms cubic-bezier(.22,.9,.28,1.06) both;}
+@keyframes mbFly{
+  0%{opacity:0;transform:translate(var(--mb-fx,0px),var(--mb-fy,96px)) scale(1.34) rotate(6deg);}
+  18%{opacity:1;}
+  72%{opacity:1;transform:translate(0,3px) scale(1.06) rotate(0deg);}   /* overshoot a hair */
+  100%{opacity:1;transform:translate(0,0) scale(1) rotate(0deg);}       /* then settle */
+}
+/* the hand-off: the flier dissolves while the slot's own glyph fades up underneath it */
+.mb-fly.mb-fly-done{animation:mbFlyOut 260ms ease-out both;}
+@keyframes mbFlyOut{from{opacity:1;transform:scale(1);}to{opacity:0;transform:scale(1.08);}}
+
+.mb-slot{display:inline-flex;align-items:center;justify-content:center;min-width:76px;}
+.mb-slot.mb-slot-wait{opacity:0;}      /* laid out, not yet shown - see step 4 */
+.mb-slot.mb-slot-in{animation:mbSlotIn 320ms ease-out both;}
+@keyframes mbSlotIn{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:scale(1);}}
+
+/* प -> पु dissolves instead of cutting */
+.mb-syl{display:inline-block;min-width:76px;text-align:center;}
+.mb-syl.mb-syl-in{animation:mbSylIn 420ms ease-out both;}
+@keyframes mbSylIn{from{opacity:0;transform:translateY(10px) scale(.88);}
+                   to{opacity:1;transform:translateY(0) scale(1);}}
+.mb-eq.mb-settle{animation:mbSettle 420ms ease-out;}
+@keyframes mbSettle{0%{transform:scale(1);}38%{transform:scale(1.035);}100%{transform:scale(1);}}
+
+@media (prefers-reduced-motion:reduce){
+  .mb-panel.mb-in,.mb-fly.mb-fly-go,.mb-fly.mb-fly-done,.mb-slot.mb-slot-in,
+  .mb-syl.mb-syl-in,.mb-eq.mb-settle,.mb-eq.mb-say{animation:none;}
+  .mb-fly{opacity:1;}
+}
+
+/* GENERIC SHOW/HIDE - still used by CONTRAST_PAIR on its own .cp-* elements, and by the capture
+   settler, which strips every *seq-hidden class. Retiring the old MATRA_BUILD stylesheet took
+   these two with it and left CONTRAST_PAIR's staged reveal painting nothing: its DOM went away,
+   these utilities did not. */
+.mb-seq-hidden{ opacity:0; }
+.mb-in{ opacity:1; }
+
+
+/* [r13] THE INK-MASK OVERLAY. In this mode the overlay paints no text at all: it is a plain
+   coloured box masked to the matra's own pixels, so what shows is the mark's silhouette and
+   nothing else - no rectangle to be too big or too small. `content:none` turns off the
+   pseudo-element the text path uses, and the glow becomes a drop-shadow because text-shadow has
+   nothing to act on once there is no text. */
+.mh-ov.mh-ink{ background-color:var(--matra-hi,#FF8A00); }
+.mh-ov.mh-ink::before{ content:none; }
+.mh-ov.mh-ink.mh-glow{ filter:drop-shadow(0 0 3px rgba(255,138,0,.55)); text-shadow:none; }
+
+
+/* [r13] "Word should appear first, then image should appear." The picture is held here and
+   released a beat later by the module - opacity rather than display, so the card's width never
+   jumps when it arrives. .mp-wait is NOT a *seq-hidden class on purpose: those are stripped
+   wholesale by the capture settler, and this one has to be released deliberately so the shot
+   shows the same end state the child reaches. */
+.mp-pic{ transition:opacity .35s ease; }
+.mp-pic.mp-wait{ opacity:0; }

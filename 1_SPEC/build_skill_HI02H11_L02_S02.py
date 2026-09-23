@@ -205,13 +205,27 @@ def key_of(word):
     sys.exit("X  no OBJ entry for %r" % word)
 
 
+# The MATRA_BUILD base words, kept OUT of OBJ on purpose. OBJ is "words that carry exactly one
+# target matra" and `guard_single_matra` audits it as such; पल and फल carry none, because they
+# are the form BEFORE the matra. They still want a picture - a child reading पल with nothing
+# beside it has no idea the word means anything, and the sibling's base panel has art - so they
+# live here, where no matra guard can trip over them.
+BASE_OBJ = {
+    "पल": ("obj_pal",  "🕑"),   # a moment: clock + calendar
+    "फल": ("obj_phal", "🍎"),   # fruit: a basket of it
+}
+
+
 def key_of_opt(word):
-    """key_of() but returns None instead of exiting. The MATRA_BUILD base words (पल, फल) have
-    no picture by design — they are the form BEFORE the matra, not vocabulary the child learns
-    — so the base panel simply renders without art."""
+    """key_of() but returns None instead of exiting.
+
+    Looks in BASE_OBJ as well as OBJ: the MATRA_BUILD base words are not vocabulary the child is
+    being taught, so they are not in OBJ, but they do have art of their own."""
     for k, v in OBJ.items():
         if v[0] == word:
             return k
+    if word in BASE_OBJ:
+        return BASE_OBJ[word][0]
     return None
 
 
@@ -347,7 +361,8 @@ def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, 
                      "syllable": syllable, "result_word": result_word,
                      "result_img": pic(rk), "result_emoji": OBJ[rk][1], "travel": "down",
                      "base_img": (pic(bk) if bk else None),
-                     "base_emoji": (OBJ[bk][1] if bk else None),
+                     "base_emoji": (BASE_OBJ[base_word][1] if base_word in BASE_OBJ
+                                   else (OBJ[bk][1] if bk else None)),
                      # SME: "Keep the screen clean and minimal. Do not add unnecessary
                      # explanatory text." The round-2 panel captions go.
                      "cap_base": None, "cap_mid": None, "cap_result": None,
@@ -376,8 +391,18 @@ def s_pair(sid, words, lead, lines):
     ex = []
     for w, line in zip(words, lines):
         k = key_of(w)
+        vid = "vo_meet_" + slug(k)
+        # WHERE THE VISUALS BELONG INSIDE THE LINE. The note asks for the animation to follow the
+        # voice - "word should appear first, then image", "when VO says the matra part, the ु
+        # should glow". The line has three clauses and each one owns a beat:
+        #     «गुड़,»               -> the word is on screen already
+        #     «बोलकर देखिए।»        -> the picture arrives
+        #     «इसमें ग पर … लगी है।» -> the matra lights
+        # Both offsets are measured off the clip that exists, so a re-record moves them with it.
         ex.append({"word": w, "matra": matra_of(w), "img": pic(k), "emoji": OBJ[k][1],
-                   "audio_line": vo("vo_meet_" + slug(k), line),
+                   "audio_line": vo(vid, line),
+                   "pic_ms":   _matra_cue_ms(vid, line, "बोलकर"),
+                   "matra_ms": _matra_cue_ms(vid, line, "इसमें"),
                    "matra_audio": None})
     return {"id": sid, "phase": "tutorial", "eis": "iconic", "type": "MEET_PAIR",
             # NO HEADING, same reasoning as the build screens: the deck gives this page no
@@ -651,7 +676,14 @@ def build_card(slides):
                              "sentence_complete_first_try",
                              "answer_wrong", "hint_shown",
                              "phase_transition", "mastery_score", "lesson_completed"],
-        "_emoji_fallback": dict(list({k: v[1] for k, v in OBJ.items()}.items()) + list(SCENE.items())),
+        # BASE_OBJ has to be in here too. It was added so पल / फल could have pictures without
+        # entering OBJ (which `guard_single_matra` audits as "words carrying exactly one target
+        # matra", and those two carry none) — but this map is built from OBJ, so the two new
+        # images arrived with no emoji fallback and the receipt failed them. Caught by the
+        # receipt, which is exactly what it is for.
+        "_emoji_fallback": dict(list({k: v[1] for k, v in OBJ.items()}.items())
+                                + [(v[0], v[1]) for v in BASE_OBJ.values()]
+                                + list(SCENE.items())),
         "assets": {"audio": audio, "audio_text": AUDIO_TEXT, "image": image,
                    "audio_ext": "ogg", "img_ext": "png"},
         "slides": slides,
