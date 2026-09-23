@@ -75,6 +75,7 @@ RIGHT_SPACING_MATRAS, because that failure is silent and looks like the feature 
 Run:  PYTHONUTF8=1 python 1_SPEC/build_skill_HI02H11_L02_S02.py   (from the handoff root)
 """
 import os, re, sys, json, argparse
+import contextlib, wave        # [r8] page-1 matra cue, measured off the clip
 
 CODE     = "HI02H11_L02_S02"
 # ---------------------------------------------------------------- paths
@@ -100,7 +101,7 @@ RSM_RE   = re.compile(r'RIGHT_SPACING_MATRAS\s*=\s*new Set\(\[([^\]]*)\]\)')
 # engine copy: if the injector ever ran short, that is what tells us.
 TRAIN_MODULES = ["TRAIN_TAP", "TRAIN_SORT", "MATRA_FILL", "MATRA_BUILD",
                  "MEET_PAIR", "CONTRAST_PAIR", "POEM_SEARCH", "MATRA_INTRO",
-                 "WORD_BUILD", "SENTENCE_COMPLETE"]
+                 "WORD_BUILD", "SENTENCE_COMPLETE", "MATRA_PAIRS"]
 STOCK_MODULES = ["CELEBRATION"]
 # Fixed clips that are not recorded for this lesson. The three sfx_train_*/whistle files are
 # REAL RECORDINGS brought over from the sibling lesson HI02H11_L02_S01; round 3 previously
@@ -227,27 +228,82 @@ def name_clip(word):
 
 
 # ---------------------------------------------------------------- screens
-def s_intro(sid):
-    """Screen 1. «उ → ◌ु», one pair lit at a time, now riding in train bogies.
 
-    SME: "Show the letter and its corresponding matra symbol as a pair, one by one. Keep only one
-    pair active at a time. Each active pair should light up when its VO plays." and "If possible,
-    keep the train-theme continuity by showing each pair inside a train-style card / bogie / box."
+def _matra_cue_ms(audio_id, line, phrase="इसकी"):
+    """When, inside `line`'s recording, the phrase «इसकी मात्रा है» starts — in ms.
 
-    Round 2's separate `instruction` clip is gone: the SME's VO list for this screen is the intro
-    line and then the two pair lines, with nothing between them.
+    Page 1's highlight has to land ON THE WORDS, and a fixed delay cannot do that: the two clips
+    are 4.13s and 3.85s, so any constant is early on one and late on the other. There is no forced
+    aligner in this toolchain, so the cue is the clip's REAL duration scaled by where the phrase
+    begins in the text. Devanagari is close enough to evenly paced for one sentence of this length,
+    and the highlight is a 1.2s glow — it only has to start inside the right phrase, not on the
+    exact sample.
+
+    Computed from the file on disk, so a re-recorded clip recomputes its own cue and a missing one
+    falls back to a delay that is at least not wrong in the same direction every time.
     """
+    path = os.path.join(AUD_DIR, audio_id + ".ogg")
+    try:
+        with contextlib.closing(wave.open(path)) as w:
+            secs = w.getnframes() / float(w.getframerate())
+    except Exception:
+        return 1300                      # a plausible middle for a ~4s line, flagged by the receipt
+    i = line.find(phrase)
+    if i < 0:
+        return int(secs * 1000 * 0.35)
+    # strip spaces on both sides of the split: they are not spoken and there are more of them in
+    # the second half, which would otherwise push the cue late
+    before = len(line[:i].replace(" ", ""))
+    total  = len(line.replace(" ", ""))
+    return int(secs * 1000 * (before / float(total)))
+
+def s_intro(sid):
+    """Screen 1. «उ → ◌ु», one pair at a time — matched to the sibling lesson's page 1.
+
+    NO HEADING AND NO TRAIN, both on the SME's instruction. Their note says "Remove the current
+    extra heading text from the top … so the screen stays clean and focused" and "Do not add extra
+    decorative elements"; the sibling (`HI02H11_L02_S01`), whose page-1 note is the same note,
+    reads it the same way and draws two glyphs and an arrow on the bare stage. The train belongs
+    to the screens that need coaches to sort into — this screen is two marks and the relationship
+    between them.
+
+    Pair by pair, letter first: «First उ appears, then ु appears beside it with a soft glow. After
+    that, both can fade slightly / dim softly. Then ऊ appears, and ू appears beside it.» A pair
+    already taught stays faded; the note never asks for it to be restored.
+
+    `no_heading` is what lets `prompt_hi` be empty here. It is a per-SLIDE opt-out on purpose:
+    round 2 hid the heading band globally and shipped 14 screens with a mascot beside nothing, so
+    `guard_prompts` still fails on any empty heading that has not asked for it.
+    """
+    # SPOKEN vs SHOWN — deliberately not the same string. The SME gives the VO verbatim, with
+    # छोटी/बड़ी: spoken, that is exactly what separates two vowels which sound alike. The heading
+    # is the screenshot's own line, without them — printed directly above the two glyphs those
+    # words are redundant, and they turn a short heading into a long one.
     p = "आज हम छोटी उ और बड़ी ऊ की मात्रा वाले शब्द पढ़ेंगे।"
+    heading = "आज हम उ और ऊ की मात्रा वाले शब्द पढ़ेंगे।"
+    # `cue_ms` is when «इसकी मात्रा है» starts inside each clip. The matra is highlighted THEN,
+    # rather than when it pops in - the ask is that the glow lands on the words that name it.
+    _u_line  = "यह है उ। इसकी मात्रा है — ु।"
+    _uu_line = "यह है ऊ। इसकी मात्रा है — ू।"
     pairs = [
         {"letter": "उ", "matra": U,
-         "audio": vo("vo_pair_u", "यह है उ। इसकी मात्रा है — ु।")},
+         "audio": vo("vo_pair_u", _u_line),
+         "cue_ms": _matra_cue_ms("vo_pair_u", _u_line)},
         {"letter": "ऊ", "matra": UU,
-         "audio": vo("vo_pair_uu", "यह है ऊ। इसकी मात्रा है — ू।")},
+         "audio": vo("vo_pair_uu", _uu_line),
+         "cue_ms": _matra_cue_ms("vo_pair_uu", _uu_line)},
     ]
-    return {"id": sid, "phase": "tutorial", "eis": "enactive", "type": "MATRA_INTRO",
-            "prompt_hi": p,
+    # HEADING OFF AGAIN (r7). It went on in r6 because the screenshot that came with that ask
+    # had one; it comes off now because the ask is explicit. The sentence is still SPOKEN - it is
+    # `p` below, the SME's own VO line - so nothing is lost from the lesson, only from the screen.
+    # `heading` stays defined and unused on purpose: it is one edit away if the ask reverses
+    # again, and it documents what the band would say.
+    del heading
+    return {"id": sid, "phase": "tutorial", "eis": "enactive", "type": "MATRA_PAIRS",
+            "prompt_hi": "",
             "audio": {"prompt": vo("vo_%s_prompt" % sid.lower(), p)},
-            "data": {"pairs": pairs, "phonemes": dict(MATRA_VO), "auto": True, "train": True}}
+            "data": {"pairs": pairs, "phonemes": dict(MATRA_VO), "auto": True,
+                     "no_heading": True}}
 
 
 def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, sounds):
@@ -282,7 +338,11 @@ def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, 
     }
     bk = key_of_opt(base_word)
     return {"id": sid, "phase": "tutorial", "eis": "symbolic", "type": "MATRA_BUILD",
-            "prompt_hi": AUDIO_TEXT[a["prompt"]], "audio": a,
+            # NO HEADING. The deck gives this screen no "Heading" section — unlike the tap
+            # screens, which say "Keep the heading at the top: …" — and tells it to "keep the
+            # screen clean and minimal. Do not add unnecessary explanatory text." The sibling
+            # lesson's equivalent screen carries none either.
+            "prompt_hi": "", "audio": a,
             "data": {"base_word": base_word, "consonant": consonant, "matra": matra,
                      "syllable": syllable, "result_word": result_word,
                      "result_img": pic(rk), "result_emoji": OBJ[rk][1], "travel": "down",
@@ -290,7 +350,8 @@ def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, 
                      "base_emoji": (OBJ[bk][1] if bk else None),
                      # SME: "Keep the screen clean and minimal. Do not add unnecessary
                      # explanatory text." The round-2 panel captions go.
-                     "cap_base": None, "cap_mid": None, "cap_result": None}}
+                     "cap_base": None, "cap_mid": None, "cap_result": None,
+                     "no_heading": True}}
 
 
 def s_pair(sid, words, lead, lines):
@@ -319,9 +380,11 @@ def s_pair(sid, words, lead, lines):
                    "audio_line": vo("vo_meet_" + slug(k), line),
                    "matra_audio": None})
     return {"id": sid, "phase": "tutorial", "eis": "iconic", "type": "MEET_PAIR",
-            "prompt_hi": lead,
+            # NO HEADING, same reasoning as the build screens: the deck gives this page no
+            # heading, and the sibling's equivalent shows the word and its picture and nothing else
+            "prompt_hi": "",
             "audio": {"prompt": vo("vo_%s_prompt" % sid.lower(), lead)},
-            "data": {"examples": ex}}
+            "data": {"examples": ex, "no_heading": True}}
 
 
 def s_tap(sid, words, target, matra, correct_line):
@@ -564,7 +627,11 @@ def build_card(slides):
         # dotted placeholder circle, which is exactly the «ु» the note asks for and is how the
         # sibling ships it. The intro screen still uses an explicit ◌ because its glyphs sit in a
         # text run where the font does not supply one.
-        "landing_hero": {"kind": "matra_train", "matras": [U, UU]},
+        "landing_hero": {"kind": "matra_train", "matras": [U, UU],
+                     # r7: the coach shows the LETTER with its matra in brackets -
+                     # the same «उ (ु)» form the G4 bins already use, so the cover
+                     # and the sorting screens name the pair the same way.
+                     "letters": ["उ", "ऊ"]},
         "phase_transition_audio": {"tutorial": "vo_pt_tutorial", "guided": "vo_pt_guided",
                                    "practice": "vo_pt_practice"},
         # flipped to आप with everything else — these sit between the phases, next to the shared
@@ -648,7 +715,7 @@ def guard_engine(src):
 
 def guard_flow(slides):
     """The flow must match the SME's round-3 deck screen for screen: 18 screens = landing + 17."""
-    want = ["MATRA_INTRO", "MATRA_BUILD", "MEET_PAIR", "MATRA_BUILD", "MEET_PAIR",
+    want = ["MATRA_PAIRS", "MATRA_BUILD", "MEET_PAIR", "MATRA_BUILD", "MEET_PAIR",
             "TRAIN_TAP", "TRAIN_TAP", "TRAIN_TAP", "TRAIN_SORT", "TRAIN_SORT",
             "WORD_BUILD", "TRAIN_SORT",
             "SENTENCE_COMPLETE", "SENTENCE_COMPLETE", "SENTENCE_COMPLETE", "SENTENCE_COMPLETE",
@@ -746,14 +813,21 @@ def guard_prompts(slides):
     check: the page scored 0 FAIL / 0 WARN, all assets served and no JS errored — it simply had a
     mascot sitting next to nothing.
     """
-    bad = [sl["id"] for sl in slides if not (sl.get("prompt_hi") or "").strip()]
+    bad = [sl["id"] for sl in slides
+           if not (sl.get("prompt_hi") or "").strip()
+           and not (sl.get("data") or {}).get("no_heading")]
     if bad:
         sys.exit("X  guard_prompts: empty prompt_hi on %s — the heading band would render "
                  "blank beside the mascot" % ", ".join(bad))
-    short = [(sl["id"], sl["prompt_hi"]) for sl in slides if len(sl["prompt_hi"].strip()) < 8]
+    short = [(sl["id"], sl["prompt_hi"]) for sl in slides
+             if not (sl.get("data") or {}).get("no_heading")
+             and len(sl["prompt_hi"].strip()) < 8]
     if short:
         sys.exit("X  guard_prompts: heading too short to read: %s" % short)
-    print("   guard_prompts ....... %d/%d slides carry heading text" % (len(slides), len(slides)))
+    opted = [sl["id"] for sl in slides if (sl.get("data") or {}).get("no_heading")]
+    print("   guard_prompts ....... %d/%d slides carry heading text%s"
+          % (len(slides) - len(opted), len(slides),
+             ("; %s opted out on the SME's instruction" % ", ".join(opted)) if opted else ""))
 
 
 BAD_REGISTER = ["करो", "सोचो", "देखो", "डालो", "सुनो", "चुनो", "पढ़ो", "बोलो", "ढूँढो",

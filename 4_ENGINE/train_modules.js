@@ -64,7 +64,14 @@
      So every chain carries the epoch it started in, and a callback whose epoch has moved on is
      simply dropped. Nothing else has to know about it. */
   let _voGen = 0;
-  function newVoEpoch(){ return ++_voGen; }
+  function newVoEpoch(){
+    /* the no-heading opt-out is per SLIDE, so it is cleared on every mount and re-applied only by
+       a module whose card asks for it. Round 2 hid the band GLOBALLY and shipped 14 screens with
+       a mascot sitting next to nothing; this cannot do that. */
+    const st = document.getElementById("stage");
+    if(st){ st.classList.remove("no-band"); st.classList.remove("mp-center"); }
+    return ++_voGen;
+  }
   function say(src, next){
     const gen = _voGen;
     let done = false;
@@ -988,7 +995,8 @@
   SlideModules.MATRA_BUILD = {
     mount(host, slide){
       const d = slide.data;
-      newVoEpoch();          /* any chain still running from a previous mount is now stale */
+      newVoEpoch();
+      if(d.no_heading){ const _st = document.getElementById("stage"); if(_st) _st.classList.add("no-band"); }          /* any chain still running from a previous mount is now stale */
       const wrap = document.createElement("div");
       wrap.className = "mb-stage";
       /* Laid out to the SME's own mockup (_SME_MOCKUPS/slide05_image5.png): each of the three
@@ -1097,7 +1105,8 @@
   SlideModules.MEET_PAIR = {
     mount(host, slide){
       const d = slide.data;
-      newVoEpoch();          /* any chain still running from a previous mount is now stale */
+      newVoEpoch();
+      if(d.no_heading){ const _st = document.getElementById("stage"); if(_st) _st.classList.add("no-band"); }          /* any chain still running from a previous mount is now stale */
       const wrap = document.createElement("div");
       wrap.className = "mp-stage";
       host.appendChild(wrap);
@@ -1270,12 +1279,30 @@
       state.ownsAudio = true; state.demoRunning = true; setNavActive(false);
       if(typeof setSwMood === "function") setSwMood("teach");
 
-      /* SETTLED BY DEFAULT: every pair is painted and visible from the start, and `is-on` only
-         adds the highlight. A capture with animation frozen therefore shows the whole screen,
-         not one pair — the failure mode that shipped three blank teach pages last round. */
+      /* WITHIN EACH PAIR THE TWO GLYPHS ARRIVE SEPARATELY. The SME's animation note is explicit:
+         "First उ appears, then ु appears beside it with a soft glow. After that, both can fade
+         slightly / dim softly. Then ऊ appears, and ू appears beside it." Until now both glyphs
+         were painted together and only the PAIR sequenced, so the one thing the screen exists to
+         teach — that this letter owns this mark — was never actually shown happening.
+
+         SETTLED BY DEFAULT, held back live. The hold class is named `mi-seq-hidden` on purpose:
+         this bundle's capture settler strips anything ending in `seq-hidden`, so a frozen review
+         capture still photographs the finished screen instead of two empty coaches. */
+      const parts = train.coaches.map(c => ({
+        letter: c.body.querySelector(".mi-letter"),
+        arrow:  c.body.querySelector(".mi-arrow"),
+        matra:  c.body.querySelector(".mi-matra")
+      }));
+      const reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches);
+      const showAll = ()=> parts.forEach(pt => [pt.letter, pt.arrow, pt.matra]
+        .forEach(e => e && e.classList.remove("mi-seq-hidden")));
+      if(!reduced) parts.forEach(pt => [pt.letter, pt.arrow, pt.matra]
+        .forEach(e => e && e.classList.add("mi-seq-hidden")));
+
       const done = ()=>{
         state.demoRunning = false;
         pairs.forEach(p => p.classList.remove("is-dim"));
+        showAll();                       /* nothing may be left invisible once the beat is over */
         state.replayAudio = ()=> sayAll(d.pairs.map(p => clip(p.audio)), ()=>{});
         $("navBtn").onclick = ()=> completeSlide(true);
         setNavActive(true);
@@ -1284,15 +1311,142 @@
       const step = ()=>{
         if(i >= pairs.length){ done(); return; }
         const k = i++;
+        const pt = parts[k];
+        /* "Keep only one pair active at a time" · "Each active pair should light up when its VO
+           plays" — the pair before this one dims rather than disappearing. */
         pairs.forEach((p, n) => p.classList.toggle("is-dim", n !== k));
         pairs[k].classList.add("is-on");
-        sfxPopSoft();
+        /* the letter lands with «यह है उ», … */
+        if(pt.letter){ pt.letter.classList.remove("mi-seq-hidden"); pt.letter.classList.add("mi-pop"); }
+        /* … and the matra beside it a beat later, on «इसकी मात्रा है — ु», with the soft glow and
+           the chime the note asks for. 1500ms is roughly where that half of the line starts in a
+           ~4s clip; it is a beat, not a claim of lip-sync. */
+        setTimeout(()=>{
+          if(!pt.matra || !pt.matra.isConnected) return;
+          if(pt.arrow){ pt.arrow.classList.remove("mi-seq-hidden"); pt.arrow.classList.add("mi-pop"); }
+          pt.matra.classList.remove("mi-seq-hidden");
+          pt.matra.classList.add("mi-pop", "mi-glow");
+          sfxPopSoft();                  /* SME: "a soft pop / chime when each MATRA symbol appears" */
+        }, 1500);
         say(clip(d.pairs[k].audio), ()=> setTimeout(step, 320));
       };
       /* `instruction` is optional in round 3 — the SME's VO list for this screen is the intro
          line and then the two pair lines, nothing between them. */
       train.whenParked(()=> say(A(slide, "prompt"), ()=> sayOpt(A(slide, "instruction"), step)));
-      setTimeout(()=>{ if(state.demoRunning) done(); }, 30000);
+      /* never strand the slide, and never leave a glyph hidden if the chain stalls */
+      setTimeout(()=>{ if(state.demoRunning) done(); else showAll(); }, 30000);
+    }
+  };
+
+
+  /* ================================================================ 12 · MATRA_PAIRS */
+  /* PORTED FROM HI02H11_L02_S01, which built this exact screen for आ/इ/ई. The SME's page-1 note
+     is the same note in both decks, and the sibling's reading of it is the one to match:
+
+       "First उ appears, THEN ु appears beside it with a soft glow."
+       "After that, both can fade slightly / dim softly. Then ऊ appears, and ू appears beside it."
+       "Use a simple pop / fade animation." · "Do not add extra decorative elements."
+
+     So NOTHING is on screen at mount; a pair arrives only when its turn comes; inside a pair the
+     LETTER lands first and the matra follows beside it; and a pair already taught stays FADED
+     rather than being restored to full — the note never asks for that.
+
+     NO CARD, NO BOGIE, NO HEADING. The sibling's own comment records why the card chrome went:
+     it was "exactly the 'extra decorative element' the note rules out". The train belongs to the
+     screens that need coaches to sort into; page 1 is two glyphs and a relationship between them.
+
+     NO `.ink-glyph` ON THESE SPANS, deliberately, and this is the sibling's measurement: the
+     engine's centerInkGlyph() squares up the ink BOUNDING BOX, which translated the letter ~2.5px
+     but the matra ~13.3px, so the two never shared a baseline. Plain baseline alignment puts the
+     letter and its dotted circle on one line. */
+  SlideModules.MATRA_PAIRS = {
+    mount(host, slide){
+      newVoEpoch();
+      const d = slide.data || {};
+      const pairs = d.pairs || [];
+      /* the SME asks for no heading on this screen; the band is hidden per-slide rather than
+         globally, so an ACCIDENTALLY empty heading anywhere else still fails the build */
+      if(d.no_heading){ const st = document.getElementById("stage");
+        if(st){ st.classList.add("no-band");
+                /* r7: this screen is two cards and a lot of air, so it centres on the
+                   MAIN BOX rather than on the content box the nav-button clearance
+                   leaves behind. Scoped to a class this module owns and newVoEpoch
+                   drops, so no other screen loses that clearance. */
+                st.classList.add("mp-center"); } }
+
+      const row = document.createElement("div"); row.className = "mp-row";
+      const els = pairs.map(p => {
+        const el = document.createElement("div"); el.className = "mp-pair";
+        el.innerHTML = '<span class="mp-letter">' + p.letter + "</span>" +
+                       '<span class="mp-arrow">\u2192</span>' +
+                       '<span class="mp-matra">' + matraGlyph(p.matra) + "</span>";
+        row.appendChild(el);
+        return el;
+      });
+      host.appendChild(row);
+
+      /* "Keep the Next button disabled during the sequence. Activate it only after both pairs
+         have been shown and spoken." */
+      state.ownsAudio = true; state.demoRunning = true;
+      if(typeof setSwMood === "function") setSwMood("teach");
+      setNavActive(false);
+      $("navBtn").onclick = ()=> completeSlide(true);
+
+      let i = 0, finished = false;
+      /* the deck's END STATE is the last pair still lit and the earlier one faded slightly */
+      const finish = ()=>{
+        if(finished) return; finished = true;
+        state.demoRunning = false;
+        els.forEach((e, k) => {
+          e.classList.toggle("active", k === els.length - 1);
+          e.classList.toggle("shown",  k !== els.length - 1);
+          e.querySelectorAll(".mp-arrow, .mp-matra").forEach(x => x.classList.add("mp-in"));
+          /* the glow belongs to the pair that is still lit; a faded pair must not keep it */
+          const mm = e.querySelector(".mp-matra");
+          if(mm) mm.classList.toggle("mp-hl", k === els.length - 1);
+        });
+        setNavActive(true);
+      };
+
+      const step = ()=>{
+        if(CARD.slides[state.idx] !== slide) return;      // navigated away -> drop the chain
+        if(i >= els.length){ finish(); return; }
+        const k = i, el = els[k], p = pairs[k]; i++;
+        /* a pair already taught fades; the one arriving lights up */
+        els.forEach(e => { if(e !== el && e.classList.contains("active")){
+          e.classList.remove("active"); e.classList.add("shown"); } });
+
+        /* 1 · the LETTER arrives on its own */
+        el.classList.add("active");
+        const arrow = el.querySelector(".mp-arrow"), m = el.querySelector(".mp-matra");
+
+        /* 2 · then the matra lands beside it with the soft glow and a subtle chime */
+        setTimeout(()=>{
+          if(CARD.slides[state.idx] !== slide) return;
+          arrow.classList.add("mp-in");
+          m.classList.remove("mp-in"); void m.offsetWidth; m.classList.add("mp-in");
+          sfxPopSoft();                                    // kept subtle so the VO stays clear
+          /* 3 · the pair is lit, so now its line plays — "light up when its VO plays" */
+          say(clip(p.audio), ()=> setTimeout(step, 560));
+          /* 4 · AND THE MATRA LIGHTS UP ON THE WORDS THAT NAME IT. The line is «यह है उ। इसकी
+             मात्रा है — ु।»: the first half names the LETTER, and lighting the matra there would
+             point at the wrong mark while the right one is being spoken. `cue_ms` is where
+             «इसकी» starts, measured off the clip itself at build time, so the two clips (4.13s
+             and 3.85s) each get their own moment rather than sharing a guess. */
+          const cue = Math.max(0, p.cue_ms || 1300);
+          setTimeout(()=>{
+            if(CARD.slides[state.idx] !== slide) return;   // navigated away mid-line
+            if(!el.classList.contains("active")) return;   // a later pair already took the light
+            m.classList.add("mp-hl");
+          }, cue);
+        }, 480);
+      };
+
+      state.replayAudio = ()=> sayAll(
+        [A(slide, "prompt")].concat(pairs.map(p => clip(p.audio))).filter(Boolean), ()=>{});
+      say(A(slide, "prompt"), ()=> setTimeout(step, 350));
+      /* FAIL-SAFE: आगे never stays dead if a clip blocks or is missing */
+      setTimeout(()=>{ if(CARD.slides[state.idx] === slide) finish(); }, 30000);
     }
   };
 
@@ -1888,21 +2042,47 @@
     el.dataset.ltDone = "1";
     const ms = hero.matras || [];
 
+    /* r7: THE GREETING WAITS FOR THE TRAIN. It used to start at boot, i.e. under a 3.4s arrival
+       with a whistle, a chug bed and two sparkles over it — the same clash this bundle fixed on
+       all seven activity screens, still live on the one screen every child sees first.
+       `ltReady()` is the single release point, and the backstop below fires it even if the
+       arrival never completes, because a cover that never speaks is worse than one that speaks
+       over itself. */
+    window.__ltReady = false;
+    window.__ltWaiters = [];
+    function ltReady(){
+      if(window.__ltReady) return;
+      window.__ltReady = true;
+      const q = window.__ltWaiters; window.__ltWaiters = [];
+      q.forEach(fn => { try{ fn(); }catch(e){} });
+    }
+    window.landingTrainReady = (fn)=>{ if(window.__ltReady) fn(); else window.__ltWaiters.push(fn); };
+    setTimeout(ltReady, 7000);        /* never leave the cover silent on a stalled arrival */
+
     const tc = TrainChrome.mount(el, {
       coaches: ms.length,
       coach_label: ms.map(()=> null),
       /* `lt-pending` holds each matra invisible until the train has parked — the SME asks for
          them "one by one" AFTER the arrival, so they land on a coach that is standing still */
-      coach_body: ms.map(m => ({ html: '<span class="lt-matra lt-pending">' + matraGlyph(m) + "</span>" })),
+      /* r7: «उ (ु)» — the letter with its matra in brackets, the same form the G4 bins use,
+         so the cover names the pair exactly as the sorting screens later will. */
+      coach_body: ms.map((m, i) => ({ html: '<span class="lt-matra lt-pending">' +
+        ((hero.letters && hero.letters[i]) ? hero.letters[i] + ' <span class="lt-br">(' +
+          matraGlyph(m) + ')</span>' : matraGlyph(m)) + "</span>" })),
       drop_zone: false,
       /* the sibling's landing train is 634px wide for a locomotive and THREE coaches, i.e. a
          per-part scale of 634/2155 = 0.294. Matching that scale rather than a width budget is
          what makes the two covers read as the same train: 0.294 * the 592px ink band = 174. */
       maxH: 174,
       on_enter: ()=>{
+        const last = ms.length - 1;
         [...el.querySelectorAll(".lt-matra")].forEach((sp, i)=> setTimeout(()=>{
           sp.classList.remove("lt-pending"); sp.classList.add("lt-pop");
           sfxSparkle();                       // SME: "a light sparkle/pop SFX when each matra appears"
+          /* r7: the greeting waits for THIS — the last matra has popped and its sparkle has
+             sounded, so the arrival is genuinely over and nothing is left to talk over. The pop
+             animation is 420ms; the clip starts once it has landed rather than on top of it. */
+          if(i === last) setTimeout(ltReady, 460);
         }, 220 + i * 520));
       }
     });
@@ -1933,3 +2113,242 @@
 
 
 })();
+
+
+/* ==========================================================================================
+   [r5] FLN ANIMATION KIT — ported from HI02H11_L02_S01's install
+   github.com/ananya-goswami/fln-animation-toolkit · Recipe 1 (start screen stars, drift) ·
+   Recipe 2 (tap to burst). Classic script only, per the kit's R3. Every entry point is wrapped
+   so a throw here can never strand the boot loader (R4), and every effect checks the
+   reduced-motion guard as well as the CSS kill-switch (R5).
+   This is the "animation in the stars and bubble" Yasir found missing on the cover.
+   ========================================================================================== */
+
+/* ===== FLN ANIMATION KIT: core BEGIN ===== */
+(function(){ "use strict";
+  var M = window.FLNMotion = window.FLNMotion || {};
+  M.still = function(){
+    try{ return document.documentElement.classList.contains("no-anim") ||
+      (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }
+    catch(_){ return false; }
+  };
+  M.scale = function(){
+    try{ return parseFloat(getComputedStyle(document.documentElement)
+      .getPropertyValue("--scale")) || 1; }catch(_){ return 1; }
+  };
+  M.guard = function(fn){
+    try{ fn(); }catch(e){ try{ console.warn("[animation-kit]", e && e.message); }catch(_){} }
+  };
+  var _actx = null;
+  M.audio = function(){
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext; if(!AC) return null;
+      _actx = _actx || new AC();
+      if(_actx.state === "suspended") _actx.resume();
+      return _actx;
+    }catch(_){ return null; }
+  };
+  M.ready = function(fn){
+    if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
+    else fn();
+  };
+})();
+/* ===== FLN ANIMATION KIT: core END ===== */
+
+/* ===== FLN ANIMATION KIT: sky-drift BEGIN ===== */
+(function(){ "use strict";
+  var M = window.FLNMotion;
+
+  function build(o){
+    var sky = typeof o.container === "string" ? document.querySelector(o.container) : o.container;
+    if(!sky) return null;
+    sky.textContent = "";
+    var maxSize = 0, frag = document.createDocumentFragment();
+
+    o.layers.forEach(function(L, li){
+      for(var i = 0; i < o.lanes; i++){
+        var a = ((360 / o.lanes) * i + L.rot) * Math.PI / 180;
+        var cos = Math.cos(a), sin = Math.sin(a);
+        var size = +((o.size[0] + Math.random() * (o.size[1] - o.size[0])) * L.scale).toFixed(2);
+        if(size > maxSize) maxSize = size;
+        var dur = +(o.dur[0] + Math.random() * (o.dur[1] - o.dur[0])).toFixed(1);
+        var el = document.createElement("i");
+        el.className = o.shapes[(i + li) % o.shapes.length];
+        el.style.cssText =
+          "--s:"  + size + "vmax;" +
+          "--x1:" + (o.r0 * cos).toFixed(2) + "vmax;--y1:" + (o.r0 * sin).toFixed(2) + "vmax;" +
+          "--x2:" + (o.r1 * cos).toFixed(2) + "vmax;--y2:" + (o.r1 * sin).toFixed(2) + "vmax;" +
+          "--t:"  + dur + "s;" +
+          "--d:-" + (Math.random() * dur).toFixed(1) + "s;" +     // negative = de-sync
+          "--g:"  + (o.glow[0] + Math.random() * (o.glow[1] - o.glow[0])).toFixed(1) + "s;" +
+          "--gd:-" + (Math.random() * 4).toFixed(1) + "s;" +
+          "--o:"  + (o.opacity[0] + Math.random() * (o.opacity[1] - o.opacity[0])).toFixed(2) + ";";
+        frag.appendChild(el);
+      }
+    });
+    sky.appendChild(frag);
+
+    // collision proof: lane arc at the tightest radius must be >= 1.5x the largest element
+    var arc = (2 * Math.PI * o.r0) / o.lanes, ok = arc >= maxSize * 1.5;
+    if(!ok && o.warn !== false){
+      console.warn("[animation-kit] sky lanes too tight: arc " + arc.toFixed(2) +
+        "vmax vs element " + maxSize.toFixed(2) + "vmax. Reduce lanes or size.");
+    }
+    return { arc:arc, maxSize:maxSize, safe:ok, count:sky.children.length };
+  }
+
+  M.sky = {
+    defaults: {
+      container:".sg-sky", lanes:29,
+      layers:[{rot:0,scale:1},{rot:6.2,scale:0.62},{rot:-6.2,scale:0.55}],
+      r0:22, r1:72, size:[0.8,2.6], dur:[18,34], glow:[3.0,4.8],
+      opacity:[0.62,0.92], shapes:["s1","s2","s3","s4","s5"], warn:true
+    },
+    init: function(opts){
+      var o = Object.assign({}, this.defaults, opts || {}), res = null;
+      M.guard(function(){ res = build(o); });
+      return res;
+    }
+  };
+  M.ready(function(){ M.guard(function(){ if(!window.__skyManual) M.sky.init(); }); });
+})();
+/* ===== FLN ANIMATION KIT: sky-drift END ===== */
+
+/* ===== FLN ANIMATION KIT: sky-burst BEGIN ===== */
+(function(){ "use strict";
+  var M = window.FLNMotion;
+
+  function boom(o){                      // sine thud + noise tail + square crackles
+    var actx = M.audio(); if(!actx) return;
+    try{
+      var t = actx.currentTime, out = actx.createGain();
+      out.gain.value = o.volume; out.connect(actx.destination);
+
+      var tg = actx.createGain();
+      tg.gain.setValueAtTime(0.9, t);
+      tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      tg.connect(out);
+      var osc = actx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(420, t);
+      osc.frequency.exponentialRampToValueAtTime(90, t + 0.16);
+      osc.connect(tg); osc.start(t); osc.stop(t + 0.18);
+
+      var n = actx.sampleRate * 0.45;
+      var buf = actx.createBuffer(1, n, actx.sampleRate), d = buf.getChannelData(0);
+      for(var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.6);
+      var src = actx.createBufferSource(); src.buffer = buf;
+
+      for(var c = 0; c < o.crackles; c++){
+        var cg = actx.createGain(), ct = t + 0.10 + Math.random() * 0.30;
+        cg.gain.setValueAtTime(0.0001, ct);
+        cg.gain.exponentialRampToValueAtTime(0.18, ct + 0.006);
+        cg.gain.exponentialRampToValueAtTime(0.0001, ct + 0.07);
+        cg.connect(out);
+        var co = actx.createOscillator();
+        co.type = "square";
+        co.frequency.setValueAtTime(1500 + Math.random() * 2200, ct);
+        co.connect(cg); co.start(ct); co.stop(ct + 0.08);
+      }
+      var bp = actx.createBiquadFilter();
+      bp.type = "bandpass"; bp.frequency.value = 3400; bp.Q.value = 0.8;
+      var ng = actx.createGain();
+      ng.gain.setValueAtTime(0.0001, t);
+      ng.gain.exponentialRampToValueAtTime(0.5, t + 0.03);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+      src.connect(bp); bp.connect(ng); ng.connect(out); src.start(t + 0.02);
+    }catch(_){}
+  }
+
+  function pop(el, r, o){
+    el.classList.add("popped");
+    // respawn on the next FLIGHT lap — the glow cycle is much shorter, so filter by name
+    el.addEventListener("animationiteration", function back(e){
+      if(e.animationName !== "sgFly") return;
+      el.classList.remove("popped");
+      el.removeEventListener("animationiteration", back);
+    });
+
+    var kind = "k-dot", cls = el.classList;
+    for(var ci = 0; ci < cls.length; ci++){ if(o.kind[cls[ci]]) kind = o.kind[cls[ci]]; }
+
+    var bs = Math.max(11, r.width);
+    var b = document.createElement("div");
+    b.className = "sg-burst " + kind;
+    b.style.left = (r.left + r.width / 2) + "px";
+    b.style.top  = (r.top  + r.height / 2) + "px";
+    b.style.setProperty("--bs", bs + "px");
+    b.appendChild(document.createElement("div")).className = "fl";
+
+    var k = 0;
+    for(var g = 0; g < o.rings.length; g++){
+      var R = o.rings[g], off = Math.random() * Math.PI * 2;
+      for(var i = 0; i < R.n; i++, k++){
+        var a = off + i / R.n * Math.PI * 2;
+        var dist = bs * R.rad * (0.78 + Math.random() * 0.44);
+        var p = document.createElement("i");
+        p.style.cssText =
+          "--ps:"  + (bs * R.size * (0.8 + Math.random() * 0.5)).toFixed(1) + "px;" +
+          "--dx:"  + (Math.cos(a) * dist).toFixed(1) + "px;" +
+          "--dy:"  + (Math.sin(a) * dist).toFixed(1) + "px;" +
+          "--gy:"  + (dist * o.gravity).toFixed(1) + "px;" +
+          "--sd:"  + (R.dur + Math.random() * 0.22).toFixed(2) + "s;" +
+          "--sdl:" + (Math.random() * 0.06).toFixed(3) + "s;" +
+          "color:" + o.hues[k % o.hues.length];
+        b.appendChild(p);
+      }
+    }
+    document.body.appendChild(b);
+    if(o.sound) boom(o);
+    setTimeout(function(){ b.remove(); }, o.life);
+  }
+
+  M.skyBurst = {
+    defaults: {
+      container:".sg-sky", when:["is-start","is-end"],
+      rings:[{n:9,rad:3.1,size:.58,dur:.80},{n:7,rad:1.8,size:.78,dur:.62}],
+      hues:["#FCB717","#3B7DD8","#21A74A","#E5484D","#7048D6","#F1781D"],
+      kind:{s1:"k-star",s2:"k-star",s3:"k-spark",s4:"k-dot",s5:"k-dot"},
+      gravity:0.42, pad:12, padRatio:0.7, minAlpha:0.08, life:1200,
+      sound:true, volume:0.22, crackles:4
+    },
+    init: function(opts){
+      var o = Object.assign({}, this.defaults, opts || {});
+      M.guard(function(){
+        var sky = typeof o.container === "string"
+          ? document.querySelector(o.container) : o.container;
+        if(!sky) return;
+        // capture phase: .sg-sky is pointer-events:none, so hit-test by rect (R6)
+        document.addEventListener("pointerdown", function(e){
+          if(M.still()) return;
+          if(!o.when.some(function(c){ return document.body.classList.contains(c); })) return;
+          /* INTERACTIVE_TAPS_ARE_NOT_OURS. This handler claims the tap with preventDefault(),
+             which kills the CLICK that would have followed — so a star drifting over शुरू करें
+             made the button silently ignore the press. Worse, the mask that hides stars behind
+             the centre card is visual only: those stars still have a box and a non-zero computed
+             opacity, so the kit's minAlpha test cannot tell they are invisible, and the play
+             button sits right inside that masked area. A control's tap is never ours to take. */
+          if(e.target && e.target.closest &&
+             e.target.closest("button,a,input,select,textarea,[role=button],[onclick]")) return;
+          var els = sky.querySelectorAll("i:not(.popped)");
+          for(var i = 0; i < els.length; i++){
+            var el = els[i], r = el.getBoundingClientRect();
+            if(r.width < 2) continue;
+            var pad = Math.max(o.pad, r.width * o.padRatio);   // ~4px targets need slack
+            if(e.clientX < r.left - pad || e.clientX > r.right  + pad ||
+               e.clientY < r.top  - pad || e.clientY > r.bottom + pad) continue;
+            if(parseFloat(getComputedStyle(el).opacity) < o.minAlpha) continue;
+            // claim the tap, or it also fires the button under the star
+            e.stopPropagation(); e.preventDefault();
+            var op = Object.assign({}, o);
+            if(typeof isMuted !== "undefined" && isMuted) op.sound = false;   // honour the dev mute
+            pop(el, r, op);
+            return;
+          }
+        }, true);
+      });
+    }
+  };
+  M.ready(function(){ M.guard(function(){ M.skyBurst.init(); }); });
+})();
+/* ===== FLN ANIMATION KIT: sky-burst END ===== */

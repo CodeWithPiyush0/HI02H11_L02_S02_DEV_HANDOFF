@@ -442,3 +442,169 @@ Three concrete differences from the sibling's cover remained after round 3b:
 The tray cards were also matched to the sibling's `.tt-card` (paler border, flatter shadow, roomier
 padding) and the activity trains raised to `maxH 270` — the sibling uses 300 and carries no heading
 band, which this lesson does.
+
+---
+
+# ROUND 5 — the buttons, the cover's motion, and the train back on page 1
+
+Three asks, all of them "make it match the sibling lesson":
+
+> currently page1 feels bit empty, do one thing bring back the train in page 1, but it should not
+> get outside of the box that is made — also you are still not using the buttons and its placement
+> used in this file (play button, next button) — and also in the cover page there is animation in
+> the stars and bubble which is currently missing in my current file
+
+## What was actually different, measured rather than eyeballed
+
+The buttons were the confusing one, because the *pills* were already identical — same fill,
+border, radius, shadow, `bottom`, `min-width`. Diffing the two engines rule by rule found the
+differences were all in the CONTENTS:
+
+| | S01 | this build, before | now |
+|---|---|---|---|
+| `.nav-btn::after` | `content:"→"; font-size:52px; line-height:1` | `content:"→"; font-size:28px` | matched |
+| `.sg-btn` label | icon-only `▶` via `::after`, Hindi in `aria-label` | the text `शुरू करें` | matched |
+| `.sg-btn` states | `.sg-waiting` + `.idle-pulse` | neither | matched |
+| `.end-btn::after` | `content:"→"; font-size:52px` | none (arrow **typed into the label**) | matched |
+| animation kit | installed | `grep -c "sg-sky\|sgFly" == 0` | ported |
+
+A 28px arrow against a 52px one is nearly half-size, which is why the next button "looked wrong"
+on a pill whose geometry was already right.
+
+## The pulse is still not wallpaper
+
+Ruling [30l] in this engine killed `sgBtnPulse` outright because it ran from first paint: it was
+decoration, not a signal, and there was nothing left to escalate to when a child actually stalled.
+That ruling is intact. S01's answer is better than either extreme and is what was ported: the
+pulse hangs off `.idle-pulse`, which only a 5-second idle timer adds. A resting button is still
+perfectly still. A tap anywhere on the cover RESTARTS that wait rather than cancelling it —
+cancelling meant one stray tap bought permanent silence, which is not what "idle for 5 seconds"
+describes.
+
+The second state is `.sg-waiting`: while the greeting is speaking the button is genuinely
+disabled, so it is drawn disabled. A bright button that ignores taps is worse than a grey one,
+because the child concludes the screen is broken rather than that it is busy.
+
+## The animation kit
+
+Recipes 1 (drifting stars) and 2 (tap to burst) from the kit S01 installed, ported whole —
+CSS into `train_styles.css`, JS into `train_modules.js`, and the `.sg-glow` / `.sg-sky` layers
+into the body of `lesson_template.html` (they are outside the injection fences, so they live in
+the template itself). `bgdeco_star.svg`, `bgdeco_star_o.svg` and `bgdeco_spark.svg` came back —
+they were deleted in an earlier round as "unused", which they were, right up until this.
+
+`startnew_bg_plain.webp` came with them and is **mandatory, not cosmetic**. Our shipped
+`startnew_bg.webp` has stars, sparkles, rings and dots PAINTED IN; drifting a second set over them
+is the kit's own documented "two sets of stars, one frozen and one moving" bug.
+
+### One deliberate divergence from S01
+
+The kit's burst handler claims a tap with `stopPropagation()` + `preventDefault()`. On the
+background that is right. On a button it is not: `preventDefault()` on `pointerdown` suppresses
+the click that follows, so a star drifting over शुरू करें makes the button silently ignore the
+press. Two things make that likelier than it sounds — the mask that punches a hole over the centre
+card is VISUAL ONLY (a star inside it still has a real box and a real computed opacity, so the
+kit's own `minAlpha` test cannot tell it is invisible, and the play button sits inside that hole),
+and `pad` is `max(12, width*0.7)`, so a star is a bigger target than it looks.
+
+`INTERACTIVE_TAPS_ARE_NOT_OURS`: the handler now checks what is under the pointer and leaves
+`button, a, input, select, textarea, [role=button], [onclick]` alone. S01 carries this latent bug.
+
+## Page 1's train
+
+The page-1 note says "Do not add extra decorative elements", so a train that is only scenery would
+put back exactly what that line removes. The train therefore **carries the content**: coach *k*
+holds the matra of pair *k*, revealed on the same beat the pair lights up. Same two matras, on the
+train theme the deck asks to keep running through the lesson — not a third thing on the screen.
+
+"Not outside the box" is enforced **structurally**, not by picking a lucky number:
+
+* `.mp-train` is a fixed 560px box with `overflow:hidden`, so the 3.4s arrival that starts fully
+  off to the right is clipped at the box edge rather than trusted to fit.
+* `maxW:520 / maxH:150` size the artwork to ~412×150 inside that box, so at rest there is a
+  visible run of track either side and nothing is near an edge.
+* `.mp-train .train-track{left:0;right:0;}` — the track is drawn `-7%/-7%` on the activity screens
+  so the line outruns the train. In a 559px box that is a 39px overhang at each end, and
+  `overflow:hidden` would CUT it; a sliced rail reads as a mistake. Pulled back to the box edges
+  so the clip is left to do the one job it is actually for.
+
+The prompt now waits for `whenParked`, like every other train screen here. Firing at mount would
+put the instruction under a moving train with a whistle and a chug bed over it — the clash already
+fixed seven times in round 3c. The chain's failsafe went 30s → 34s to cover the arrival it now
+waits on.
+
+Measured at three moments (mid-arrival, at rest, after the chain): furthest part outside the box
+is **+116px mid-arrival — clipped — and +0.0px at rest and at the end**.
+
+## Three bugs this round found, none of them in the ask
+
+### 1. A `</sty`+`le>` inside a CSS comment took the whole page apart
+
+The new CSS block carried the comment *"This block is injected before the last `</style>`, so it
+is later than the original .start-bg"*. The HTML parser does not care that it sits inside a CSS
+comment: it ended the stylesheet right there, and every rule after it became **text in the body**.
+
+The symptom looked nothing like the cause. The entire stage was shoved to `x=1797` in a 1382px
+viewport by a 1797px-wide run of stray CSS text; `.sg-glow` / `.sg-sky` never got
+`position:fixed`; and Selenium reported the start button "not interactable" because it now sat
+outside a viewport that `body{overflow:hidden}` would not scroll. Clean build, green receipt, no
+console error. The control that found it was S01: same measurement there gave `x=26`.
+
+`inject_train.py` now refuses to inject either source if it contains a literal closing tag, and
+names the file and line. One string check; half an hour to find without it.
+
+### 2. The end button would have had two arrows
+
+`.end-btn` had its arrow **typed into the label** (`आगे बढ़ें →`) where `.nav-btn` draws it with a
+pseudo-element. Adding S01's `.end-btn::after` on top would have rendered `आगे बढ़ें → →`. The
+typed arrow is gone and the pseudo-element draws it, matching `.nav-btn` exactly. The *word* stays:
+`आगे बढ़ें` is a different action from `आगे`, and dropping it to an icon would be a content change
+nobody asked for.
+
+### 3. The harnesses could not press the start button — and three guesses were wrong first
+
+Every one of the 18 captured pages came back as the cover. Three plausible causes were checked;
+all three were innocent, which is worth recording because each looked right at the time:
+
+1. **The new disabled state.** शुरू करें is now genuinely disabled while the greeting plays, and
+   Selenium refuses to click a disabled control. Real, and the harnesses did need to wait for it —
+   but it was not this: the press was happening after the button had gone live.
+2. **The star layer.** Removing `.sg-sky` from the DOM entirely changed nothing.
+3. **The burst handler eating the tap.** Short-circuiting it via `html.no-anim` changed nothing.
+
+The actual cause: **under Chrome 153 headless the first synthetic press can deliver `pointerdown`
+alone** — no `mousedown`, no `mouseup`, no `click` — so the handler never runs. A second press
+goes through. The control settled it: **the sibling build behaves identically under the same
+driver**, so nothing in either lesson is at fault. (The engine's own drag VO-gate at
+`installDragVoGate` does `preventDefault()` on `pointerdown`, which looked like a perfect
+suspect — but its selector list is `.sort-item, .dd-tile, .cdm-objtile, .cdm-card, .combine-drag`,
+so it never sees this button.)
+
+Both harnesses now press with `ActionChains`, **retry up to four times**, and **poll
+`startGate.hidden`** instead of sleeping. The fixed 3.5s sleep was already marginal — the start
+handler awaits an audio warm-up capped at 3s and the phase gate holds its peek for ~2s — and
+polling asserts the gate DID open, which is what every later screenshot silently depends on. They
+also wait for `disabled` to clear first, capped at 20s: above the engine's own 12s stranding
+backstop, so a hang there means the backstop failed, which is worth failing on.
+
+The burst guard in the section above was kept even though it was not the cause here. The risk it
+closes is real and independent — it just is not what broke the harness.
+
+### 4. Page 1's pairs were not being settled for the capture
+
+`.mp-pair` is held by `opacity:0` and revealed by adding `.active` / `.shown` — a different
+mechanism from the `*seq-hidden` classes the settler strips, so SETTLE never touched it. It went
+unnoticed while page 1 had no train, because the chain finished inside the harness's 4s wait. Now
+that the chain waits for the train to park at 3.4s, the shot caught it one pair in: **the captured
+page showed one pair where the child sees two.** A review deck that misrepresents the screen is
+worse than no deck. `_capture_settled.py` now settles them to the deck's end state — all pairs
+visible, the last still lit, the earlier ones faded.
+
+## Known, and not a build problem
+
+**The phase gate cannot open when the real `play()` is in use under headless Chrome.** Its VO goes
+down the WebAudio buffer path and that source's `onended` never fires in this state, so `body`
+keeps `vo-lock` and the gate's callback never runs — `startGate` stays up and the lesson never
+starts. **S01 behaves identically**, which is what proves it is the harness and not this build.
+Stub `window.play` first (which is what `_capture_settled.py` does, and why the gate opens there
+once the button is actually pressed), or use the engine's own `?slide=N` QA jump.

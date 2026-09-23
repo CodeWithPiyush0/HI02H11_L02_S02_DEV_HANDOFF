@@ -22,6 +22,7 @@ overlaps. Run per slide, letting each screen's chain run to its natural end.
 import contextlib, json, os, sys, time, wave
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.action_chains import ActionChains
 
 URL, CARD, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 card = json.load(open(CARD, encoding="utf-8"))
@@ -82,7 +83,31 @@ c = clashes(ev)
 note("LANDING  clips=%d  clashes=%d" % (len(ev), len(c)))
 for ms, a, b in c: note("    %5dms  %s  ||  %s" % (ms, a, b))
 
-d.find_element("id", "sgBtn").click(); time.sleep(4.0)
+# PRESSING शुरू करें RELIABLY. Two things bite here, both headless-only and both confirmed
+# against the sibling build before being worked around:
+#   · the button is genuinely disabled while the landing greeting plays, so wait for it;
+#   · the first synthetic press can deliver pointerdown ALONE - no mousedown, no click - so the
+#     handler never runs. A second press goes through. Without this the gate never opens, slide 0
+#     is never mounted, and T1 silently reports 0 clips: a screen that was never measured looks
+#     exactly like a screen with no clashes.
+for _ in range(80):                       # 20s, above the engine's 12s stranding backstop
+    if not d.execute_script("const b=document.getElementById('sgBtn');return !b||b.disabled;"):
+        break
+    time.sleep(0.25)
+_opened = False
+for _attempt in range(4):
+    ActionChains(d).move_to_element(d.find_element("id", "sgBtn")).click().perform()
+    for _ in range(24):                   # 6s per attempt
+        if d.execute_script(
+                "return document.getElementById('startGate').classList.contains('hidden');"):
+            _opened = True
+            break
+        time.sleep(0.25)
+    if _opened:
+        break
+if not _opened:
+    raise RuntimeError("landing gate never opened after 4 presses - slide 0 would go unmeasured")
+time.sleep(4.0)
 d.execute_script(STUB, dur)
 n = d.execute_script("return CARD.slides.length")
 total = 0

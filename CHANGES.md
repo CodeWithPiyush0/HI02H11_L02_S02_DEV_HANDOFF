@@ -1,4 +1,8 @@
-# CHANGES — HI02H11_L02_S02 «मात्राओं की रेल» (उ / ऊ) · round 3
+# CHANGES — HI02H11_L02_S02 «मात्राओं की रेल» (उ / ऊ) · rounds 3–9
+
+> Rounds 4–9 are **not** from the review deck — they are direct asks to bring this
+> lesson into line with its sibling `HI02H11_L02_S01`. They live in their own sections at
+> the end; the deck contract above them is unchanged.
 
 **Contract and scorecard, in one document.** Every discrete ask in
 `HI02H11_L02_S02_SME_Review.pptx` is a row below, quoted verbatim from the deck, with what it cost
@@ -48,7 +52,7 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 | 14 | Page 16 + sentence mockup | 13 · SENTENCE_COMPLETE ① |
 | 15, 16, 17 | sentence mockup ×3 | 14, 15, 16 · SENTENCE_COMPLETE ②③④ |
 | 18 | (empty) | N/C |
-| 19 | Page 17 `17_CELEBRATION.png` | 17 · CELEBRATION — no note |
+| 19 | "First उ appears, then ु appears beside it with a soft glow. After that, both can fade slightly / dim softly. Then ऊ appears, and ू appears beside it." | ✅ | **Implemented as written.** Previously both glyphs were painted together and only the PAIR sequenced, so the one thing this screen teaches — that this letter owns this mark — was never shown happening. The matra lands 1.5s into its own VO line, with the glow |
 
 ---
 
@@ -75,13 +79,13 @@ order — every row below is keyed to the **screen**, never to a live slide inde
 | 12 | VO: "आज हम छोटी उ और बड़ी ऊ की मात्रा वाले शब्द पढ़ेंगे।" | ✅ `vo` | `card` `vo_t1_prompt`; also the on-screen heading (shown == spoken) |
 | 13 | pair VO: "यह है उ। इसकी मात्रा है — ु।" / "यह है ऊ। इसकी मात्रा है — ू।" | ✅ `vo` | `card` `vo_pair_u` / `vo_pair_uu` — **new clips**, replacing round 2's bare «छोटी उ की मात्रा». ⚠️ EAR-CHECK, see Q6 |
 | 14 | "Remove the current extra heading text from the top, if needed" | ✅ | `render` 02 — one line, and it is the VO line. The band itself stays: removing it is what caused round-2 defect #1, and `guard_prompts` now fails the build on an empty heading |
-| 15 | "Show the letter and its corresponding matra symbol as a pair, one by one. Keep only one pair active at a time." | ✅ | `engine` MATRA_INTRO step chain (`is-dim` on all but the active pair) |
+| 15 | "Show the letter and its corresponding matra symbol as a pair, one by one. Keep only one pair active at a time." | ✅ | `engine` — and the two glyphs now arrive **separately within** each pair, which is the part that was missing: उ lands, then ु beside it. Traced live: pair 1 at 10.85s / 12.35s, pair 2 at 15.38s / 16.89s |
 | 16 | "Each active pair should light up/highlight when its VO plays." | ✅ | `engine` `.mi-pair.is-on .mi-car` amber ring |
 | 17 | "Sequence should be: उ → ु · ऊ → ू" | ✅ | `card` `data.pairs` in that order; `render` 02 |
 | 18 | "keep the train-theme continuity by showing each pair inside a train-style card / bogie / box." | ✅ | `engine` `.mi-train` — each pair is now a coach behind the locomotive, on the track; `render` 02 |
 | 19 | "First उ appears, then ु appears beside it with a soft glow. After that, both can fade slightly / dim softly. Then ऊ appears, and ू appears beside it." | ✅ | `engine` — step chain toggles `is-on` / `is-dim` per pair |
 | 20 | "Do not add extra decorative elements." | ✅ | `render` 02 — locomotive, two coaches, track. Nothing else |
-| 21 | "Add a soft pop / chime when each matra symbol appears." | ✅ | `engine` `sfxPopSoft()` per pair |
+| 21 | "Add a soft pop / chime when each matra symbol appears." | ✅ | `engine` — the chime now fires **when the matra lands**, not when the pair starts. "Use a simple pop / fade animation" is `miPop`, 380ms |
 | 22 | "Keep the Next button disabled during the sequence. Activate it only after both pairs have been shown and spoken." | ✅ | `engine` `setNavActive(false)` at mount, `done()` after the last pair |
 
 ## Screen 2 · MATRA_BUILD पल → पुल (deck slide 3)
@@ -451,3 +455,305 @@ The game was left exactly as the deck specified on all of these.
 6. **The three sentence distractors are not checked for accidental correctness.** `guard_sentences`
    proves the answer is an option and is not pre-printed, but whether «बगीचे में सुंदर तरबूज खिले
    हैं।» reads as wrong *enough* is a human judgement. Worth one read-through by the SME.
+
+---
+
+## Round 5 — three parity asks (not from the deck)
+
+Asked for directly, after round 4's page-1 pass:
+
+> currently page1 feels bit empty, do one thing bring back the train in page 1, but it should not
+> get outside of the box that is made — also you are still not using the buttons and its placement
+> used in this file `F:\CG Game\FLN\FIle2\HI02H11_L02_S01_DEV_HANDOFF-file2-` (play button, next
+> button) — and also in the cover page there is animation in the stars and bubble which is
+> currently missing in my current file so incorporate all of these changes so that it align with
+> my previous file
+
+| # | Ask | What was different | Change | Proof |
+|---|---|---|---|---|
+| R5-1 | next button to match S01 | the *pill* was already identical; the arrow glyph was `28px` here against `52px` there — nearly half-size | `.nav-btn::after{content:"→";font-size:52px;line-height:1}` | render · measured `52px`, `bottom:32px` |
+| R5-2 | play button to match S01 | S01 ships it icon-only (`▶` via `::after`, Hindi in `aria-label`) with two states; ours showed the text and had none | icon-only + `.sg-waiting` + `.idle-pulse` | render · `h=64 minw=186 bottom=40`, glyph `30px`, `animation:none` at rest |
+| R5-3 | end button (found while doing R5-1) | its arrow was **typed into the label**, so adding `::after` would have drawn `आगे बढ़ें → →` | typed arrow removed; `::after` draws it, as on `.nav-btn` | render · text `आगे बढ़ें`, `::after "→"` |
+| R5-4 | stars + bubbles on the cover | the whole FLN animation kit was absent — `grep -c "sg-sky\|sgFly"` was **0** | recipes 1 + 2 ported; `.sg-glow`/`.sg-sky` added to the body | render · 87 elements, `animation:sgFly`, a star moved 33px in 1.2s, a tap fires a burst |
+| R5-5 | (required by R5-4) | `startnew_bg.webp` has stars painted in — drifting more over them is the kit's own "two sets of stars, one frozen and one moving" bug | swapped to `startnew_bg_plain.webp`, copied from S01 | art · computed `background-image` ends `startnew_bg_plain.webp` |
+| R5-6 | (required by R5-4) | `bgdeco_star.svg` / `bgdeco_star_o.svg` / `bgdeco_spark.svg` were deleted in an earlier round as "unused" | restored from S01 | art · 3 files back in `assets/UI/` |
+| R5-7 | train back on page 1, inside the box | page 1 had no train after round 4 | `MATRA_PAIRS` mounts a `TrainChrome` train under the pair row; **coach *k* carries the matra of pair *k***, revealed on the same beat the pair lights up | render · train `412×150`, 2/2 coaches carry their matra at the end |
+| R5-8 | "should not get outside of the box" | — | `.mp-train` is a 560px box with `overflow:hidden`; `maxW/maxH` size the art well inside it; `.train-track` pulled back from its `-7%` overhang so the clip is not cutting a visible rail | render · furthest part **+116px mid-arrival (clipped), +0.0px at rest and after the chain** |
+| R5-9 | (required by R5-7) | the prompt firing at mount would play under a 3.4s arrival with a whistle and chug bed over it — the round-3c clash | prompt gated on `whenParked`; chain failsafe 30s → 34s | vo · 0 clashes across 18 screens |
+
+### The pulse question, since it was settled the other way once
+
+Ruling **[30l]** in this engine killed `sgBtnPulse` because it ran from first paint: it was
+wallpaper, not a signal, and there was nothing left to escalate to when a child actually stalled.
+That ruling is **not** reversed. S01's answer is better than either extreme and is what was taken:
+the pulse hangs off `.idle-pulse`, which only a 5-second idle timer adds, so a resting button is
+still perfectly still. A tap anywhere on the cover restarts that wait rather than cancelling it.
+
+### One deliberate divergence from S01
+
+The kit's burst handler claims a tap with `preventDefault()`, which kills the click that follows —
+so a star drifting over शुरू करें would make the button silently ignore the press. The mask that
+hides stars behind the centre card is **visual only**, so those stars still have a real box and a
+real computed opacity and the kit's own `minAlpha` test cannot tell they are invisible; the play
+button sits inside that masked area. Taps on `button, a, input, select, textarea, [role=button],
+[onclick]` are now left alone. **S01 carries this latent bug** — worth telling whoever maintains it.
+
+### A build trap now guarded
+
+The new CSS carried a comment mentioning `</sty`+`le>`. The HTML parser does not care that it sits
+inside a CSS comment — it ended the stylesheet there and every rule after it became text in the
+body. The stage was shoved to `x=1797` in a 1382px viewport, the sky layers never got
+`position:fixed`, and the start button became unclickable. Clean build, green receipt, no console
+error. `inject_train.py` now refuses to inject either source if it contains a literal closing tag,
+naming the file and line.
+
+### Known, and not a build problem
+
+Three headless-only harness quirks, each confirmed against the sibling build before being written
+off — and worth reading before anyone spends an afternoon on them again:
+
+* **The first synthetic press of शुरू करें can deliver `pointerdown` alone** under Chrome 153
+  headless — no mousedown, no click — so the lesson never starts and every captured page comes
+  back as the cover. It was blamed on the new disabled state, then the star layer, then the burst
+  handler; removing each changed nothing. **S01 does the same under the same driver.** Both
+  shipped harnesses now press with `ActionChains`, retry up to four times, and poll
+  `startGate.hidden` rather than sleeping a fixed 3.5s.
+* **The phase gate cannot open when the real `play()` is in use** — its VO goes down the WebAudio
+  buffer path and that source's `onended` never fires, so `body` keeps `vo-lock`. Stub
+  `window.play` first, or use the engine's own `?slide=N` QA jump. **S01 behaves identically.**
+* **Page 1's pairs are not `*seq-hidden`**, so the capture settler never revealed them — they are
+  held by `opacity` and revealed by `.active`/`.shown`. Harmless while page 1 had no train,
+  because the chain finished inside the harness's 4s wait; once the chain began waiting for the
+  train to park it left the review shot showing **one pair where the child sees two**.
+  `_capture_settled.py` now settles them to the deck's end state.
+
+### Verification after round 5
+
+| check | result |
+|---|---|
+| build receipt | **0 FAIL · 1 WARN** (unchanged: the `vo_pair_u` / `vo_pair_uu` em-dash EAR-CHECK) |
+| geometry sweep | **0 / 17** slides with findings |
+| round-5 parity checks | **24 / 24** |
+| VO clashes | **0** across all 18 screens — and page 1 was genuinely measured this time (`T1 clips=2`; the harness's broken press had been reporting `clips=0`, i.e. a screen never mounted, which is indistinguishable from a screen with no clashes) |
+| mechanics driven | **11 / 11** wrong → wrong → right, each with its own hint ladder |
+| ruling [28f] | **proven, not inferred.** Guided G1–G5 on miss 2: `glow=1 hand=1`. Every practice slide on miss 2: `glow=1 hand=0`. The train blocks used to print `.is-nudge` (the coach GLOW, which [28f] allows in practice) under the heading `hand=`, so a legitimate glow read as a violation and a real hand would have read as normal. Both are now separate columns. |
+
+---
+
+## Round 6 — page 1 back to the cards, and the next button loses its label
+
+> remove train use this same structure as showin in the screenshot, also remove text from next
+> button, and its placement should be exact same as the previous file ... also make sure to follow
+> this except train thing: *(the SME's page-1 recommendation, quoted in full)*
+
+The screenshot supplied with this ask is **this bundle's own round-2 page 1** — `MATRA_INTRO`,
+heading «आज हम उ और ऊ की मात्रा वाले शब्द पढ़ेंगे।», two white cards. So round 6 restores that
+structure while keeping the round-5 module, whose staging already follows the SME note line by
+line. Round 5's train on this screen is removed.
+
+| # | Ask | Change | Proof |
+|---|---|---|---|
+| R6-1 | remove the train from page 1 | the `.mp-train` box, its `TrainChrome` mount, the coach matras and the `whenParked` gate are gone; the chain is back to prompt → pairs, failsafe 34s → 30s | render · 0 train nodes in `.slide-host` (the one `.train-shell` left in the DOM is the **cover's**, inside the hidden `#startGate`) |
+| R6-2 | use the screenshot's structure | heading restored on T1 only; each pair back inside a white card | render · heading painted, 2 cards, `#fff` / `radius 22px` / `3px` border / shadow |
+| R6-3 | remove the text from the next button | `<button class="nav-btn" id="navBtn" disabled aria-label="आगे"></button>` — the arrow is drawn by `.nav-btn::after`, exactly as the sibling ships it | render · `textContent` empty, `aria-label` present, glyph `"→"` at 52px |
+| R6-4 | placement exactly the sibling's | nothing to change — the CSS was matched in round 5; this confirms it | render · **every** measured property identical to S01: `bottom`, `left`, `transform`, `min-width`, `height`, `border-radius`, `border-width`, glyph and glyph size |
+
+### The SME's page-1 note, bullet by bullet
+
+| bullet | state |
+|---|---|
+| VO «आज हम छोटी उ और बड़ी ऊ की मात्रा वाले शब्द पढ़ेंगे।» then the two pair lines | ✅ measured order: `vo_t1_prompt` → `vo_pair_u` → `vo_pair_uu` |
+| show the letter and its matra as a pair, one by one | ✅ |
+| keep only one pair active at a time | ✅ never more than one `.mp-pair.active` across the whole chain |
+| each active pair lights up when its VO plays | ✅ gold ring + `mpGlow` on the matra |
+| sequence उ → ु, then ऊ → ू | ✅ |
+| keep the mascot and the UI/UX style unchanged | ✅ |
+| train-theme continuity via a train-style card / bogie / box | ✅ **the card is what carries this** now that the train is gone |
+| letter first, then the matra beside it with a soft glow | ✅ 480ms apart |
+| then both fade slightly / dim softly | ✅ — see the note below |
+| simple pop / fade animation, no extra decorative elements | ✅ nothing on the slide but the pairs and the mascot |
+| soft pop / chime as each matra appears, subtle under the VO | ✅ `sfxPopSoft()` fires per matra |
+| next button disabled during the sequence, active only after both | ✅ dead at mount, live only after the second pair has spoken |
+
+### Dim the pair, not the box
+
+The note asks that a taught pair "fade slightly / dim softly". Round 5 did that with `opacity:.5`
+on `.mp-pair` — which also faded the **card**: against this pale grid the white fill and its
+border washed out until the first card had visibly stopped being a card. The box now keeps its
+full presence and the glyphs inside it fade instead.
+
+### Two things the verification script got wrong before it got them right
+
+Worth recording, because both would have been easy to "fix" in the product instead:
+
+* **"no heading"** — the check read `.header-row`, which is `display:none` on this layout. The
+  heading that is actually painted is `.tut-prompt` inside `.tut-card`, because teach screens lay
+  out as `.tut-page`. The screenshot showed a heading while the check insisted there was none.
+* **"an extra decorative element"** — it was the **mascot**, which the same note explicitly
+  requires be kept. A check counting it as decoration contradicts the bullet above it.
+
+A third failure was real only in the harness: `sfxPopSoft` is a module-scope const that builds a
+WebAudio **oscillator**, so there is no `window.sfxPopSoft` to wrap and no `<audio>` element to
+catch. Hooking `AudioContext.prototype.createOscillator` sees it.
+
+### Spoken and shown are deliberately different strings
+
+The VO keeps the SME's wording with छोटी/बड़ी; the heading is the screenshot's line without them.
+Spoken, छोटी/बड़ी is exactly what separates two vowels that sound alike. Printed directly above the
+two glyphs the words are redundant and make a short heading long. The VO clip already exists with
+the SME's wording, so **nothing was re-recorded**.
+
+---
+
+## Round 7 — page 1 loses its heading and grows; the cover gets its track, its labels and its turn to speak
+
+> remove heading text, and make the text box little bigger and put it in center of the main box
+> — also in the cover page why did you removed the train track, please bring that back, also when
+> train animation, sfx etc finished then start the main VO of cover page, also add "ऊ", "उ" and in
+> bracket use matra
+
+| # | Ask | Change | Proof |
+|---|---|---|---|
+| R7-1 | remove the heading text | `prompt_hi` back to `""` and `no_heading` back on for T1. The sentence is still **spoken** — it is the SME's own VO line — so nothing leaves the lesson, only the screen | render · heading empty |
+| R7-2 | make the box a little bigger | padding `12/26` → `30/60`, gap `12` → `26`, glyphs `74px` → `88px` | render · **312×154**, was 268×116 |
+| R7-3 | centre it in the main box | the empty heading band was hidden and the row pinned to the card | render · **2px** off the box centre (was 38px) |
+| R7-4 | bring the cover's track back | the `.lt-cover` rule that hid it is gone | render · 543px of rail under the train |
+| R7-5 | cover VO after the train and its SFX | `ltReady()` releases the greeting when the last matra has popped and its sparkle has sounded; a 7s backstop covers a stalled arrival | render · greeting at **3.9–4.5s**, last SFX **0.47s earlier**, over three runs |
+| R7-6 | «letter (matra)» on the cover's coaches | `उ (◌ु)` / `ऊ (◌ू)`, the same form G4's bins already use | render · labels match |
+
+### Two decisions inside those
+
+**The cover's track was hidden on purpose, and that was wrong.** Round 3c hid it to match the
+sibling, whose cover has no rail. That was a copy of a decision rather than a decision: a train on
+the cover is a train, and a train on no track reads as a train falling. Restored.
+
+**The dotted circle stays.** `(◌ु)` rather than `(ु)` — ◌ is how an isolated matra renders
+throughout this bundle, and G4's sorting bins come back the same way, so the cover names the pair
+exactly as the later screens do. The verification expected `(ु)` and was wrong, not the build.
+
+**The सुनो chip is not gated.** `playLanding()` has two callers and only the automatic greeting
+waits for the train; an explicit replay that waited would read as a dead button.
+
+### The centring took four attempts, and the reason is the useful part
+
+The heading element was **empty but still 92px tall**. The rule that hides the band targets
+`.header-row` — but teach screens lay out as `.tut-card`, whose heading is `.tut-prompt`. So the
+band was "hidden" while the gap it left was not. **This is the same two-element confusion that
+made the round-6 check insist there was no heading while the screenshot plainly showed one.**
+
+Then hiding it did not centre anything either: the freed 92px went straight to `.tut-content`'s
+flex-grow. Three attempts through the flex chain each moved the cards somewhere new and none
+landed on the middle — a negative margin did nothing at all, because the row is *positioned* by
+its parent's `justify-content` rather than *sized* by it. The chain is four nested flex boxes with
+four opinions, and this screen needs one thing from it: a box the size of the main box with two
+cards in the middle. It now takes that box directly, pinned to `.tut-card`.
+
+### ⚠️ Open: T2–T5 carry the same empty band
+
+Hiding `.tut-prompt` for every `no-band` screen **also moved T2–T5** — they stack from the top, so
+the freed 92px pulled their content against the ceiling and left a hole underneath. They were not
+part of this ask and nobody has raised them, so the fix is **scoped to page 1** and those screens
+keep the layout they have been reviewed in.
+
+The empty band is still wrong there. It is left as a question rather than a silent change:
+**should T2–T5 also drop their blank 92px band, and if so should their content re-centre or stay
+top-aligned?** One line each way; it needs somebody to look at the four screens and say.
+
+---
+
+## Round 8 — the glow lands on the words, and the cover's track spans the box
+
+> page1 is completed just small changes when the VO plays "iski matra..." then highlight the matra
+> — and in cover page the track length cover the entire main box
+
+| # | Ask | Change | Proof |
+|---|---|---|---|
+| R8-1 | highlight the matra when the VO says «इसकी मात्रा…» | the glow moved off the pop and onto a per-clip cue | render · `vo_pair_u` cue 1180ms, glow at **+1196ms**; `vo_pair_uu` cue 1100ms, glow at **+1104ms** |
+| R8-2 | the cover's track covers the whole main box | pinned to the card's centre at the card's width less a margin | render · **1027px of the card's 1111px (92%)**, 42px clear at each end |
+
+### Why the cue is computed and not a constant
+
+The glow used to start the instant the matra popped in — which is while the clip is still saying
+«यह है उ।», i.e. **naming the letter**. So it was pointing at the wrong mark while the right one
+was being spoken.
+
+A fixed delay cannot fix that, because the two clips are **4.13s and 3.85s**: any constant is
+early on one and late on the other. There is no forced aligner in this toolchain, so
+`_matra_cue_ms()` takes the clip's real duration off the file on disk and scales it by where
+«इसकी» begins in the text (spaces stripped — they are not spoken, and there are more of them in
+the second half, which would push the cue late). Both land at ~29% in.
+
+That is an estimate, and it is allowed to be: the highlight is a 1.2s glow repeated three times,
+so it only has to **start inside the right phrase**, not on the exact sample. It is computed at
+BUILD time from the file, so a re-recorded clip recomputes its own cue instead of quietly
+inheriting a stale one — and a missing file falls back to 1300ms rather than to zero.
+
+The glow also gained a third repeat: it now starts partway through the line and would otherwise
+finish before the sentence does.
+
+### The cover's track
+
+On the activity screens the track is sized off the TRAIN — `left/right: -7%` of the rail — because
+there it is the line the train arrives along. On the cover the train is a title illustration in a
+1114px card, so a track stopping 90px past the buffers read as a stub of rail rather than as a
+railway. Measured: the card spans 1111px and the rail only 476px, dead centre. The cover's track
+is now pinned to the card's centre at 1030px — **the card's own fixed width less a 42px margin at
+each end**, not a number picked to look right.
+
+---
+
+## Round 9 — pressing ▶ on the cover replayed the greeting instead of starting the lesson
+
+> everything is fine just there is one issue in cover page — when I click on play the VO plays
+> again I have to listen it all then again play button appears fix this bug
+
+**Reproduced before touching anything:** greeting at 3.1s, button goes live at 7.8s, the press
+replays `vo_landing.ogg` at 8.3s, the button returns to `sg-waiting`, and the gate never opens.
+
+**This was mine, introduced in r7.** The autoplay-policy fallback fires on the first `pointerdown`
+anywhere and starts the greeting if nothing is audible. That has been there for a long time, and
+`[30m]` already guarded it. What r7 added was `setStartBtnReady(false)` *inside* the greeting — and
+that turns a harmless double-play into a **swallowed press**:
+
+1. `pointerdown` on ▶ runs the fallback,
+2. the fallback starts the greeting, which **disables the button**,
+3. a browser does not dispatch `click` on a button that became disabled during the gesture.
+
+So the press was eaten, and the child had to sit through the whole greeting before the button came
+back — exactly as reported.
+
+### Why the old guard could not catch it
+
+`_audible` only asks *"is sound moving right now"*, which is false in three different situations it
+has to tell apart:
+
+| state | audible? | fallback needed? |
+|---|---|---|
+| autoplay was refused | no | **yes** — this is what it is for |
+| the greeting already ran | no | no |
+| the greeting is queued behind the train (new in r7) | no | no |
+
+Three guards now, one per row: a tap on a **control** is never a cue to speak; the greeting is
+remembered once it has **sounded**; and while the train gate still holds it, it is *scheduled*,
+not blocked.
+
+### The fix nearly broke the thing it was guarding
+
+The first version remembered `_landingSpoke = true` where the greeting was *requested*. `[30m]`
+warns against precisely that — *"on a blocked autoplay we DID call it, so a call-flag would kill
+the very fallback this line is for"* — and it did: the test for a genuinely refused autoplay went
+red. The flag now records the **return**: a greeting that reports back in under 600ms never
+sounded, because a refused clip comes back at once and a real 5s one cannot.
+
+That case is now a standing test, so the next person to touch this cannot quietly delete the
+fallback and still pass.
+
+### Verified
+
+| check | result |
+|---|---|
+| pressing ▶ replays the greeting | **no** — only the phase-gate clip follows |
+| ...puts the button back into `sg-waiting` | **no** |
+| ...starts the lesson | **yes**, one press opens the gate and mounts page 1 |
+| the सुनो chip still replays on demand | **yes** |
+| a genuinely blocked autoplay still recovers on a background tap | **yes** |

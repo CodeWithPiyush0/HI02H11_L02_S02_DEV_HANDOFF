@@ -20,6 +20,10 @@
   "matras": [
    "ु",
    "ू"
+  ],
+  "letters": [
+   "उ",
+   "ऊ"
   ]
  },
  "phase_transition_audio": {
@@ -285,8 +289,8 @@
    "id": "T1",
    "phase": "tutorial",
    "eis": "enactive",
-   "type": "MATRA_INTRO",
-   "prompt_hi": "आज हम छोटी उ और बड़ी ऊ की मात्रा वाले शब्द पढ़ेंगे।",
+   "type": "MATRA_PAIRS",
+   "prompt_hi": "",
    "audio": {
     "prompt": "vo_t1_prompt"
    },
@@ -295,12 +299,14 @@
      {
       "letter": "उ",
       "matra": "ु",
-      "audio": "vo_pair_u"
+      "audio": "vo_pair_u",
+      "cue_ms": 1180
      },
      {
       "letter": "ऊ",
       "matra": "ू",
-      "audio": "vo_pair_uu"
+      "audio": "vo_pair_uu",
+      "cue_ms": 1100
      }
     ],
     "phonemes": {
@@ -308,7 +314,7 @@
      "ू": "vo_matra_uu"
     },
     "auto": true,
-    "train": true
+    "no_heading": true
    }
   },
   {
@@ -316,7 +322,7 @@
    "phase": "tutorial",
    "eis": "symbolic",
    "type": "MATRA_BUILD",
-   "prompt_hi": "आइए, देखें कि छोटी उ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।",
+   "prompt_hi": "",
    "audio": {
     "prompt": "vo_t2_prompt",
     "base": "vo_base_pal",
@@ -338,7 +344,8 @@
     "base_emoji": null,
     "cap_base": null,
     "cap_mid": null,
-    "cap_result": null
+    "cap_result": null,
+    "no_heading": true
    }
   },
   {
@@ -346,7 +353,7 @@
    "phase": "tutorial",
    "eis": "iconic",
    "type": "MEET_PAIR",
-   "prompt_hi": "आइए, छोटी उ की मात्रा वाले कुछ शब्द देखें।",
+   "prompt_hi": "",
    "audio": {
     "prompt": "vo_t3_prompt"
    },
@@ -368,7 +375,8 @@
       "audio_line": "vo_meet_dhanush",
       "matra_audio": null
      }
-    ]
+    ],
+    "no_heading": true
    }
   },
   {
@@ -376,7 +384,7 @@
    "phase": "tutorial",
    "eis": "symbolic",
    "type": "MATRA_BUILD",
-   "prompt_hi": "आइए, देखें कि बड़ी ऊ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।",
+   "prompt_hi": "",
    "audio": {
     "prompt": "vo_t4_prompt",
     "base": "vo_base_phal",
@@ -398,7 +406,8 @@
     "base_emoji": null,
     "cap_base": null,
     "cap_mid": null,
-    "cap_result": null
+    "cap_result": null,
+    "no_heading": true
    }
   },
   {
@@ -406,7 +415,7 @@
    "phase": "tutorial",
    "eis": "iconic",
    "type": "MEET_PAIR",
-   "prompt_hi": "आइए, बड़ी ऊ की मात्रा वाले कुछ शब्द देखें।",
+   "prompt_hi": "",
    "audio": {
     "prompt": "vo_t5_prompt"
    },
@@ -428,7 +437,8 @@
       "audio_line": "vo_meet_kabootar",
       "matra_audio": null
      }
-    ]
+    ],
+    "no_heading": true
    }
   },
   {

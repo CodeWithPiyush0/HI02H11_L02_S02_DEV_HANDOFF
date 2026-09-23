@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """Drive every mechanic (wrong -> wrong -> right) and capture the SETTLED state of each screen.
 
+Selectors follow the TrainChrome port: a coach is a painted slice, the tappable one carries
+`.is-tappable`, and `.is-nudge` is added in exactly one place so it needs no qualifier.
+
 Two things this does that capture_pages.py cannot right now:
   · it strips EVERY `*seq-hidden` variant (`mb-seq-hidden`, `tr-seq-hidden`), not just the bare
     `.seq-hidden` the shipped harness removes, so a staged teach screen photographs finished;
@@ -10,6 +13,39 @@ Two things this does that capture_pages.py cannot right now:
 import io, json, sys, time
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+
+def _click_start(d):
+    """Press शुरू करें and wait until the landing is really gone.
+
+    ActionChains, not element.click(): the latter delivers only pointerdown under Chrome 153
+    headless, so the handler never runs. Verified against the sibling build — same driver, same
+    behaviour there, so it is the driver and not either lesson.
+
+    Then poll `startGate.hidden` instead of sleeping: the handler awaits an audio warm-up (capped
+    at 3s) and the phase gate holds its peek for ~2s, so any fixed sleep is a race. Polling also
+    asserts the gate DID open, which is the thing every later screenshot depends on.
+    """
+    import time as _t
+    from selenium.webdriver.common.action_chains import ActionChains as _AC
+    for _ in range(80):                       # 20s: above the engine's 12s stranding backstop
+        if not d.execute_script("const b=document.getElementById('sgBtn');return !b||b.disabled;"):
+            break
+        _t.sleep(0.25)
+    else:
+        raise RuntimeError("start button never became enabled - the 12s backstop did not fire")
+    # THE FIRST PRESS IS NOT RELIABLE under this driver: it can deliver pointerdown alone, with
+    # no mousedown and no click, so the handler never runs. A second press goes through. The
+    # sibling build behaves the same, and removing the star layer / the burst handler / the new
+    # disabled state each changed nothing - it is the driver. So press, watch, press again.
+    for attempt in range(4):
+        _AC(d).move_to_element(d.find_element("id", "sgBtn")).click().perform()
+        for _ in range(24):                   # 6s per attempt
+            if d.execute_script(
+                    "return document.getElementById('startGate').classList.contains('hidden');"):
+                return
+            _t.sleep(0.25)
+    raise RuntimeError("landing gate never opened after 4 presses of the start button")
+
 from selenium.webdriver.common.action_chains import ActionChains
 
 URL, OUT, SHOTS = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -70,7 +106,7 @@ d.execute_script(STUB)
 # its .dd-zone and every drag silently does nothing. Taps look fine throughout, because a tap is
 # dispatched on the element and never hit-tests — which is exactly what made this read as a
 # drag-only bug in the module rather than a harness one.
-d.find_element("id", "sgBtn").click()
+_click_start(d)
 time.sleep(4.0)
 d.execute_script(STUB)          # re-stub: the gate reloads state
 
@@ -99,6 +135,18 @@ def el(sel, n=0):
     return e[n] if len(e) > n else None
 
 
+def hand():
+    """[28f] the GUIDING HAND — `.nudge-hand.show`.
+
+    NOT `.is-nudge`, which is the coach GLOW and which [28f] explicitly DOES allow in practice
+    ("tutorial and guided get the hand, practice gets the coach glow only"). The train blocks
+    used to report .is-nudge under the heading `hand=`, so a practice slide showing a legitimate
+    glow read as a ruling violation, and a real hand on a practice slide would have read as
+    normal. Both columns are now reported, under their own names.
+    """
+    return d.execute_script("return document.querySelectorAll('.nudge-hand.show').length;")
+
+
 def logs():
     return d.execute_script("return window.__log.slice();")
 
@@ -111,24 +159,24 @@ for i, s in enumerate(slides):
     t, sid = s["type"], s["id"]
 
     if t == "TRAIN_TAP":
-        coaches = d.find_elements("css selector", ".train-coach")
+        coaches = d.find_elements("css selector", ".is-tappable")
         right = d.execute_script(
-            "return [...document.querySelectorAll('.train-coach')].findIndex("
+            "return [...document.querySelectorAll('.is-tappable')].findIndex("
             "  (c,i)=>CARD.slides[arguments[0]].data.coaches[i].correct);", i)
         wrongs = [c for n, c in enumerate(coaches) if n != right]
         d.execute_script(CLICK, wrongs[0]); time.sleep(0.6)
-        a1 = logs(); hand1 = d.execute_script("return document.querySelectorAll('.train-coach.is-nudge').length;")
+        a1 = logs(); hand1 = d.execute_script("return document.querySelectorAll('.is-nudge').length;"); hh1 = hand()
         d.execute_script("window.__log=[];")
         d.execute_script(CLICK, wrongs[1]); time.sleep(0.8)
-        a2 = logs(); hand2 = d.execute_script("return document.querySelectorAll('.train-coach.is-nudge').length;")
+        a2 = logs(); hand2 = d.execute_script("return document.querySelectorAll('.is-nudge').length;"); hh2 = hand()
         d.execute_script("window.__log=[];")
         d.execute_script(CLICK, coaches[right]); time.sleep(0.9)
         a3 = logs()
         nav = d.execute_script("return !document.getElementById('navBtn').classList.contains('disabled')"
                                " && !document.getElementById('navBtn').disabled;")
         ov = d.execute_script("return document.querySelectorAll('.tr-word .mh-ov').length;")
-        note("%-4s %-18s miss1 vo=%s hand=%d | miss2 vo=%s hand=%d | win vo=%s matraHL=%d nav=%s"
-             % (sid, t, a1, hand1, a2, hand2, a3, ov, nav))
+        note("%-4s %-18s miss1 vo=%s glow=%d hand=%d | miss2 vo=%s glow=%d hand=%d | win vo=%s matraHL=%d nav=%s"
+             % (sid, t, a1, hand1, hh1, a2, hand2, hh2, a3, ov, nav))
 
     elif t == "SENTENCE_COMPLETE":
         ans = d.execute_script("return CARD.slides[arguments[0]].data.answer;", i)
@@ -162,10 +210,10 @@ for i, s in enumerate(slides):
         want = t0.get_attribute("data-bin")
         wrong_i = 0 if bins[0] != want else 1
         drag(t0, bodies[wrong_i]); time.sleep(0.7)
-        a1 = logs(); h1 = d.execute_script("return document.querySelectorAll('.train-coach.is-nudge').length;")
+        a1 = logs(); h1 = d.execute_script("return document.querySelectorAll('.is-nudge').length;"); hh1 = hand()
         d.execute_script("window.__log=[];")
         drag(t0, bodies[wrong_i]); time.sleep(0.9)
-        a2 = logs(); h2 = d.execute_script("return document.querySelectorAll('.train-coach.is-nudge').length;")
+        a2 = logs(); h2 = d.execute_script("return document.querySelectorAll('.is-nudge').length;"); hh2 = hand()
         d.execute_script("window.__log=[];")
         ok_i = bins.index(want)
         drag(t0, bodies[ok_i]); time.sleep(0.8)
@@ -178,10 +226,10 @@ for i, s in enumerate(slides):
             time.sleep(0.5)
         d.execute_script("window.__log=[];"); time.sleep(0.8)
         done = d.execute_script("return {snap:document.querySelectorAll('.tr-card.snapped').length,"
-                                "finish:!!document.querySelector('.train-shell.complete'),"
+                                "finish:!!document.querySelector('.tr-wrap.tr-done'),"
                                 "nav:!document.getElementById('navBtn').classList.contains('disabled')};")
-        note("%-4s %-18s miss1 vo=%s hand=%d | miss2 vo=%s hand=%d | win vo=%s snapped=%d | all=%s"
-             % (sid, t, a1, h1, a2, h2, a3, snapped, json.dumps(done)))
+        note("%-4s %-18s miss1 vo=%s glow=%d hand=%d | miss2 vo=%s glow=%d hand=%d | win vo=%s snapped=%d | all=%s"
+             % (sid, t, a1, h1, hh1, a2, h2, hh2, a3, snapped, json.dumps(done)))
 
     elif t == "WORD_BUILD":
         tiles = d.find_elements("css selector", ".tr-card")
@@ -201,12 +249,12 @@ for i, s in enumerate(slides):
                 break
         bad = next(n for n in range(len(slots)) if n != home)
         drag(t0, blank(bad)); time.sleep(0.7)
-        a1 = logs(); h1 = d.execute_script("return document.querySelectorAll('.train-coach.is-nudge').length;")
+        a1 = logs(); h1 = d.execute_script("return document.querySelectorAll('.is-nudge').length;"); hh1 = hand()
         d.execute_script("window.__log=[];")
         drag(t0, blank(bad)); time.sleep(0.9)
         a2 = logs()
-        h2 = d.execute_script("return {coach:document.querySelectorAll('.train-coach.is-nudge').length,"
-                              "blank:document.querySelectorAll('.wb-blank.wb-pulse').length};")
+        h2 = d.execute_script("return {coach:document.querySelectorAll('.is-nudge').length,"
+                              "blank:document.querySelectorAll('.wb-blank.wb-pulse').length};"); hh2 = hand()
         d.execute_script("window.__log=[];")
         drag(t0, blank(home)); time.sleep(1.0)
         a3 = logs()
@@ -224,10 +272,10 @@ for i, s in enumerate(slides):
         fin = d.execute_script("return {words:[...document.querySelectorAll('.tr-doneword')]"
                                ".map(e=>e.dataset.mhWord||e.textContent),"
                                "ov:document.querySelectorAll('.tr-doneword .mh-ov').length,"
-                               "finish:!!document.querySelector('.train-shell.complete'),"
+                               "finish:!!document.querySelector('.tr-wrap.tr-done'),"
                                "nav:!document.getElementById('navBtn').classList.contains('disabled')};")
-        note("%-4s %-18s miss1 vo=%s hand=%d | miss2 vo=%s nudge=%s | win vo=%s built=%s | all=%s"
-             % (sid, t, a1, h1, a2, json.dumps(h2), a3, w1, json.dumps(fin)))
+        note("%-4s %-18s miss1 vo=%s glow=%d hand=%d | miss2 vo=%s nudge=%s hand=%d | win vo=%s built=%s | all=%s"
+             % (sid, t, a1, h1, hh1, a2, json.dumps(h2), hh2, a3, w1, json.dumps(fin)))
 
     else:
         note("%-4s %-18s (teach / celebration — render only)" % (sid, t))

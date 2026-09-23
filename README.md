@@ -175,7 +175,7 @@ Do it on a **copy**, smoke-test that copy (serve it, sweep every slide, 0 errors
 never the working folder. `package_bundle.py --netlify` in the revise skill does the dropping of
 dev-only files (`card.json`, `*.xlsx`, `README*`, `CHANGES.md`, `_review_shots/`).
 
-## Five things that will cost you a day if you do not know them
+## Seven things that will cost you a day if you do not know them
 
 Each was learned by losing that day. They are in `4_ENGINE/CHANGES.md` in full.
 
@@ -198,6 +198,20 @@ Each was learned by losing that day. They are in `4_ENGINE/CHANGES.md` in full.
    silent and looks like the feature working.
 5. **The engine sizes EVERY `.dd-zone` at 150×150**, which beats any `min-width`. A drop zone
    inside a coach must take its width back explicitly or the word spills out of the coach.
+6. **A literal closing tag inside a CSS or JS comment truncates the whole element.** The HTML
+   parser does not care that it sits inside a `/* */`. One comment in `train_styles.css` mentioning
+   the tag it is injected before ended the stylesheet there, and every rule after it became **text
+   in the body**: the stage was shoved to `x=1797` in a 1382px viewport, `position:fixed` stopped
+   applying to the new sky layers, and the start button became unclickable. **Clean build, green
+   receipt, no console error** — the symptom looks nothing like the cause. `inject_train.py` now
+   refuses to inject a source containing one and names the file and line.
+7. **Under headless Chrome the FIRST synthetic press of शुरू करें can deliver `pointerdown`
+   alone** — no mousedown, no click — so the lesson never starts and every captured page comes back
+   as the cover. It is not this build: **the sibling lesson does the same under the same driver**,
+   and it was wrongly blamed on three innocent things first (the button's disabled state, the star
+   layer, the burst handler). Press with `ActionChains`, retry, and **poll `startGate.hidden`**
+   rather than sleeping. Separately, the phase gate cannot open at all while the real `play()` is
+   in use headless — stub `window.play` first, or use `?slide=N`.
 
 ---
 

@@ -1797,6 +1797,44 @@ body.is-start .phase-gate{
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* == TRAIN STYLES :: BEGIN (engine_local, HI02H11_L02_S02) == */
 
 /* ==========================================================================================
@@ -2493,13 +2531,377 @@ body.is-start .phase-gate{
   transition:transform .42s cubic-bezier(.34,1.1,.5,1), opacity .42s ease; }
 @media (prefers-reduced-motion:reduce){ .sc-fly{ display:none; } }
 
-/* ---------- the cover's train has no rail ----------
-   On the activity screens the track is the line the train arrives along and it reads as a
-   railway. On the cover — where the train is really the title illustration — it cut the card in
-   half, and the sibling's cover does not have one. Scoped to `.lt-cover` so the seven activity
-   screens keep theirs. */
-.train-shell.lt-cover .train-track{ display:none; }
+/* [r7] THE COVER KEEPS ITS TRACK. It was hidden to match the sibling, whose cover has no rail -
+   but that was a copy of a decision, not a decision, and the ask here is explicit: the train on
+   the cover is a train, and a train on no track reads as a train falling. Restored. */
+
 .train-shell.lt-cover{ margin-bottom:6px; }
+
+/* ---------- MATRA_INTRO: the letter, then its matra ----------
+   SME: "First उ appears, then ु appears beside it with a soft glow … Use a simple pop / fade
+   animation … Keep animations subtle and child-friendly."
+   The hold class ends in `seq-hidden` deliberately: the capture settler strips anything with that
+   suffix, so a frozen review capture shows the finished pair rather than an empty coach. */
+.mi-seq-hidden{ opacity:0; }
+.mi-pop{ animation:miPop 380ms cubic-bezier(.34,1.5,.6,1) both; }
+@keyframes miPop{ from{ opacity:0; transform:scale(.55); } to{ opacity:1; transform:none; } }
+/* the "soft glow" on the matra — the mark is the thing being taught, so it is what lights up */
+.mi-matra.mi-glow{ text-shadow:0 0 12px rgba(232,69,60,.60), 0 0 22px rgba(232,69,60,.30); }
+@media (prefers-reduced-motion:reduce){
+  .mi-seq-hidden{ opacity:1; } .mi-pop{ animation:none; }
+}
+
+/* --- MATRA_PAIRS (deck page 4 · rows #17-#22) ---------------------------------------
+   letter + its matra, one pair at a time, only one active. */
+/* Deck page 4 animation, literally:
+     "First आ appears, THEN ा appears beside it with a soft glow."
+     "Then both fade slightly and इ → ि appears."  "Finally ई → ी appears."
+     "Use a simple pop/fade animation; NO EXTRA DECORATIVE ELEMENTS."
+   So: nothing is on screen at mount; a pair arrives only when its turn comes; inside a pair the
+   LETTER lands first and the matra follows beside it; a pair already taught stays faded, not
+   restored to full. The card chrome the first pass drew around each pair is gone — it was exactly
+   the "extra decorative element" the note rules out. Visibility is carried by opacity in the RULE
+   (not only inside @keyframes), so the frozen review capture shows the real settled state. */
+/* [r7] centred in BOTH axes inside the stage, not just horizontally: the row now owns the
+   whole height the removed heading band gave back, so `align-items:center` on a full-height row
+   is what puts the cards on the optical centre of the main box. */
+.mp-row{display:flex;align-items:center;justify-content:center;gap:70px;
+  width:100%;flex:1 1 auto;min-height:0;
+}
+/* Page 1 pairs are deliberately NOT ink-centred (no .ink-glyph on the spans): centerInkGlyph
+   squares up the ink BOUNDING BOX and was translating the letter ~2.5px but the matra ~13.3px, so
+   the two never shared a baseline and ि / ी (tall ascenders) sat differently from ा. Plain baseline
+   alignment puts all three dotted circles on one line. */
+/* [r6] THE CARD IS BACK, AND IT IS THE TRAIN-THEME CONTINUITY.
+   The note asks to "keep the train-theme continuity by showing each pair inside a train-style
+   card / bogie / box" - so with the train itself gone the BOX is what carries that thread, and
+   the screen still reads as part of a train lesson. Chrome copied verbatim from the round-2
+   stylesheet (`.mi-pair`), because the ask was "use this same structure as shown in the
+   screenshot" and the screenshot IS that build - approximating it would have been a redesign.
+   align-items:center, not baseline: inside a bordered card the two glyphs are read against the
+   BOX, so an optical centre beats a shared typographic baseline. */
+/* [r7] BIGGER CARD, AND CENTRED IN THE BOX. With the heading gone the screen has the full
+   stage height and the two cards were sitting small in a lot of empty space. Padding and gap grow
+   with the glyphs so the card grows in proportion rather than just gaining margin. */
+.mp-pair{display:flex;align-items:center;gap:26px;background:#fff;
+  border:3px solid #E4ECF7;border-radius:28px;padding:30px 60px;
+  box-shadow:0 10px 26px rgba(11,61,140,.12);
+  opacity:0;transform:scale(.92);
+  transition:opacity .45s ease,transform .45s ease,border-color .3s ease,box-shadow .3s ease;}
+/* [r6] DIM THE PAIR, NOT THE BOX. The note asks that a taught pair "fade slightly / dim softly",
+   and opacity on the whole card did that to the CARD too - against this pale grid the white fill
+   and its border washed out until the first card had visibly stopped being a card, which is not
+   what "dim softly" describes. The box keeps its full presence; the glyphs inside it fade. */
+.mp-pair.shown{transform:scale(.97);opacity:1;}
+.mp-pair.shown .mp-letter,
+.mp-pair.shown .mp-arrow,
+.mp-pair.shown .mp-matra{opacity:.42;}
+.mp-pair.shown{border-color:#EDF2F9;box-shadow:0 4px 12px rgba(11,61,140,.06);}
+.mp-pair.active{opacity:1;transform:scale(1);
+  border-color:#F7C948;box-shadow:0 0 0 5px rgba(247,201,72,.42),0 8px 20px rgba(11,61,140,.10);}
+.mp-letter{font-size:88px;font-weight:800;color:var(--navy);line-height:1;}
+.mp-arrow{font-size:52px;color:#7FA8D9;line-height:1;align-self:center;
+  opacity:0;transition:opacity .35s ease;}
+.mp-arrow.mp-in{opacity:1;}
+/* the matra is held back until the letter has landed, then pops in beside it and glows softly */
+.mp-matra{font-size:88px;font-weight:800;color:#FF8A00;line-height:1;   /* BRIGHT ORANGE — screen 1 only */
+  opacity:0;transform:scale(.55);
+  transition:opacity .38s ease,transform .38s cubic-bezier(.34,1.5,.6,1);}
+.mp-matra.mp-in{opacity:1;transform:scale(1);}
+/* [r8] THE GLOW IS CUED BY THE VOICE, NOT BY THE POP. It used to start the moment the matra
+   appeared - which is while the clip is still saying «यह है उ।», i.e. naming the LETTER. It now
+   waits for «इसकी मात्रा है», so the thing lighting up is the thing being said.
+   A third repeat was added because the glow now starts partway through the line and would
+   otherwise finish before the sentence does. */
+.mp-pair.active .mp-matra.mp-hl{animation:mpGlow 1200ms ease-in-out 3;}
+/* the dim above targets the same property the pop-in animates, so it has to win
+   once the pair is no longer the active one */
+.mp-pair.shown .mp-matra.mp-in{opacity:.42;}
+@keyframes mpGlow{0%,100%{text-shadow:0 0 0 rgba(255,138,0,0);}
+                  50%{text-shadow:0 0 26px rgba(255,138,0,.85),0 0 10px rgba(255,138,0,.6);}}
+@media (prefers-reduced-motion:reduce){.mp-pair.active .mp-matra.mp-in{animation:none;}}
+
+
+/* the SME asks for no heading on page 1; scoped to the slide that asks, never global */
+.stage.no-band .header-row{ display:none; }
+
+/* ==========================================================================================
+   PAGES 2-5 MATCHED TO THE SIBLING LESSON
+   ==========================================================================================
+   Comparing this lesson's teach screens against HI02H11_L02_S01's page by page, three things
+   differed and none of them was structural — the flow is already the same. They are chrome and
+   colour, and the sibling's choices are the SME's own notes read more literally:
+
+     · no card panels. "Do not add extra decorative elements" / "Keep the screen clean and
+       minimal." The sibling's own note records dropping exactly this chrome for that reason.
+     · the matra is ORANGE, not red. Red is this engine's WRONG colour — it is what a shaken
+       coach and a failed answer are painted in — so teaching a mark in the same red asks the
+       child to read "this is the bit that matters" and "this is the bit that is wrong" off one
+       hue. The sibling uses #FF8A00 throughout.
+     · no callout pill under the example word.
+   ========================================================================================== */
+
+/* --- the build screen loses its panels; the glyphs sit on the stage like the sibling's --- */
+.mb-panel{ background:none; border:0; box-shadow:none; padding:6px 10px; }
+.mb-p2{ background:rgba(233,241,252,.75); border-radius:18px; padding:10px 18px; }
+
+/* --- the matra is orange everywhere it is TAUGHT ---
+   `--wrong` stays red for wrong answers; this is a different meaning and needs a different hue. */
+:root{ --matra-hi:#FF8A00; }
+.mb-matra{ color:var(--matra-hi); }
+.mh-ov{ color:var(--matra-hi); }
+.mh-ov.mh-glow{ text-shadow:0 0 14px rgba(255,138,0,.60); }
+.mi-matra{ color:var(--matra-hi); }
+.mi-matra.mi-glow{ text-shadow:0 0 12px rgba(255,138,0,.60), 0 0 22px rgba(255,138,0,.30); }
+.tr-inmatra,.wb-inakshar{ color:var(--matra-hi); }
+@keyframes mhPulse{ 0%,100%{ filter:none }
+  50%{ filter:brightness(1.25) drop-shadow(0 0 9px rgba(255,138,0,.75)) } }
+
+/* --- the example screen loses the callout pill (the sibling has none) --- */
+.mp-callout{ display:none; }
+/* the isolated consonant is highlighted, not marked wrong — same reasoning as the matra */
+.mb-cons.mb-hot{ color:var(--matra-hi); }
+/* with the heading band gone the host has the full stage height; keep the teach content on the
+   optical centre rather than letting it ride up under the removed band */
+/* [r10] NO BOTTOM PADDING. That 40px was mine, added so heading-less teach content would clear
+   the आगे button - but it shortens the MAIN BOX by 40px, and only on the screens that opted out
+   of the heading. The result was page 1 at 561px tall and pages 2-5 at 521px: the same lesson
+   with two different card sizes, which is what Yasir spotted.
+   The sibling settles it: every teach slide there measures 1130x561 with NO bottom padding, and
+   its content clears the button perfectly well without it. The clearance the padding was buying
+   is already in the layout. Measured on both builds before removing it. */
+.stage.no-band .slide-host{ justify-content:center; }
+/* the row can only centre within a height it actually has */
+.stage.no-band .slide-host{ display:flex; flex-direction:column; }
+
+
+/* ==========================================================================================
+   [r5] BUTTONS + COVER MOTION — PARITY WITH HI02H11_L02_S01
+   Yasir: "you are still not using the buttons and its placement used in this file (play button,
+   next button) ... and also in the cover page there is animation in the stars and bubble which is
+   currently missing in my current file."
+   Three separate gaps, all measured off S01's engine rather than guessed:
+     (1) .nav-btn::after — the arrow glyph was 28px here against 52px there. The PILL is already
+         identical (same bottom:32, min-width, border, shadow); it was only ever the glyph inside
+         it that read small, which is why "placement" looked wrong when the geometry matched.
+     (2) .sg-btn — S01 ships an icon-only PLAY button (a play triangle through ::after, with the
+         Hindi kept as aria-label) plus two earned states. Ours showed the शुरू करें text and had
+         no states at all.
+     (3) the whole FLN ANIMATION KIT sky layer was absent (grep count 0) — that is the missing
+         "stars and bubble" motion on the cover.
+   ========================================================================================== */
+
+/* ---------- (1) the next button's arrow ---------- */
+.nav-btn::after{content:"\2192";font-size:52px;line-height:1;}
+.end-btn::after{content:"\2192";font-size:52px;line-height:1;}
+
+/* ---------- (2) the play button ----------
+   The pill itself is untouched — same fill, border, radius, shadow, and the 186px min-width that
+   stops an icon-only label collapsing it to a circle. Only the CONTENT changes, so there is no new
+   asset to ship and nothing to go missing. */
+.sg-btn::after{content:"\25B6";font-size:30px;line-height:1;display:block;transform:translateX(2px);}
+/* THE PULSE IS EARNED. Our [30l] ruling killed the always-on pulse because it was wallpaper rather
+   than a signal — that ruling stands, and this does not revive it. The animation now hangs off a
+   class that only the 5s idle timer adds, so the resting button is still perfectly still. */
+.sg-btn.idle-pulse{animation:sgBtnPulse 1.4s ease-in-out infinite;}
+/* ...and while the greeting is still speaking the button is genuinely disabled, so it has to LOOK
+   disabled. A bright button that ignores taps is worse than a grey one: the child concludes the
+   screen is broken rather than that it is busy. */
+.sg-btn.sg-waiting{background:#E8E8EA;color:#B3B3B8;border-color:#F4F4F6;
+  box-shadow:0 4px 0 #D6D6D6;cursor:default;animation:none;}
+.sg-btn.sg-waiting:active{transform:translateX(-50%);}
+
+/* ---------- (3) FLN ANIMATION KIT ----------
+   Ported from S01's install (github.com/ananya-goswami/fln-animation-toolkit), recipes 1 (start
+   screen stars, drift) and 2 (tap to burst). Checked against the kit's own collision rules before
+   pasting: none of .sg-sky / .sg-glow / .sg-burst nor any of sgFly / sgBreathe / sgFlash / sgSpark
+   / sgGlowOpacity existed in this engine, and ENGINE_VERSION is untouched.
+   Stacking: .start-bg/.end-bg are z-index 0, the sky is 1, .start-gate is 80, .end-screen is 90,
+   a burst is 95 — so the sky sits BEHIND the card and bursts land on top of both. */
+
+/* ===== FLN ANIMATION KIT: reduced-motion BEGIN ===== */
+html.no-anim *, html.no-anim *::before, html.no-anim *::after{
+  animation:none!important; transition:none!important;
+}
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation:none!important; transition:none!important; }
+}
+/* ===== FLN ANIMATION KIT: reduced-motion END ===== */
+
+/* ===== FLN ANIMATION KIT: sky-drift BEGIN ===== */
+/* MANDATORY swap, not a preference. Our shipped startnew_bg.webp has stars, sparkles, rings and
+   dots PAINTED IN; drifting a second set over them is the kit's documented "two sets of stars, one
+   frozen and one moving" bug. startnew_bg_plain.webp is that same artwork with the decorations
+   inpainted out (rays and centre glow untouched) — copied from S01, which already did this work.
+   This block is injected just before the stylesheet's closing tag, so it is later in the
+   cascade than the original .start-bg and wins on equal specificity. */
+.start-bg{background-image:url("assets/UI/startnew_bg_plain.webp");}
+
+.sg-glow,.sg-sky{position:fixed;inset:0;pointer-events:none;display:none;z-index:1;}
+body.is-start .sg-glow,body.is-start .sg-sky,
+body.is-end   .sg-glow,body.is-end   .sg-sky{display:block;}
+/* this engine never sets html.rotated, so the rule below is inert here — kept so the layer still
+   behaves if portrait rotation is ever adopted. */
+html.rotated .sg-glow,html.rotated .sg-sky{
+  inset:auto;left:50%;top:50%;width:100vh;height:100vw;
+  transform:translate(-50%,-50%) rotate(90deg);}
+
+.sg-glow{opacity:.75;background:radial-gradient(ellipse 38% 25% at 50% 79%,
+  rgba(255,255,255,.34) 0%,rgba(255,255,255,.13) 45%,rgba(255,255,255,0) 72%);
+  animation:sgBreathe 6.5s ease-in-out infinite;}
+@keyframes sgBreathe{0%,100%{opacity:.55;}50%{opacity:1;}}
+
+/* hole punched over the centre card — it is translucent, so drifting stars showed THROUGH it.
+   Our .sg-card is 1114x456, byte-identical to S01's, so the kit's default hole size is right. */
+.sg-sky{overflow:hidden;
+  --sg-hole-w:calc(1074px * var(--scale,1));
+  --sg-hole-h:calc(416px * var(--scale,1));
+  -webkit-mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000);
+          mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000);
+  -webkit-mask-size:100% 100%,var(--sg-hole-w) var(--sg-hole-h);
+          mask-size:100% 100%,var(--sg-hole-w) var(--sg-hole-h);
+  -webkit-mask-position:center,center; mask-position:center,center;
+  -webkit-mask-repeat:no-repeat,no-repeat; mask-repeat:no-repeat,no-repeat;
+  -webkit-mask-composite:xor; mask-composite:exclude;
+}
+/* the end screen has no visible occluder, so a hard-edged hole reads as a sliced crescent.
+   Soft radial hole sized to the mascot instead. */
+body.is-end .sg-sky{
+  --sg-hole-w:calc(800px * var(--scale,1));
+  --sg-hole-h:calc(800px * var(--scale,1));
+  -webkit-mask-image:linear-gradient(#000,#000),
+                     radial-gradient(closest-side,#000 71%,rgba(0,0,0,0) 100%);
+          mask-image:linear-gradient(#000,#000),
+                     radial-gradient(closest-side,#000 71%,rgba(0,0,0,0) 100%);
+}
+
+.sg-sky i{position:absolute;left:50%;top:50%;width:var(--s);aspect-ratio:1;
+  margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+  background:center/contain no-repeat;opacity:0;
+  animation:sgFly var(--t) linear infinite;animation-delay:var(--d);}
+.sg-sky .s1{background-image:url("assets/UI/bgdeco_star.svg");}
+.sg-sky .s2{background-image:url("assets/UI/bgdeco_star_o.svg");}
+.sg-sky .s3{background-image:url("assets/UI/bgdeco_spark.svg");}
+.sg-sky .s4{border-radius:50%;border:.22vmax solid rgba(255,255,255,.92);}   /* the bubbles */
+.sg-sky .s5{border-radius:50%;background:rgba(255,255,255,.92);}
+
+/* transform keyed ONLY at 0% and 100% — that is what makes the path a straight ray */
+@keyframes sgFly{
+  0%{transform:translate(var(--x1),var(--y1));opacity:0;}
+  10%{opacity:var(--o);}
+  84%{opacity:var(--o);}
+  100%{transform:translate(var(--x2),var(--y2));opacity:0;}
+}
+
+/* glow: static shadow, animated opacity = composited (animating the filter itself is not) */
+.sg-sky i::after{content:"";position:absolute;inset:0;border-radius:inherit;
+  background:inherit;border:inherit;
+  filter:drop-shadow(0 0 7px rgba(255,255,255,.95));
+  opacity:0;will-change:opacity;
+  animation:sgGlowOpacity var(--g) ease-in-out infinite alternate;
+  animation-delay:var(--gd);}
+@keyframes sgGlowOpacity{from{opacity:0;}to{opacity:1;}}
+/* ===== FLN ANIMATION KIT: sky-drift END ===== */
+
+/* ===== FLN ANIMATION KIT: sky-burst BEGIN ===== */
+.sg-sky i.popped{visibility:hidden;}
+.sg-burst{position:fixed;z-index:95;width:0;height:0;pointer-events:none;}
+
+/* data URIs, not file refs — external SVG masks are blocked under file://, and this bundle is
+   opened from disk as often as it is served. */
+.sg-burst.k-star{--shape:url("data:image/svg+xml,%3Csvg%20width=%2264%22%20height=%2264%22%20viewBox=%220%200%2064%2064%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath%20d=%22M32%205.5c1.6%200%203%20.9%203.7%202.4l6.1%2012.4%2013.7%202c1.6.2%203%201.4%203.5%203s.1%203.3-1.1%204.4l-9.9%209.6%202.3%2013.6c.3%201.6-.4%203.3-1.7%204.2s-3.1%201.1-4.6.3L32%2051l-12.2%206.4c-1.5.8-3.2.7-4.6-.3s-2-2.6-1.7-4.2l2.3-13.6-9.9-9.6c-1.2-1.1-1.6-2.9-1.1-4.4s1.9-2.7%203.5-3l13.7-2%206.1-12.4C29%206.4%2030.4%205.5%2032%205.5z%22%20fill=%22%23fff%22/%3E%3C/svg%3E");}
+.sg-burst.k-spark{--shape:url("data:image/svg+xml,%3Csvg%20width=%2264%22%20height=%2264%22%20viewBox=%220%200%2064%2064%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath%20d=%22M32%202c1.6%2012.6%2015.4%2026.4%2030%2030-14.6%203.6-28.4%2017.4-30%2030-1.6-12.6-15.4-26.4-30-30C16.6%2028.4%2030.4%2014.6%2032%202z%22%20fill=%22%23fff%22/%3E%3C/svg%3E");}
+.sg-burst.k-dot{--shape:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23fff'/%3E%3C/svg%3E");}
+
+.sg-burst .fl{position:absolute;left:0;top:0;
+  width:calc(var(--bs) * 3);height:calc(var(--bs) * 3);
+  margin:calc(var(--bs) * -1.5) 0 0 calc(var(--bs) * -1.5);border-radius:50%;
+  background:radial-gradient(circle,rgba(244,250,255,1) 0%,
+    rgba(96,165,250,.92) 38%,rgba(30,58,138,0) 76%);
+  animation:sgFlash .36s ease-out forwards;}
+
+/* solid fill + two colour drop-shadows; they respect the mask alpha, so the halo follows the star
+   silhouette rather than a box */
+.sg-burst i{position:absolute;left:0;top:0;width:var(--ps);height:var(--ps);
+  margin:calc(var(--ps) / -2) 0 0 calc(var(--ps) / -2);
+  background:currentColor;
+  -webkit-mask:var(--shape) center/contain no-repeat;
+          mask:var(--shape) center/contain no-repeat;
+  filter:drop-shadow(0 0 3px currentColor) drop-shadow(0 0 8px currentColor);
+  animation:sgSpark var(--sd) cubic-bezier(.12,.72,.24,1) forwards;
+  animation-delay:var(--sdl);}
+
+@keyframes sgFlash{0%{transform:scale(.15);opacity:1;}100%{transform:scale(1.6);opacity:0;}}
+@keyframes sgSpark{           /* --gy = gravity drop. The kit renames the shipped --g here, which
+                                 would collide with the sky's glow-duration --g; do not mix them. */
+  0%{transform:translate(0,0) scale(.35);opacity:0;}
+  14%{opacity:1;transform:translate(calc(var(--dx) * .3),calc(var(--dy) * .3)) scale(1.12);}
+  100%{transform:translate(var(--dx),calc(var(--dy) + var(--gy))) scale(.3);opacity:0;}
+}
+/* ===== FLN ANIMATION KIT: sky-burst END ===== */
+
+
+
+/* [r7] the bracketed matra on the cover's coaches. Smaller and lighter than the letter, because
+   the letter is the thing being named and the matra in brackets is what it is being named WITH -
+   equal weight made the coach read as two separate characters rather than one pair. */
+.lt-br{ font-size:.78em; opacity:.92; }
+
+
+/* [r7] CENTRED ON THE MAIN BOX, NOT ON WHAT IS LEFT OF IT.
+   `.stage.no-band .slide-host` keeps 40px of bottom padding so teach content clears the आगे
+   button. That padding shortens the box the row centres inside, so the cards sat 18px ABOVE the
+   true centre of the main box - measured, not guessed: stage centre y=374, row centre y=356.
+   (A negative margin on the row does nothing here, because the row is centred by the host's
+   justify-content rather than sized by it - which is why the first attempt moved nothing.)
+   This screen is two cards and a lot of air, so it gives the padding back and lands on the real
+   centre. Scoped to .mp-center, which only MATRA_PAIRS adds and newVoEpoch removes, so the other
+   no-band screens keep their clearance. */
+/* THE BAND THAT WAS ACTUALLY RESERVING THE SPACE IS `.tut-prompt`, NOT `.header-row`.
+   Teach screens lay out as .tut-card, whose heading element is .tut-prompt - and with
+   `prompt_hi: ""` it was EMPTY BUT STILL 92px TALL, so every no-band screen has been holding a
+   blank band open and pushing its content up. `.stage.no-band .header-row{display:none}` was
+   hiding a different, unused element, which is why the band appeared to be gone while the gap it
+   left did not. This is also why the r6 verification insisted there was no heading while the
+   screenshot plainly showed one: two elements, and the checks kept finding the wrong one.
+   Measured here: stage centre y=374, cards at y=356 - exactly half of the 92px + 10px the empty
+   band and its margin were holding, minus the mascot's absolute footprint.
+   SCOPED TO .mp-center, i.e. page 1 ONLY. Hiding it on every no-band screen also moved T2-T5:
+   those screens stack from the top, so the freed 92px pulled their content up against the ceiling
+   and left a hole underneath. They were not part of this ask and nobody has complained about
+   them, so they keep the layout they have been reviewed in. The empty band is still wrong there -
+   it is written up as an open question rather than silently changed. */
+.stage.no-band.mp-center .tut-prompt{ display:none; }
+/* ...and with the band gone the content centres on the MAIN BOX. Scoped to .mp-center, a class
+   only MATRA_PAIRS adds and newVoEpoch removes, so the other no-band screens keep the flex-start
+   stacking their own content depends on. */
+/* ...and the row is then pinned to the card rather than stacked inside it. Three attempts at
+   centring it THROUGH the flex chain each moved it somewhere new and none landed on the middle:
+   a negative margin did nothing (the row is positioned by its parent's justify-content, not sized
+   by it), giving the host its padding back moved it 2px, and hiding the empty band handed the
+   freed 92px straight to .tut-content's flex-grow. The chain has four nested flex boxes, each
+   with its own opinion, and this screen only ever needs one thing from it: a box the size of the
+   main box, with two cards in the middle of it. So it takes that box directly. */
+.stage.no-band.mp-center .mp-row{
+  position:absolute; inset:0; margin:0; width:auto; flex:none;
+}
+/* the box it pins to is the CARD, not .tut-content - .tut-content is the flex-grown middle
+   band and pinning to that just reproduced its 106..515 box. .tut-card IS the main box. */
+.stage.no-band.mp-center .tut-card{ position:relative; }
+/* (the .mp-center padding override is gone - the base rule no longer adds any) */
+
+
+/* [r8] THE COVER'S TRACK RUNS THE WIDTH OF THE MAIN BOX.
+   On the activity screens the track is sized off the TRAIN (left/right -7% of the rail), because
+   there it is the line the train arrives along. On the cover the train is a title illustration
+   sitting in a 1114px card, so a track that stops 90px past the buffers reads as a stub of rail
+   rather than as a railway - which is what the reference screenshot shows it should be.
+   Measured: the card spans 1111px and the rail only 476px, dead centre, so the track is pinned to
+   the card's centre and given the card's width less a 42px margin at each end. 1114 is the card's
+   own fixed width, not a number chosen to look right. */
+.train-shell.lt-cover .train-track{
+  left:50%; right:auto; width:1030px; transform:translateX(-50%);
+}
 
 /* == TRAIN STYLES :: END == */
 </style>
@@ -2529,6 +2931,8 @@ body.is-start .phase-gate{
 </head>
 <body class="is-start">
 <div class="start-bg" aria-hidden="true"></div>
+<div class="sg-glow" aria-hidden="true"></div>
+<div class="sg-sky"  aria-hidden="true"></div>
 <div class="end-bg" aria-hidden="true"></div>   <!-- [20a] body-level: position:fixed must NOT sit inside the transformed .stage or it gets hijacked to the stage box (leaves letterbox band) -->
 
 <!-- BOOT LOADER — [template] r4/P2: white boot screen, no-tap auto-dismiss (see boot()) -->
@@ -2570,7 +2974,10 @@ body.is-start .phase-gate{
     <div class="mascot-wrap" id="swBuddy"><div class="mascot-circle"><img class="mascot-img" id="swBuddyImg" src="assets/UI/sw_head_talking.webp" alt=""></div></div>
 
     <!-- Nav button — kit-style pill, floats bottom-right -->
-    <button class="nav-btn" id="navBtn" disabled>आगे</button>
+    <!-- [r6] icon-only, exactly as HI02H11_L02_S01 ships it: the arrow is drawn by
+         .nav-btn::after and the Hindi moves to aria-label, so the pill is identical
+         on both lessons and a screen reader still announces it. -->
+    <button class="nav-btn" id="navBtn" disabled aria-label="आगे"></button>
   </div>
 
   <!-- FEEDBACK OVERLAY — kit-style card + clean Swiftee large -->
@@ -2599,7 +3006,7 @@ body.is-start .phase-gate{
         <div class="sg-art" id="sgHero"></div>
       </div>
       <button class="sg-vo" id="sgVo" type="button" aria-label="सुनो"><svg viewBox="0 0 62 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Audio"><g filter="url(#sgChipShadow)"><rect x="8" y="4" width="46" height="44" rx="22" fill="url(#sgChipGrad)"/><rect x="6" y="2" width="50" height="48" rx="24" stroke="white" stroke-width="4"/><path d="M29.8466 19.0574C29.8804 19.0524 29.9145 19.0496 29.9487 19.0488C30.6094 19.0317 31.0021 19.5124 31.0015 20.1414C31.0008 20.9661 31.0003 21.7911 31.0005 22.6158L31.001 27.7212L31.0009 30.5591C31.0009 31.0364 31.0122 31.5472 30.9863 32.0228C30.9662 32.2709 30.902 32.4608 30.7251 32.643C30.3831 32.9952 29.8337 33.0842 29.4386 32.7671C29.0784 32.4781 28.7473 32.1159 28.4181 31.7862L26.4414 29.8087C26.1771 29.5426 25.9071 29.2636 25.6339 29.0081C25.0227 28.9649 24.3645 29.017 23.7487 28.9979C23.445 28.9885 23.1625 29.0211 22.8589 28.9606C22.3751 28.8616 22.0618 28.4823 22.0642 27.9824C22.0706 26.5937 22.0287 25.1949 22.0828 23.8081C22.0884 23.6626 22.2302 23.4334 22.3309 23.3252C22.454 23.1907 22.6146 23.0963 22.792 23.0543C23.0567 22.9904 23.5328 23.016 23.8224 23.0128C24.4143 23.0063 25.0171 23.0277 25.609 23.0073C25.6794 22.9529 25.8505 22.7743 25.919 22.706L26.5305 22.0945L28.5396 20.0838C28.9157 19.7059 29.3217 19.1749 29.8466 19.0574Z" fill="white"/><path class="wv wv2" d="M36.2367 18.6905C36.8783 18.6449 37.3041 19.231 37.6725 19.6829C38.7675 21.0046 39.4982 22.5894 39.7923 24.2804C40.2503 26.8763 39.6548 29.5478 38.1378 31.7035C37.8393 32.1274 37.508 32.5324 37.149 32.9063C36.9404 33.1236 36.7646 33.2558 36.4622 33.3081C36.2013 33.3412 35.9378 33.2717 35.7272 33.1144C35.5185 32.9615 35.3816 32.7298 35.3483 32.4733C35.2786 31.9235 35.5696 31.6821 35.8914 31.3297C36.0448 31.1639 36.1901 30.9908 36.3269 30.811C38.3669 28.136 38.4986 24.4654 36.6555 21.6511C36.4826 21.3899 36.2966 21.1376 36.0984 20.8951C35.8252 20.5652 35.3947 20.2691 35.3472 19.8184C35.2845 19.2225 35.6439 18.768 36.2367 18.6905Z" fill="white"/><path class="wv wv1" d="M33.3868 21.5044C33.9769 21.4549 34.2563 21.7845 34.5981 22.1981C35.1982 22.924 35.6149 23.7691 35.8211 24.6886C36.171 26.2384 35.8867 27.8637 35.0314 29.2026C34.7421 29.6568 34.2333 30.3745 33.6937 30.4946C33.1633 30.5437 32.6759 30.2927 32.5495 29.7376C32.3921 29.0462 32.9849 28.6956 33.3274 28.1763C34.2088 26.833 34.1932 25.0908 33.288 23.7635C33.0747 23.4522 32.6159 23.0564 32.5518 22.7133C32.4377 22.1027 32.7745 21.619 33.3868 21.5044Z" fill="white"/></g><defs><filter id="sgChipShadow" x="0" y="0" width="62" height="60" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset dy="4"/><feGaussianBlur stdDeviation="2"/><feComposite in2="hardAlpha" operator="out"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/></filter><linearGradient id="sgChipGrad" x1="8" y1="26" x2="54" y2="26" gradientUnits="userSpaceOnUse"><stop stop-color="#1987FC"/><stop offset="1" stop-color="#1565F4"/></linearGradient></defs></svg></button>
-      <button class="sg-btn" id="sgBtn">शुरू करें</button>
+      <button class="sg-btn" id="sgBtn" aria-label="शुरू करें"></button>
     </div>
   </div>
 
@@ -2610,7 +3017,11 @@ body.is-start .phase-gate{
     <div class="end-subtitle" id="endSubtitle"></div>
     <img class="end-mascot" src="assets/UI/sw_lg_celebrating_anim.webp" alt="Swiftee"
          onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'end-mascot',textContent:'🎉'}))">
-    <button class="end-btn" id="endBtn">आगे बढ़ें →</button>
+    <!-- [r5] the arrow is drawn by .end-btn::after now, exactly as .nav-btn draws its own.
+         It used to be TYPED INTO THE LABEL, so adding the pseudo-element gave this button
+         two arrows. The word stays: "आगे बढ़ें" is a different action from आगे and
+         dropping it to an icon would be a content change nobody asked for. -->
+    <button class="end-btn" id="endBtn">आगे बढ़ें</button>
   </div>
 
   <!-- DEV VALIDATOR BANNER -->
@@ -2650,6 +3061,10 @@ body.is-start .phase-gate{
   "matras": [
    "ु",
    "ू"
+  ],
+  "letters": [
+   "उ",
+   "ऊ"
   ]
  },
  "phase_transition_audio": {
@@ -2915,8 +3330,8 @@ body.is-start .phase-gate{
    "id": "T1",
    "phase": "tutorial",
    "eis": "enactive",
-   "type": "MATRA_INTRO",
-   "prompt_hi": "आज हम छोटी उ और बड़ी ऊ की मात्रा वाले शब्द पढ़ेंगे।",
+   "type": "MATRA_PAIRS",
+   "prompt_hi": "",
    "audio": {
     "prompt": "vo_t1_prompt"
    },
@@ -2925,12 +3340,14 @@ body.is-start .phase-gate{
      {
       "letter": "उ",
       "matra": "ु",
-      "audio": "vo_pair_u"
+      "audio": "vo_pair_u",
+      "cue_ms": 1180
      },
      {
       "letter": "ऊ",
       "matra": "ू",
-      "audio": "vo_pair_uu"
+      "audio": "vo_pair_uu",
+      "cue_ms": 1100
      }
     ],
     "phonemes": {
@@ -2938,7 +3355,7 @@ body.is-start .phase-gate{
      "ू": "vo_matra_uu"
     },
     "auto": true,
-    "train": true
+    "no_heading": true
    }
   },
   {
@@ -2946,7 +3363,7 @@ body.is-start .phase-gate{
    "phase": "tutorial",
    "eis": "symbolic",
    "type": "MATRA_BUILD",
-   "prompt_hi": "आइए, देखें कि छोटी उ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।",
+   "prompt_hi": "",
    "audio": {
     "prompt": "vo_t2_prompt",
     "base": "vo_base_pal",
@@ -2968,7 +3385,8 @@ body.is-start .phase-gate{
     "base_emoji": null,
     "cap_base": null,
     "cap_mid": null,
-    "cap_result": null
+    "cap_result": null,
+    "no_heading": true
    }
   },
   {
@@ -2976,7 +3394,7 @@ body.is-start .phase-gate{
    "phase": "tutorial",
    "eis": "iconic",
    "type": "MEET_PAIR",
-   "prompt_hi": "आइए, छोटी उ की मात्रा वाले कुछ शब्द देखें।",
+   "prompt_hi": "",
    "audio": {
     "prompt": "vo_t3_prompt"
    },
@@ -2998,7 +3416,8 @@ body.is-start .phase-gate{
       "audio_line": "vo_meet_dhanush",
       "matra_audio": null
      }
-    ]
+    ],
+    "no_heading": true
    }
   },
   {
@@ -3006,7 +3425,7 @@ body.is-start .phase-gate{
    "phase": "tutorial",
    "eis": "symbolic",
    "type": "MATRA_BUILD",
-   "prompt_hi": "आइए, देखें कि बड़ी ऊ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।",
+   "prompt_hi": "",
    "audio": {
     "prompt": "vo_t4_prompt",
     "base": "vo_base_phal",
@@ -3028,7 +3447,8 @@ body.is-start .phase-gate{
     "base_emoji": null,
     "cap_base": null,
     "cap_mid": null,
-    "cap_result": null
+    "cap_result": null,
+    "no_heading": true
    }
   },
   {
@@ -3036,7 +3456,7 @@ body.is-start .phase-gate{
    "phase": "tutorial",
    "eis": "iconic",
    "type": "MEET_PAIR",
-   "prompt_hi": "आइए, बड़ी ऊ की मात्रा वाले कुछ शब्द देखें।",
+   "prompt_hi": "",
    "audio": {
     "prompt": "vo_t5_prompt"
    },
@@ -3058,7 +3478,8 @@ body.is-start .phase-gate{
       "audio_line": "vo_meet_kabootar",
       "matra_audio": null
      }
-    ]
+    ],
+    "no_heading": true
    }
   },
   {
@@ -8714,7 +9135,14 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
      So every chain carries the epoch it started in, and a callback whose epoch has moved on is
      simply dropped. Nothing else has to know about it. */
   let _voGen = 0;
-  function newVoEpoch(){ return ++_voGen; }
+  function newVoEpoch(){
+    /* the no-heading opt-out is per SLIDE, so it is cleared on every mount and re-applied only by
+       a module whose card asks for it. Round 2 hid the band GLOBALLY and shipped 14 screens with
+       a mascot sitting next to nothing; this cannot do that. */
+    const st = document.getElementById("stage");
+    if(st){ st.classList.remove("no-band"); st.classList.remove("mp-center"); }
+    return ++_voGen;
+  }
   function say(src, next){
     const gen = _voGen;
     let done = false;
@@ -9638,7 +10066,8 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
   SlideModules.MATRA_BUILD = {
     mount(host, slide){
       const d = slide.data;
-      newVoEpoch();          /* any chain still running from a previous mount is now stale */
+      newVoEpoch();
+      if(d.no_heading){ const _st = document.getElementById("stage"); if(_st) _st.classList.add("no-band"); }          /* any chain still running from a previous mount is now stale */
       const wrap = document.createElement("div");
       wrap.className = "mb-stage";
       /* Laid out to the SME's own mockup (_SME_MOCKUPS/slide05_image5.png): each of the three
@@ -9747,7 +10176,8 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
   SlideModules.MEET_PAIR = {
     mount(host, slide){
       const d = slide.data;
-      newVoEpoch();          /* any chain still running from a previous mount is now stale */
+      newVoEpoch();
+      if(d.no_heading){ const _st = document.getElementById("stage"); if(_st) _st.classList.add("no-band"); }          /* any chain still running from a previous mount is now stale */
       const wrap = document.createElement("div");
       wrap.className = "mp-stage";
       host.appendChild(wrap);
@@ -9920,12 +10350,30 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       state.ownsAudio = true; state.demoRunning = true; setNavActive(false);
       if(typeof setSwMood === "function") setSwMood("teach");
 
-      /* SETTLED BY DEFAULT: every pair is painted and visible from the start, and `is-on` only
-         adds the highlight. A capture with animation frozen therefore shows the whole screen,
-         not one pair — the failure mode that shipped three blank teach pages last round. */
+      /* WITHIN EACH PAIR THE TWO GLYPHS ARRIVE SEPARATELY. The SME's animation note is explicit:
+         "First उ appears, then ु appears beside it with a soft glow. After that, both can fade
+         slightly / dim softly. Then ऊ appears, and ू appears beside it." Until now both glyphs
+         were painted together and only the PAIR sequenced, so the one thing the screen exists to
+         teach — that this letter owns this mark — was never actually shown happening.
+
+         SETTLED BY DEFAULT, held back live. The hold class is named `mi-seq-hidden` on purpose:
+         this bundle's capture settler strips anything ending in `seq-hidden`, so a frozen review
+         capture still photographs the finished screen instead of two empty coaches. */
+      const parts = train.coaches.map(c => ({
+        letter: c.body.querySelector(".mi-letter"),
+        arrow:  c.body.querySelector(".mi-arrow"),
+        matra:  c.body.querySelector(".mi-matra")
+      }));
+      const reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches);
+      const showAll = ()=> parts.forEach(pt => [pt.letter, pt.arrow, pt.matra]
+        .forEach(e => e && e.classList.remove("mi-seq-hidden")));
+      if(!reduced) parts.forEach(pt => [pt.letter, pt.arrow, pt.matra]
+        .forEach(e => e && e.classList.add("mi-seq-hidden")));
+
       const done = ()=>{
         state.demoRunning = false;
         pairs.forEach(p => p.classList.remove("is-dim"));
+        showAll();                       /* nothing may be left invisible once the beat is over */
         state.replayAudio = ()=> sayAll(d.pairs.map(p => clip(p.audio)), ()=>{});
         $("navBtn").onclick = ()=> completeSlide(true);
         setNavActive(true);
@@ -9934,15 +10382,142 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       const step = ()=>{
         if(i >= pairs.length){ done(); return; }
         const k = i++;
+        const pt = parts[k];
+        /* "Keep only one pair active at a time" · "Each active pair should light up when its VO
+           plays" — the pair before this one dims rather than disappearing. */
         pairs.forEach((p, n) => p.classList.toggle("is-dim", n !== k));
         pairs[k].classList.add("is-on");
-        sfxPopSoft();
+        /* the letter lands with «यह है उ», … */
+        if(pt.letter){ pt.letter.classList.remove("mi-seq-hidden"); pt.letter.classList.add("mi-pop"); }
+        /* … and the matra beside it a beat later, on «इसकी मात्रा है — ु», with the soft glow and
+           the chime the note asks for. 1500ms is roughly where that half of the line starts in a
+           ~4s clip; it is a beat, not a claim of lip-sync. */
+        setTimeout(()=>{
+          if(!pt.matra || !pt.matra.isConnected) return;
+          if(pt.arrow){ pt.arrow.classList.remove("mi-seq-hidden"); pt.arrow.classList.add("mi-pop"); }
+          pt.matra.classList.remove("mi-seq-hidden");
+          pt.matra.classList.add("mi-pop", "mi-glow");
+          sfxPopSoft();                  /* SME: "a soft pop / chime when each MATRA symbol appears" */
+        }, 1500);
         say(clip(d.pairs[k].audio), ()=> setTimeout(step, 320));
       };
       /* `instruction` is optional in round 3 — the SME's VO list for this screen is the intro
          line and then the two pair lines, nothing between them. */
       train.whenParked(()=> say(A(slide, "prompt"), ()=> sayOpt(A(slide, "instruction"), step)));
-      setTimeout(()=>{ if(state.demoRunning) done(); }, 30000);
+      /* never strand the slide, and never leave a glyph hidden if the chain stalls */
+      setTimeout(()=>{ if(state.demoRunning) done(); else showAll(); }, 30000);
+    }
+  };
+
+
+  /* ================================================================ 12 · MATRA_PAIRS */
+  /* PORTED FROM HI02H11_L02_S01, which built this exact screen for आ/इ/ई. The SME's page-1 note
+     is the same note in both decks, and the sibling's reading of it is the one to match:
+
+       "First उ appears, THEN ु appears beside it with a soft glow."
+       "After that, both can fade slightly / dim softly. Then ऊ appears, and ू appears beside it."
+       "Use a simple pop / fade animation." · "Do not add extra decorative elements."
+
+     So NOTHING is on screen at mount; a pair arrives only when its turn comes; inside a pair the
+     LETTER lands first and the matra follows beside it; and a pair already taught stays FADED
+     rather than being restored to full — the note never asks for that.
+
+     NO CARD, NO BOGIE, NO HEADING. The sibling's own comment records why the card chrome went:
+     it was "exactly the 'extra decorative element' the note rules out". The train belongs to the
+     screens that need coaches to sort into; page 1 is two glyphs and a relationship between them.
+
+     NO `.ink-glyph` ON THESE SPANS, deliberately, and this is the sibling's measurement: the
+     engine's centerInkGlyph() squares up the ink BOUNDING BOX, which translated the letter ~2.5px
+     but the matra ~13.3px, so the two never shared a baseline. Plain baseline alignment puts the
+     letter and its dotted circle on one line. */
+  SlideModules.MATRA_PAIRS = {
+    mount(host, slide){
+      newVoEpoch();
+      const d = slide.data || {};
+      const pairs = d.pairs || [];
+      /* the SME asks for no heading on this screen; the band is hidden per-slide rather than
+         globally, so an ACCIDENTALLY empty heading anywhere else still fails the build */
+      if(d.no_heading){ const st = document.getElementById("stage");
+        if(st){ st.classList.add("no-band");
+                /* r7: this screen is two cards and a lot of air, so it centres on the
+                   MAIN BOX rather than on the content box the nav-button clearance
+                   leaves behind. Scoped to a class this module owns and newVoEpoch
+                   drops, so no other screen loses that clearance. */
+                st.classList.add("mp-center"); } }
+
+      const row = document.createElement("div"); row.className = "mp-row";
+      const els = pairs.map(p => {
+        const el = document.createElement("div"); el.className = "mp-pair";
+        el.innerHTML = '<span class="mp-letter">' + p.letter + "</span>" +
+                       '<span class="mp-arrow">\u2192</span>' +
+                       '<span class="mp-matra">' + matraGlyph(p.matra) + "</span>";
+        row.appendChild(el);
+        return el;
+      });
+      host.appendChild(row);
+
+      /* "Keep the Next button disabled during the sequence. Activate it only after both pairs
+         have been shown and spoken." */
+      state.ownsAudio = true; state.demoRunning = true;
+      if(typeof setSwMood === "function") setSwMood("teach");
+      setNavActive(false);
+      $("navBtn").onclick = ()=> completeSlide(true);
+
+      let i = 0, finished = false;
+      /* the deck's END STATE is the last pair still lit and the earlier one faded slightly */
+      const finish = ()=>{
+        if(finished) return; finished = true;
+        state.demoRunning = false;
+        els.forEach((e, k) => {
+          e.classList.toggle("active", k === els.length - 1);
+          e.classList.toggle("shown",  k !== els.length - 1);
+          e.querySelectorAll(".mp-arrow, .mp-matra").forEach(x => x.classList.add("mp-in"));
+          /* the glow belongs to the pair that is still lit; a faded pair must not keep it */
+          const mm = e.querySelector(".mp-matra");
+          if(mm) mm.classList.toggle("mp-hl", k === els.length - 1);
+        });
+        setNavActive(true);
+      };
+
+      const step = ()=>{
+        if(CARD.slides[state.idx] !== slide) return;      // navigated away -> drop the chain
+        if(i >= els.length){ finish(); return; }
+        const k = i, el = els[k], p = pairs[k]; i++;
+        /* a pair already taught fades; the one arriving lights up */
+        els.forEach(e => { if(e !== el && e.classList.contains("active")){
+          e.classList.remove("active"); e.classList.add("shown"); } });
+
+        /* 1 · the LETTER arrives on its own */
+        el.classList.add("active");
+        const arrow = el.querySelector(".mp-arrow"), m = el.querySelector(".mp-matra");
+
+        /* 2 · then the matra lands beside it with the soft glow and a subtle chime */
+        setTimeout(()=>{
+          if(CARD.slides[state.idx] !== slide) return;
+          arrow.classList.add("mp-in");
+          m.classList.remove("mp-in"); void m.offsetWidth; m.classList.add("mp-in");
+          sfxPopSoft();                                    // kept subtle so the VO stays clear
+          /* 3 · the pair is lit, so now its line plays — "light up when its VO plays" */
+          say(clip(p.audio), ()=> setTimeout(step, 560));
+          /* 4 · AND THE MATRA LIGHTS UP ON THE WORDS THAT NAME IT. The line is «यह है उ। इसकी
+             मात्रा है — ु।»: the first half names the LETTER, and lighting the matra there would
+             point at the wrong mark while the right one is being spoken. `cue_ms` is where
+             «इसकी» starts, measured off the clip itself at build time, so the two clips (4.13s
+             and 3.85s) each get their own moment rather than sharing a guess. */
+          const cue = Math.max(0, p.cue_ms || 1300);
+          setTimeout(()=>{
+            if(CARD.slides[state.idx] !== slide) return;   // navigated away mid-line
+            if(!el.classList.contains("active")) return;   // a later pair already took the light
+            m.classList.add("mp-hl");
+          }, cue);
+        }, 480);
+      };
+
+      state.replayAudio = ()=> sayAll(
+        [A(slide, "prompt")].concat(pairs.map(p => clip(p.audio))).filter(Boolean), ()=>{});
+      say(A(slide, "prompt"), ()=> setTimeout(step, 350));
+      /* FAIL-SAFE: आगे never stays dead if a clip blocks or is missing */
+      setTimeout(()=>{ if(CARD.slides[state.idx] === slide) finish(); }, 30000);
     }
   };
 
@@ -10538,21 +11113,47 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
     el.dataset.ltDone = "1";
     const ms = hero.matras || [];
 
+    /* r7: THE GREETING WAITS FOR THE TRAIN. It used to start at boot, i.e. under a 3.4s arrival
+       with a whistle, a chug bed and two sparkles over it — the same clash this bundle fixed on
+       all seven activity screens, still live on the one screen every child sees first.
+       `ltReady()` is the single release point, and the backstop below fires it even if the
+       arrival never completes, because a cover that never speaks is worse than one that speaks
+       over itself. */
+    window.__ltReady = false;
+    window.__ltWaiters = [];
+    function ltReady(){
+      if(window.__ltReady) return;
+      window.__ltReady = true;
+      const q = window.__ltWaiters; window.__ltWaiters = [];
+      q.forEach(fn => { try{ fn(); }catch(e){} });
+    }
+    window.landingTrainReady = (fn)=>{ if(window.__ltReady) fn(); else window.__ltWaiters.push(fn); };
+    setTimeout(ltReady, 7000);        /* never leave the cover silent on a stalled arrival */
+
     const tc = TrainChrome.mount(el, {
       coaches: ms.length,
       coach_label: ms.map(()=> null),
       /* `lt-pending` holds each matra invisible until the train has parked — the SME asks for
          them "one by one" AFTER the arrival, so they land on a coach that is standing still */
-      coach_body: ms.map(m => ({ html: '<span class="lt-matra lt-pending">' + matraGlyph(m) + "</span>" })),
+      /* r7: «उ (ु)» — the letter with its matra in brackets, the same form the G4 bins use,
+         so the cover names the pair exactly as the sorting screens later will. */
+      coach_body: ms.map((m, i) => ({ html: '<span class="lt-matra lt-pending">' +
+        ((hero.letters && hero.letters[i]) ? hero.letters[i] + ' <span class="lt-br">(' +
+          matraGlyph(m) + ')</span>' : matraGlyph(m)) + "</span>" })),
       drop_zone: false,
       /* the sibling's landing train is 634px wide for a locomotive and THREE coaches, i.e. a
          per-part scale of 634/2155 = 0.294. Matching that scale rather than a width budget is
          what makes the two covers read as the same train: 0.294 * the 592px ink band = 174. */
       maxH: 174,
       on_enter: ()=>{
+        const last = ms.length - 1;
         [...el.querySelectorAll(".lt-matra")].forEach((sp, i)=> setTimeout(()=>{
           sp.classList.remove("lt-pending"); sp.classList.add("lt-pop");
           sfxSparkle();                       // SME: "a light sparkle/pop SFX when each matra appears"
+          /* r7: the greeting waits for THIS — the last matra has popped and its sparkle has
+             sounded, so the arrival is genuinely over and nothing is left to talk over. The pop
+             animation is 420ms; the clip starts once it has landed rather than on top of it. */
+          if(i === last) setTimeout(ltReady, 460);
         }, 220 + i * 520));
       }
     });
@@ -10584,7 +11185,303 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
 
 })();
 
+
+/* ==========================================================================================
+   [r5] FLN ANIMATION KIT — ported from HI02H11_L02_S01's install
+   github.com/ananya-goswami/fln-animation-toolkit · Recipe 1 (start screen stars, drift) ·
+   Recipe 2 (tap to burst). Classic script only, per the kit's R3. Every entry point is wrapped
+   so a throw here can never strand the boot loader (R4), and every effect checks the
+   reduced-motion guard as well as the CSS kill-switch (R5).
+   This is the "animation in the stars and bubble" Yasir found missing on the cover.
+   ========================================================================================== */
+
+/* ===== FLN ANIMATION KIT: core BEGIN ===== */
+(function(){ "use strict";
+  var M = window.FLNMotion = window.FLNMotion || {};
+  M.still = function(){
+    try{ return document.documentElement.classList.contains("no-anim") ||
+      (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }
+    catch(_){ return false; }
+  };
+  M.scale = function(){
+    try{ return parseFloat(getComputedStyle(document.documentElement)
+      .getPropertyValue("--scale")) || 1; }catch(_){ return 1; }
+  };
+  M.guard = function(fn){
+    try{ fn(); }catch(e){ try{ console.warn("[animation-kit]", e && e.message); }catch(_){} }
+  };
+  var _actx = null;
+  M.audio = function(){
+    try{
+      var AC = window.AudioContext || window.webkitAudioContext; if(!AC) return null;
+      _actx = _actx || new AC();
+      if(_actx.state === "suspended") _actx.resume();
+      return _actx;
+    }catch(_){ return null; }
+  };
+  M.ready = function(fn){
+    if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
+    else fn();
+  };
+})();
+/* ===== FLN ANIMATION KIT: core END ===== */
+
+/* ===== FLN ANIMATION KIT: sky-drift BEGIN ===== */
+(function(){ "use strict";
+  var M = window.FLNMotion;
+
+  function build(o){
+    var sky = typeof o.container === "string" ? document.querySelector(o.container) : o.container;
+    if(!sky) return null;
+    sky.textContent = "";
+    var maxSize = 0, frag = document.createDocumentFragment();
+
+    o.layers.forEach(function(L, li){
+      for(var i = 0; i < o.lanes; i++){
+        var a = ((360 / o.lanes) * i + L.rot) * Math.PI / 180;
+        var cos = Math.cos(a), sin = Math.sin(a);
+        var size = +((o.size[0] + Math.random() * (o.size[1] - o.size[0])) * L.scale).toFixed(2);
+        if(size > maxSize) maxSize = size;
+        var dur = +(o.dur[0] + Math.random() * (o.dur[1] - o.dur[0])).toFixed(1);
+        var el = document.createElement("i");
+        el.className = o.shapes[(i + li) % o.shapes.length];
+        el.style.cssText =
+          "--s:"  + size + "vmax;" +
+          "--x1:" + (o.r0 * cos).toFixed(2) + "vmax;--y1:" + (o.r0 * sin).toFixed(2) + "vmax;" +
+          "--x2:" + (o.r1 * cos).toFixed(2) + "vmax;--y2:" + (o.r1 * sin).toFixed(2) + "vmax;" +
+          "--t:"  + dur + "s;" +
+          "--d:-" + (Math.random() * dur).toFixed(1) + "s;" +     // negative = de-sync
+          "--g:"  + (o.glow[0] + Math.random() * (o.glow[1] - o.glow[0])).toFixed(1) + "s;" +
+          "--gd:-" + (Math.random() * 4).toFixed(1) + "s;" +
+          "--o:"  + (o.opacity[0] + Math.random() * (o.opacity[1] - o.opacity[0])).toFixed(2) + ";";
+        frag.appendChild(el);
+      }
+    });
+    sky.appendChild(frag);
+
+    // collision proof: lane arc at the tightest radius must be >= 1.5x the largest element
+    var arc = (2 * Math.PI * o.r0) / o.lanes, ok = arc >= maxSize * 1.5;
+    if(!ok && o.warn !== false){
+      console.warn("[animation-kit] sky lanes too tight: arc " + arc.toFixed(2) +
+        "vmax vs element " + maxSize.toFixed(2) + "vmax. Reduce lanes or size.");
+    }
+    return { arc:arc, maxSize:maxSize, safe:ok, count:sky.children.length };
+  }
+
+  M.sky = {
+    defaults: {
+      container:".sg-sky", lanes:29,
+      layers:[{rot:0,scale:1},{rot:6.2,scale:0.62},{rot:-6.2,scale:0.55}],
+      r0:22, r1:72, size:[0.8,2.6], dur:[18,34], glow:[3.0,4.8],
+      opacity:[0.62,0.92], shapes:["s1","s2","s3","s4","s5"], warn:true
+    },
+    init: function(opts){
+      var o = Object.assign({}, this.defaults, opts || {}), res = null;
+      M.guard(function(){ res = build(o); });
+      return res;
+    }
+  };
+  M.ready(function(){ M.guard(function(){ if(!window.__skyManual) M.sky.init(); }); });
+})();
+/* ===== FLN ANIMATION KIT: sky-drift END ===== */
+
+/* ===== FLN ANIMATION KIT: sky-burst BEGIN ===== */
+(function(){ "use strict";
+  var M = window.FLNMotion;
+
+  function boom(o){                      // sine thud + noise tail + square crackles
+    var actx = M.audio(); if(!actx) return;
+    try{
+      var t = actx.currentTime, out = actx.createGain();
+      out.gain.value = o.volume; out.connect(actx.destination);
+
+      var tg = actx.createGain();
+      tg.gain.setValueAtTime(0.9, t);
+      tg.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      tg.connect(out);
+      var osc = actx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(420, t);
+      osc.frequency.exponentialRampToValueAtTime(90, t + 0.16);
+      osc.connect(tg); osc.start(t); osc.stop(t + 0.18);
+
+      var n = actx.sampleRate * 0.45;
+      var buf = actx.createBuffer(1, n, actx.sampleRate), d = buf.getChannelData(0);
+      for(var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.6);
+      var src = actx.createBufferSource(); src.buffer = buf;
+
+      for(var c = 0; c < o.crackles; c++){
+        var cg = actx.createGain(), ct = t + 0.10 + Math.random() * 0.30;
+        cg.gain.setValueAtTime(0.0001, ct);
+        cg.gain.exponentialRampToValueAtTime(0.18, ct + 0.006);
+        cg.gain.exponentialRampToValueAtTime(0.0001, ct + 0.07);
+        cg.connect(out);
+        var co = actx.createOscillator();
+        co.type = "square";
+        co.frequency.setValueAtTime(1500 + Math.random() * 2200, ct);
+        co.connect(cg); co.start(ct); co.stop(ct + 0.08);
+      }
+      var bp = actx.createBiquadFilter();
+      bp.type = "bandpass"; bp.frequency.value = 3400; bp.Q.value = 0.8;
+      var ng = actx.createGain();
+      ng.gain.setValueAtTime(0.0001, t);
+      ng.gain.exponentialRampToValueAtTime(0.5, t + 0.03);
+      ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+      src.connect(bp); bp.connect(ng); ng.connect(out); src.start(t + 0.02);
+    }catch(_){}
+  }
+
+  function pop(el, r, o){
+    el.classList.add("popped");
+    // respawn on the next FLIGHT lap — the glow cycle is much shorter, so filter by name
+    el.addEventListener("animationiteration", function back(e){
+      if(e.animationName !== "sgFly") return;
+      el.classList.remove("popped");
+      el.removeEventListener("animationiteration", back);
+    });
+
+    var kind = "k-dot", cls = el.classList;
+    for(var ci = 0; ci < cls.length; ci++){ if(o.kind[cls[ci]]) kind = o.kind[cls[ci]]; }
+
+    var bs = Math.max(11, r.width);
+    var b = document.createElement("div");
+    b.className = "sg-burst " + kind;
+    b.style.left = (r.left + r.width / 2) + "px";
+    b.style.top  = (r.top  + r.height / 2) + "px";
+    b.style.setProperty("--bs", bs + "px");
+    b.appendChild(document.createElement("div")).className = "fl";
+
+    var k = 0;
+    for(var g = 0; g < o.rings.length; g++){
+      var R = o.rings[g], off = Math.random() * Math.PI * 2;
+      for(var i = 0; i < R.n; i++, k++){
+        var a = off + i / R.n * Math.PI * 2;
+        var dist = bs * R.rad * (0.78 + Math.random() * 0.44);
+        var p = document.createElement("i");
+        p.style.cssText =
+          "--ps:"  + (bs * R.size * (0.8 + Math.random() * 0.5)).toFixed(1) + "px;" +
+          "--dx:"  + (Math.cos(a) * dist).toFixed(1) + "px;" +
+          "--dy:"  + (Math.sin(a) * dist).toFixed(1) + "px;" +
+          "--gy:"  + (dist * o.gravity).toFixed(1) + "px;" +
+          "--sd:"  + (R.dur + Math.random() * 0.22).toFixed(2) + "s;" +
+          "--sdl:" + (Math.random() * 0.06).toFixed(3) + "s;" +
+          "color:" + o.hues[k % o.hues.length];
+        b.appendChild(p);
+      }
+    }
+    document.body.appendChild(b);
+    if(o.sound) boom(o);
+    setTimeout(function(){ b.remove(); }, o.life);
+  }
+
+  M.skyBurst = {
+    defaults: {
+      container:".sg-sky", when:["is-start","is-end"],
+      rings:[{n:9,rad:3.1,size:.58,dur:.80},{n:7,rad:1.8,size:.78,dur:.62}],
+      hues:["#FCB717","#3B7DD8","#21A74A","#E5484D","#7048D6","#F1781D"],
+      kind:{s1:"k-star",s2:"k-star",s3:"k-spark",s4:"k-dot",s5:"k-dot"},
+      gravity:0.42, pad:12, padRatio:0.7, minAlpha:0.08, life:1200,
+      sound:true, volume:0.22, crackles:4
+    },
+    init: function(opts){
+      var o = Object.assign({}, this.defaults, opts || {});
+      M.guard(function(){
+        var sky = typeof o.container === "string"
+          ? document.querySelector(o.container) : o.container;
+        if(!sky) return;
+        // capture phase: .sg-sky is pointer-events:none, so hit-test by rect (R6)
+        document.addEventListener("pointerdown", function(e){
+          if(M.still()) return;
+          if(!o.when.some(function(c){ return document.body.classList.contains(c); })) return;
+          /* INTERACTIVE_TAPS_ARE_NOT_OURS. This handler claims the tap with preventDefault(),
+             which kills the CLICK that would have followed — so a star drifting over शुरू करें
+             made the button silently ignore the press. Worse, the mask that hides stars behind
+             the centre card is visual only: those stars still have a box and a non-zero computed
+             opacity, so the kit's minAlpha test cannot tell they are invisible, and the play
+             button sits right inside that masked area. A control's tap is never ours to take. */
+          if(e.target && e.target.closest &&
+             e.target.closest("button,a,input,select,textarea,[role=button],[onclick]")) return;
+          var els = sky.querySelectorAll("i:not(.popped)");
+          for(var i = 0; i < els.length; i++){
+            var el = els[i], r = el.getBoundingClientRect();
+            if(r.width < 2) continue;
+            var pad = Math.max(o.pad, r.width * o.padRatio);   // ~4px targets need slack
+            if(e.clientX < r.left - pad || e.clientX > r.right  + pad ||
+               e.clientY < r.top  - pad || e.clientY > r.bottom + pad) continue;
+            if(parseFloat(getComputedStyle(el).opacity) < o.minAlpha) continue;
+            // claim the tap, or it also fires the button under the star
+            e.stopPropagation(); e.preventDefault();
+            var op = Object.assign({}, o);
+            if(typeof isMuted !== "undefined" && isMuted) op.sound = false;   // honour the dev mute
+            pop(el, r, op);
+            return;
+          }
+        }, true);
+      });
+    }
+  };
+  M.ready(function(){ M.guard(function(){ M.skyBurst.init(); }); });
+})();
+/* ===== FLN ANIMATION KIT: sky-burst END ===== */
+
 /* == TRAIN MODULE SET :: END == */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -11168,8 +12065,72 @@ function boot(){
   // greeting lives HERE now (not on slide 0), which also kills the old overlap glitch where the
   // landing VO and slide-0 VO could talk over each other.
   const landSrc = (CARD.assets && CARD.assets.audio && CARD.assets.audio["vo_landing"]) || ("assets/Audio/vo_landing." + AUDIO_EXT);
-  const playLanding = ()=>{ if(!$("startGate").classList.contains("hidden")) play(landSrc, ()=>{}); };
-  const sgVo = $("sgVo"); if(sgVo) sgVo.onclick = (e)=>{ e.stopPropagation(); playLanding(); };
+  /* [r5] THE TWO START-BUTTON STATES, ported from S01.
+     (a) WAITING. The greeting is the lesson's opening instruction and the cover is the one screen
+         with nothing else to do, so the button is genuinely dead until it finishes - and therefore
+         has to look dead. setStartBtnReady(false) is called as the greeting starts and (true) at
+         its end, on the same path that arms the idle timer, so the button and the pulse can never
+         disagree about whether the VO is still running.
+     (b) THE EARNED PULSE. Our [30l] ruling killed the always-on pulse: it ran from first paint, so
+         it was wallpaper, not a signal, and there was nothing left to escalate to when the child
+         actually stalled. This does not revive it - the pulse now waits for 5 seconds of stillness
+         on the cover. Any touch of the cover counts as activity and RESTARTS the wait rather than
+         ending it: cancelling outright meant one stray tap bought permanent silence, which is not
+         what "inactive for 5 seconds" describes. */
+  const setStartBtnReady = (ready)=>{
+    const b = $("sgBtn"); if(!b) return;
+    b.disabled = !ready;
+    b.classList.toggle("sg-waiting", !ready);
+    if(!ready) b.classList.remove("idle-pulse");
+  };
+  let _startNudgeT = 0;
+  const _onLandingNow = ()=> !$("startGate").classList.contains("hidden");
+  const disarmStartNudge = ()=>{ clearTimeout(_startNudgeT); _startNudgeT = 0;
+    const b = $("sgBtn"); if(b) b.classList.remove("idle-pulse"); };
+  const armStartNudge = ()=>{
+    clearTimeout(_startNudgeT);
+    _startNudgeT = setTimeout(()=>{
+      if(!_onLandingNow()) return;
+      const btn = $("sgBtn");
+      if(!btn || btn.disabled) return;      /* a button the child cannot press yet must not beg */
+      btn.classList.add("idle-pulse");
+    }, 5000);
+  };
+  setStartBtnReady(false);                  /* dead from first paint - the greeting is coming */
+  { const sg = $("startGate");
+    if(sg) sg.addEventListener("pointerdown", ()=>{ disarmStartNudge(); armStartNudge(); }, true); }
+
+  /* [r7] THE GREETING WAITS FOR THE TRAIN TO ARRIVE.
+     `playLanding()` is two callers with one body: the automatic greeting on first paint, and the
+     सुनो chip. Only the FIRST is gated - an explicit replay must always replay at once, which is
+     the whole point of the chip. `window.landingTrainReady` is defined only when a matra_train
+     hero is on the cover; every other landing keeps talking immediately. */
+  /* [r9] Did the greeting ever actually SOUND? The autoplay fallback below has to tell "the
+     browser refused it" from "it already played" and from "it is queued behind the train", and
+     live-audio state reports the same thing (nothing is playing) in all three.
+     THIS IS NOT A CALL-FLAG. [30m] warns, correctly, that "did we call play()" kills the very
+     fallback it is meant to guard - on a refused autoplay we DID call it. The signal is the
+     RETURN: a greeting that reports back in under 600ms never sounded, because a refused clip
+     comes back at once and a real 5s one cannot. Only a clip that actually ran counts. */
+  let _landingPlayedOk = false;
+  const _speakLanding = ()=>{ if(!_onLandingNow()) return;
+    const _t0 = Date.now();
+    setStartBtnReady(false); disarmStartNudge();
+    play(landSrc, ()=>{ if(Date.now() - _t0 > 600) _landingPlayedOk = true;
+                        setStartBtnReady(true); armStartNudge(); }); };
+  const playLanding = (immediate)=>{
+    if(!_onLandingNow()) return;
+    if(!immediate && typeof window.landingTrainReady === "function"){
+      setStartBtnReady(false);          /* stay visibly busy through the arrival, not just silent */
+      window.landingTrainReady(_speakLanding);
+      return;
+    }
+    _speakLanding();
+  };
+  /* never strand the child behind a clip that never ends or never starts */
+  setTimeout(()=>{ if(_onLandingNow() && $("sgBtn") && $("sgBtn").disabled){
+    setStartBtnReady(true); armStartNudge(); } }, 12000);
+  const sgVo = $("sgVo"); if(sgVo) sgVo.onclick = (e)=>{ e.stopPropagation(); playLanding(true); };   /* true = an explicit replay never waits for the train */
   // ---- [engine JS] r4/P2 boot loader: loader.gif until assets warm, then it dismisses ITSELF into
   // the landing (NO tap gate). DUAL auto-dismiss (window 'load' OR a 2.5s watchdog — never strand the
   // child), deduped by .done. The same handler adds body.loaded (unblocks the concept-strip stagger)
@@ -11196,7 +12157,7 @@ function boot(){
     setTimeout(ready, 2500);   // watchdog: never strand the child on the loader
   })();
   // landing VO best-effort on first interaction too (some browsers block autoplay pre-gesture)
-  window.addEventListener("pointerdown", function once(){ window.removeEventListener("pointerdown", once);
+  window.addEventListener("pointerdown", function once(e){ window.removeEventListener("pointerdown", once);
     /* [30m] THE LANDING GREETING MUST NOT RESTART ON THE FIRST TAP (Yasir: "the landing VO does not
        seem fine"). This listener exists ONLY as an autoplay-policy fallback: if the browser refused
        the greeting on load, the first real user gesture is our chance to start it. But it fired
@@ -11210,7 +12171,23 @@ function boot(){
     const _a = (typeof currentAudio !== "undefined") ? currentAudio : null;
     /* [31x] a buffer clip has no element to inspect — isPlaying + a live source is the real signal. */
     const _audible = !!(isPlaying && (currentVoiceSource || (_a && !_a.paused && !_a.ended)));
-    if(!_audible) playLanding(); }, { once:true });
+    if(_audible) return;
+    /* [r9] THREE THINGS THAT ARE NOT A BLOCKED AUTOPLAY, and used to look like one.
+       (a) A TAP ON A CONTROL. The child pressing ▶ is asking to start the lesson, not asking to
+           hear the greeting. Worse than useless: the greeting disables the button, and a button
+           that becomes disabled mid-gesture never receives the click — so the press was eaten and
+           the child had to sit through the whole clip before the button returned. That is the bug
+           this comment exists for.
+       (b) THE GREETING ALREADY RAN — and ran for real, not "we called play()". `_audible` is
+           false the moment it ends, so every later tap looked like a refused autoplay and
+           replayed a 5s clip from the top.
+       (c) THE GREETING IS QUEUED behind the train's arrival (r7). Nothing is audible yet because
+           nothing is meant to be yet. */
+    if(e && e.target && e.target.closest &&
+       e.target.closest("button,a,input,select,textarea,[role=button],[onclick]")) return;   /* (a) */
+    if(_landingPlayedOk) return;                                                              /* (b) */
+    if(typeof window.landingTrainReady === "function" && !window.__ltReady) return;           /* (c) */
+    playLanding(); }, { once:true });
 
   let _starting=false;
   $("sgBtn").onclick = async()=>{
@@ -11218,7 +12195,7 @@ function boot(){
        with no existing signal in this engine. One-shot inside _xapi, so a mashed start
        cannot double-report, and a game opened-and-abandoned reports nothing. */
     try{ SwiftPAL.emit("activity_launched", { skill_code: CARD.skill_code }); }catch(e){}
-    if(_starting)return; _starting=true; $("sgBtn").disabled=true;   // a double-tap must not start twice
+    if(_starting)return; _starting=true; disarmStartNudge(); $("sgBtn").disabled=true;   // a double-tap must not start twice
     stopAudio();          // silence the landing greeting BEFORE slide 0 speaks (no VO overlap)
     _resumeVoiceAudio();  // [31x] unlock/resume INSIDE the Android user gesture
     _ac();

@@ -693,10 +693,374 @@
   transition:transform .42s cubic-bezier(.34,1.1,.5,1), opacity .42s ease; }
 @media (prefers-reduced-motion:reduce){ .sc-fly{ display:none; } }
 
-/* ---------- the cover's train has no rail ----------
-   On the activity screens the track is the line the train arrives along and it reads as a
-   railway. On the cover — where the train is really the title illustration — it cut the card in
-   half, and the sibling's cover does not have one. Scoped to `.lt-cover` so the seven activity
-   screens keep theirs. */
-.train-shell.lt-cover .train-track{ display:none; }
+/* [r7] THE COVER KEEPS ITS TRACK. It was hidden to match the sibling, whose cover has no rail -
+   but that was a copy of a decision, not a decision, and the ask here is explicit: the train on
+   the cover is a train, and a train on no track reads as a train falling. Restored. */
+
 .train-shell.lt-cover{ margin-bottom:6px; }
+
+/* ---------- MATRA_INTRO: the letter, then its matra ----------
+   SME: "First उ appears, then ु appears beside it with a soft glow … Use a simple pop / fade
+   animation … Keep animations subtle and child-friendly."
+   The hold class ends in `seq-hidden` deliberately: the capture settler strips anything with that
+   suffix, so a frozen review capture shows the finished pair rather than an empty coach. */
+.mi-seq-hidden{ opacity:0; }
+.mi-pop{ animation:miPop 380ms cubic-bezier(.34,1.5,.6,1) both; }
+@keyframes miPop{ from{ opacity:0; transform:scale(.55); } to{ opacity:1; transform:none; } }
+/* the "soft glow" on the matra — the mark is the thing being taught, so it is what lights up */
+.mi-matra.mi-glow{ text-shadow:0 0 12px rgba(232,69,60,.60), 0 0 22px rgba(232,69,60,.30); }
+@media (prefers-reduced-motion:reduce){
+  .mi-seq-hidden{ opacity:1; } .mi-pop{ animation:none; }
+}
+
+/* --- MATRA_PAIRS (deck page 4 · rows #17-#22) ---------------------------------------
+   letter + its matra, one pair at a time, only one active. */
+/* Deck page 4 animation, literally:
+     "First आ appears, THEN ा appears beside it with a soft glow."
+     "Then both fade slightly and इ → ि appears."  "Finally ई → ी appears."
+     "Use a simple pop/fade animation; NO EXTRA DECORATIVE ELEMENTS."
+   So: nothing is on screen at mount; a pair arrives only when its turn comes; inside a pair the
+   LETTER lands first and the matra follows beside it; a pair already taught stays faded, not
+   restored to full. The card chrome the first pass drew around each pair is gone — it was exactly
+   the "extra decorative element" the note rules out. Visibility is carried by opacity in the RULE
+   (not only inside @keyframes), so the frozen review capture shows the real settled state. */
+/* [r7] centred in BOTH axes inside the stage, not just horizontally: the row now owns the
+   whole height the removed heading band gave back, so `align-items:center` on a full-height row
+   is what puts the cards on the optical centre of the main box. */
+.mp-row{display:flex;align-items:center;justify-content:center;gap:70px;
+  width:100%;flex:1 1 auto;min-height:0;
+}
+/* Page 1 pairs are deliberately NOT ink-centred (no .ink-glyph on the spans): centerInkGlyph
+   squares up the ink BOUNDING BOX and was translating the letter ~2.5px but the matra ~13.3px, so
+   the two never shared a baseline and ि / ी (tall ascenders) sat differently from ा. Plain baseline
+   alignment puts all three dotted circles on one line. */
+/* [r6] THE CARD IS BACK, AND IT IS THE TRAIN-THEME CONTINUITY.
+   The note asks to "keep the train-theme continuity by showing each pair inside a train-style
+   card / bogie / box" - so with the train itself gone the BOX is what carries that thread, and
+   the screen still reads as part of a train lesson. Chrome copied verbatim from the round-2
+   stylesheet (`.mi-pair`), because the ask was "use this same structure as shown in the
+   screenshot" and the screenshot IS that build - approximating it would have been a redesign.
+   align-items:center, not baseline: inside a bordered card the two glyphs are read against the
+   BOX, so an optical centre beats a shared typographic baseline. */
+/* [r7] BIGGER CARD, AND CENTRED IN THE BOX. With the heading gone the screen has the full
+   stage height and the two cards were sitting small in a lot of empty space. Padding and gap grow
+   with the glyphs so the card grows in proportion rather than just gaining margin. */
+.mp-pair{display:flex;align-items:center;gap:26px;background:#fff;
+  border:3px solid #E4ECF7;border-radius:28px;padding:30px 60px;
+  box-shadow:0 10px 26px rgba(11,61,140,.12);
+  opacity:0;transform:scale(.92);
+  transition:opacity .45s ease,transform .45s ease,border-color .3s ease,box-shadow .3s ease;}
+/* [r6] DIM THE PAIR, NOT THE BOX. The note asks that a taught pair "fade slightly / dim softly",
+   and opacity on the whole card did that to the CARD too - against this pale grid the white fill
+   and its border washed out until the first card had visibly stopped being a card, which is not
+   what "dim softly" describes. The box keeps its full presence; the glyphs inside it fade. */
+.mp-pair.shown{transform:scale(.97);opacity:1;}
+.mp-pair.shown .mp-letter,
+.mp-pair.shown .mp-arrow,
+.mp-pair.shown .mp-matra{opacity:.42;}
+.mp-pair.shown{border-color:#EDF2F9;box-shadow:0 4px 12px rgba(11,61,140,.06);}
+.mp-pair.active{opacity:1;transform:scale(1);
+  border-color:#F7C948;box-shadow:0 0 0 5px rgba(247,201,72,.42),0 8px 20px rgba(11,61,140,.10);}
+.mp-letter{font-size:88px;font-weight:800;color:var(--navy);line-height:1;}
+.mp-arrow{font-size:52px;color:#7FA8D9;line-height:1;align-self:center;
+  opacity:0;transition:opacity .35s ease;}
+.mp-arrow.mp-in{opacity:1;}
+/* the matra is held back until the letter has landed, then pops in beside it and glows softly */
+.mp-matra{font-size:88px;font-weight:800;color:#FF8A00;line-height:1;   /* BRIGHT ORANGE — screen 1 only */
+  opacity:0;transform:scale(.55);
+  transition:opacity .38s ease,transform .38s cubic-bezier(.34,1.5,.6,1);}
+.mp-matra.mp-in{opacity:1;transform:scale(1);}
+/* [r8] THE GLOW IS CUED BY THE VOICE, NOT BY THE POP. It used to start the moment the matra
+   appeared - which is while the clip is still saying «यह है उ।», i.e. naming the LETTER. It now
+   waits for «इसकी मात्रा है», so the thing lighting up is the thing being said.
+   A third repeat was added because the glow now starts partway through the line and would
+   otherwise finish before the sentence does. */
+.mp-pair.active .mp-matra.mp-hl{animation:mpGlow 1200ms ease-in-out 3;}
+/* the dim above targets the same property the pop-in animates, so it has to win
+   once the pair is no longer the active one */
+.mp-pair.shown .mp-matra.mp-in{opacity:.42;}
+@keyframes mpGlow{0%,100%{text-shadow:0 0 0 rgba(255,138,0,0);}
+                  50%{text-shadow:0 0 26px rgba(255,138,0,.85),0 0 10px rgba(255,138,0,.6);}}
+@media (prefers-reduced-motion:reduce){.mp-pair.active .mp-matra.mp-in{animation:none;}}
+
+
+/* the SME asks for no heading on page 1; scoped to the slide that asks, never global */
+.stage.no-band .header-row{ display:none; }
+
+/* ==========================================================================================
+   PAGES 2-5 MATCHED TO THE SIBLING LESSON
+   ==========================================================================================
+   Comparing this lesson's teach screens against HI02H11_L02_S01's page by page, three things
+   differed and none of them was structural — the flow is already the same. They are chrome and
+   colour, and the sibling's choices are the SME's own notes read more literally:
+
+     · no card panels. "Do not add extra decorative elements" / "Keep the screen clean and
+       minimal." The sibling's own note records dropping exactly this chrome for that reason.
+     · the matra is ORANGE, not red. Red is this engine's WRONG colour — it is what a shaken
+       coach and a failed answer are painted in — so teaching a mark in the same red asks the
+       child to read "this is the bit that matters" and "this is the bit that is wrong" off one
+       hue. The sibling uses #FF8A00 throughout.
+     · no callout pill under the example word.
+   ========================================================================================== */
+
+/* --- the build screen loses its panels; the glyphs sit on the stage like the sibling's --- */
+.mb-panel{ background:none; border:0; box-shadow:none; padding:6px 10px; }
+.mb-p2{ background:rgba(233,241,252,.75); border-radius:18px; padding:10px 18px; }
+
+/* --- the matra is orange everywhere it is TAUGHT ---
+   `--wrong` stays red for wrong answers; this is a different meaning and needs a different hue. */
+:root{ --matra-hi:#FF8A00; }
+.mb-matra{ color:var(--matra-hi); }
+.mh-ov{ color:var(--matra-hi); }
+.mh-ov.mh-glow{ text-shadow:0 0 14px rgba(255,138,0,.60); }
+.mi-matra{ color:var(--matra-hi); }
+.mi-matra.mi-glow{ text-shadow:0 0 12px rgba(255,138,0,.60), 0 0 22px rgba(255,138,0,.30); }
+.tr-inmatra,.wb-inakshar{ color:var(--matra-hi); }
+@keyframes mhPulse{ 0%,100%{ filter:none }
+  50%{ filter:brightness(1.25) drop-shadow(0 0 9px rgba(255,138,0,.75)) } }
+
+/* --- the example screen loses the callout pill (the sibling has none) --- */
+.mp-callout{ display:none; }
+/* the isolated consonant is highlighted, not marked wrong — same reasoning as the matra */
+.mb-cons.mb-hot{ color:var(--matra-hi); }
+/* with the heading band gone the host has the full stage height; keep the teach content on the
+   optical centre rather than letting it ride up under the removed band */
+/* [r10] NO BOTTOM PADDING. That 40px was mine, added so heading-less teach content would clear
+   the आगे button - but it shortens the MAIN BOX by 40px, and only on the screens that opted out
+   of the heading. The result was page 1 at 561px tall and pages 2-5 at 521px: the same lesson
+   with two different card sizes, which is what Yasir spotted.
+   The sibling settles it: every teach slide there measures 1130x561 with NO bottom padding, and
+   its content clears the button perfectly well without it. The clearance the padding was buying
+   is already in the layout. Measured on both builds before removing it. */
+.stage.no-band .slide-host{ justify-content:center; }
+/* the row can only centre within a height it actually has */
+.stage.no-band .slide-host{ display:flex; flex-direction:column; }
+
+
+/* ==========================================================================================
+   [r5] BUTTONS + COVER MOTION — PARITY WITH HI02H11_L02_S01
+   Yasir: "you are still not using the buttons and its placement used in this file (play button,
+   next button) ... and also in the cover page there is animation in the stars and bubble which is
+   currently missing in my current file."
+   Three separate gaps, all measured off S01's engine rather than guessed:
+     (1) .nav-btn::after — the arrow glyph was 28px here against 52px there. The PILL is already
+         identical (same bottom:32, min-width, border, shadow); it was only ever the glyph inside
+         it that read small, which is why "placement" looked wrong when the geometry matched.
+     (2) .sg-btn — S01 ships an icon-only PLAY button (a play triangle through ::after, with the
+         Hindi kept as aria-label) plus two earned states. Ours showed the शुरू करें text and had
+         no states at all.
+     (3) the whole FLN ANIMATION KIT sky layer was absent (grep count 0) — that is the missing
+         "stars and bubble" motion on the cover.
+   ========================================================================================== */
+
+/* ---------- (1) the next button's arrow ---------- */
+.nav-btn::after{content:"\2192";font-size:52px;line-height:1;}
+.end-btn::after{content:"\2192";font-size:52px;line-height:1;}
+
+/* ---------- (2) the play button ----------
+   The pill itself is untouched — same fill, border, radius, shadow, and the 186px min-width that
+   stops an icon-only label collapsing it to a circle. Only the CONTENT changes, so there is no new
+   asset to ship and nothing to go missing. */
+.sg-btn::after{content:"\25B6";font-size:30px;line-height:1;display:block;transform:translateX(2px);}
+/* THE PULSE IS EARNED. Our [30l] ruling killed the always-on pulse because it was wallpaper rather
+   than a signal — that ruling stands, and this does not revive it. The animation now hangs off a
+   class that only the 5s idle timer adds, so the resting button is still perfectly still. */
+.sg-btn.idle-pulse{animation:sgBtnPulse 1.4s ease-in-out infinite;}
+/* ...and while the greeting is still speaking the button is genuinely disabled, so it has to LOOK
+   disabled. A bright button that ignores taps is worse than a grey one: the child concludes the
+   screen is broken rather than that it is busy. */
+.sg-btn.sg-waiting{background:#E8E8EA;color:#B3B3B8;border-color:#F4F4F6;
+  box-shadow:0 4px 0 #D6D6D6;cursor:default;animation:none;}
+.sg-btn.sg-waiting:active{transform:translateX(-50%);}
+
+/* ---------- (3) FLN ANIMATION KIT ----------
+   Ported from S01's install (github.com/ananya-goswami/fln-animation-toolkit), recipes 1 (start
+   screen stars, drift) and 2 (tap to burst). Checked against the kit's own collision rules before
+   pasting: none of .sg-sky / .sg-glow / .sg-burst nor any of sgFly / sgBreathe / sgFlash / sgSpark
+   / sgGlowOpacity existed in this engine, and ENGINE_VERSION is untouched.
+   Stacking: .start-bg/.end-bg are z-index 0, the sky is 1, .start-gate is 80, .end-screen is 90,
+   a burst is 95 — so the sky sits BEHIND the card and bursts land on top of both. */
+
+/* ===== FLN ANIMATION KIT: reduced-motion BEGIN ===== */
+html.no-anim *, html.no-anim *::before, html.no-anim *::after{
+  animation:none!important; transition:none!important;
+}
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation:none!important; transition:none!important; }
+}
+/* ===== FLN ANIMATION KIT: reduced-motion END ===== */
+
+/* ===== FLN ANIMATION KIT: sky-drift BEGIN ===== */
+/* MANDATORY swap, not a preference. Our shipped startnew_bg.webp has stars, sparkles, rings and
+   dots PAINTED IN; drifting a second set over them is the kit's documented "two sets of stars, one
+   frozen and one moving" bug. startnew_bg_plain.webp is that same artwork with the decorations
+   inpainted out (rays and centre glow untouched) — copied from S01, which already did this work.
+   This block is injected just before the stylesheet's closing tag, so it is later in the
+   cascade than the original .start-bg and wins on equal specificity. */
+.start-bg{background-image:url("assets/UI/startnew_bg_plain.webp");}
+
+.sg-glow,.sg-sky{position:fixed;inset:0;pointer-events:none;display:none;z-index:1;}
+body.is-start .sg-glow,body.is-start .sg-sky,
+body.is-end   .sg-glow,body.is-end   .sg-sky{display:block;}
+/* this engine never sets html.rotated, so the rule below is inert here — kept so the layer still
+   behaves if portrait rotation is ever adopted. */
+html.rotated .sg-glow,html.rotated .sg-sky{
+  inset:auto;left:50%;top:50%;width:100vh;height:100vw;
+  transform:translate(-50%,-50%) rotate(90deg);}
+
+.sg-glow{opacity:.75;background:radial-gradient(ellipse 38% 25% at 50% 79%,
+  rgba(255,255,255,.34) 0%,rgba(255,255,255,.13) 45%,rgba(255,255,255,0) 72%);
+  animation:sgBreathe 6.5s ease-in-out infinite;}
+@keyframes sgBreathe{0%,100%{opacity:.55;}50%{opacity:1;}}
+
+/* hole punched over the centre card — it is translucent, so drifting stars showed THROUGH it.
+   Our .sg-card is 1114x456, byte-identical to S01's, so the kit's default hole size is right. */
+.sg-sky{overflow:hidden;
+  --sg-hole-w:calc(1074px * var(--scale,1));
+  --sg-hole-h:calc(416px * var(--scale,1));
+  -webkit-mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000);
+          mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000);
+  -webkit-mask-size:100% 100%,var(--sg-hole-w) var(--sg-hole-h);
+          mask-size:100% 100%,var(--sg-hole-w) var(--sg-hole-h);
+  -webkit-mask-position:center,center; mask-position:center,center;
+  -webkit-mask-repeat:no-repeat,no-repeat; mask-repeat:no-repeat,no-repeat;
+  -webkit-mask-composite:xor; mask-composite:exclude;
+}
+/* the end screen has no visible occluder, so a hard-edged hole reads as a sliced crescent.
+   Soft radial hole sized to the mascot instead. */
+body.is-end .sg-sky{
+  --sg-hole-w:calc(800px * var(--scale,1));
+  --sg-hole-h:calc(800px * var(--scale,1));
+  -webkit-mask-image:linear-gradient(#000,#000),
+                     radial-gradient(closest-side,#000 71%,rgba(0,0,0,0) 100%);
+          mask-image:linear-gradient(#000,#000),
+                     radial-gradient(closest-side,#000 71%,rgba(0,0,0,0) 100%);
+}
+
+.sg-sky i{position:absolute;left:50%;top:50%;width:var(--s);aspect-ratio:1;
+  margin:calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+  background:center/contain no-repeat;opacity:0;
+  animation:sgFly var(--t) linear infinite;animation-delay:var(--d);}
+.sg-sky .s1{background-image:url("assets/UI/bgdeco_star.svg");}
+.sg-sky .s2{background-image:url("assets/UI/bgdeco_star_o.svg");}
+.sg-sky .s3{background-image:url("assets/UI/bgdeco_spark.svg");}
+.sg-sky .s4{border-radius:50%;border:.22vmax solid rgba(255,255,255,.92);}   /* the bubbles */
+.sg-sky .s5{border-radius:50%;background:rgba(255,255,255,.92);}
+
+/* transform keyed ONLY at 0% and 100% — that is what makes the path a straight ray */
+@keyframes sgFly{
+  0%{transform:translate(var(--x1),var(--y1));opacity:0;}
+  10%{opacity:var(--o);}
+  84%{opacity:var(--o);}
+  100%{transform:translate(var(--x2),var(--y2));opacity:0;}
+}
+
+/* glow: static shadow, animated opacity = composited (animating the filter itself is not) */
+.sg-sky i::after{content:"";position:absolute;inset:0;border-radius:inherit;
+  background:inherit;border:inherit;
+  filter:drop-shadow(0 0 7px rgba(255,255,255,.95));
+  opacity:0;will-change:opacity;
+  animation:sgGlowOpacity var(--g) ease-in-out infinite alternate;
+  animation-delay:var(--gd);}
+@keyframes sgGlowOpacity{from{opacity:0;}to{opacity:1;}}
+/* ===== FLN ANIMATION KIT: sky-drift END ===== */
+
+/* ===== FLN ANIMATION KIT: sky-burst BEGIN ===== */
+.sg-sky i.popped{visibility:hidden;}
+.sg-burst{position:fixed;z-index:95;width:0;height:0;pointer-events:none;}
+
+/* data URIs, not file refs — external SVG masks are blocked under file://, and this bundle is
+   opened from disk as often as it is served. */
+.sg-burst.k-star{--shape:url("data:image/svg+xml,%3Csvg%20width=%2264%22%20height=%2264%22%20viewBox=%220%200%2064%2064%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath%20d=%22M32%205.5c1.6%200%203%20.9%203.7%202.4l6.1%2012.4%2013.7%202c1.6.2%203%201.4%203.5%203s.1%203.3-1.1%204.4l-9.9%209.6%202.3%2013.6c.3%201.6-.4%203.3-1.7%204.2s-3.1%201.1-4.6.3L32%2051l-12.2%206.4c-1.5.8-3.2.7-4.6-.3s-2-2.6-1.7-4.2l2.3-13.6-9.9-9.6c-1.2-1.1-1.6-2.9-1.1-4.4s1.9-2.7%203.5-3l13.7-2%206.1-12.4C29%206.4%2030.4%205.5%2032%205.5z%22%20fill=%22%23fff%22/%3E%3C/svg%3E");}
+.sg-burst.k-spark{--shape:url("data:image/svg+xml,%3Csvg%20width=%2264%22%20height=%2264%22%20viewBox=%220%200%2064%2064%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath%20d=%22M32%202c1.6%2012.6%2015.4%2026.4%2030%2030-14.6%203.6-28.4%2017.4-30%2030-1.6-12.6-15.4-26.4-30-30C16.6%2028.4%2030.4%2014.6%2032%202z%22%20fill=%22%23fff%22/%3E%3C/svg%3E");}
+.sg-burst.k-dot{--shape:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23fff'/%3E%3C/svg%3E");}
+
+.sg-burst .fl{position:absolute;left:0;top:0;
+  width:calc(var(--bs) * 3);height:calc(var(--bs) * 3);
+  margin:calc(var(--bs) * -1.5) 0 0 calc(var(--bs) * -1.5);border-radius:50%;
+  background:radial-gradient(circle,rgba(244,250,255,1) 0%,
+    rgba(96,165,250,.92) 38%,rgba(30,58,138,0) 76%);
+  animation:sgFlash .36s ease-out forwards;}
+
+/* solid fill + two colour drop-shadows; they respect the mask alpha, so the halo follows the star
+   silhouette rather than a box */
+.sg-burst i{position:absolute;left:0;top:0;width:var(--ps);height:var(--ps);
+  margin:calc(var(--ps) / -2) 0 0 calc(var(--ps) / -2);
+  background:currentColor;
+  -webkit-mask:var(--shape) center/contain no-repeat;
+          mask:var(--shape) center/contain no-repeat;
+  filter:drop-shadow(0 0 3px currentColor) drop-shadow(0 0 8px currentColor);
+  animation:sgSpark var(--sd) cubic-bezier(.12,.72,.24,1) forwards;
+  animation-delay:var(--sdl);}
+
+@keyframes sgFlash{0%{transform:scale(.15);opacity:1;}100%{transform:scale(1.6);opacity:0;}}
+@keyframes sgSpark{           /* --gy = gravity drop. The kit renames the shipped --g here, which
+                                 would collide with the sky's glow-duration --g; do not mix them. */
+  0%{transform:translate(0,0) scale(.35);opacity:0;}
+  14%{opacity:1;transform:translate(calc(var(--dx) * .3),calc(var(--dy) * .3)) scale(1.12);}
+  100%{transform:translate(var(--dx),calc(var(--dy) + var(--gy))) scale(.3);opacity:0;}
+}
+/* ===== FLN ANIMATION KIT: sky-burst END ===== */
+
+
+
+/* [r7] the bracketed matra on the cover's coaches. Smaller and lighter than the letter, because
+   the letter is the thing being named and the matra in brackets is what it is being named WITH -
+   equal weight made the coach read as two separate characters rather than one pair. */
+.lt-br{ font-size:.78em; opacity:.92; }
+
+
+/* [r7] CENTRED ON THE MAIN BOX, NOT ON WHAT IS LEFT OF IT.
+   `.stage.no-band .slide-host` keeps 40px of bottom padding so teach content clears the आगे
+   button. That padding shortens the box the row centres inside, so the cards sat 18px ABOVE the
+   true centre of the main box - measured, not guessed: stage centre y=374, row centre y=356.
+   (A negative margin on the row does nothing here, because the row is centred by the host's
+   justify-content rather than sized by it - which is why the first attempt moved nothing.)
+   This screen is two cards and a lot of air, so it gives the padding back and lands on the real
+   centre. Scoped to .mp-center, which only MATRA_PAIRS adds and newVoEpoch removes, so the other
+   no-band screens keep their clearance. */
+/* THE BAND THAT WAS ACTUALLY RESERVING THE SPACE IS `.tut-prompt`, NOT `.header-row`.
+   Teach screens lay out as .tut-card, whose heading element is .tut-prompt - and with
+   `prompt_hi: ""` it was EMPTY BUT STILL 92px TALL, so every no-band screen has been holding a
+   blank band open and pushing its content up. `.stage.no-band .header-row{display:none}` was
+   hiding a different, unused element, which is why the band appeared to be gone while the gap it
+   left did not. This is also why the r6 verification insisted there was no heading while the
+   screenshot plainly showed one: two elements, and the checks kept finding the wrong one.
+   Measured here: stage centre y=374, cards at y=356 - exactly half of the 92px + 10px the empty
+   band and its margin were holding, minus the mascot's absolute footprint.
+   SCOPED TO .mp-center, i.e. page 1 ONLY. Hiding it on every no-band screen also moved T2-T5:
+   those screens stack from the top, so the freed 92px pulled their content up against the ceiling
+   and left a hole underneath. They were not part of this ask and nobody has complained about
+   them, so they keep the layout they have been reviewed in. The empty band is still wrong there -
+   it is written up as an open question rather than silently changed. */
+.stage.no-band.mp-center .tut-prompt{ display:none; }
+/* ...and with the band gone the content centres on the MAIN BOX. Scoped to .mp-center, a class
+   only MATRA_PAIRS adds and newVoEpoch removes, so the other no-band screens keep the flex-start
+   stacking their own content depends on. */
+/* ...and the row is then pinned to the card rather than stacked inside it. Three attempts at
+   centring it THROUGH the flex chain each moved it somewhere new and none landed on the middle:
+   a negative margin did nothing (the row is positioned by its parent's justify-content, not sized
+   by it), giving the host its padding back moved it 2px, and hiding the empty band handed the
+   freed 92px straight to .tut-content's flex-grow. The chain has four nested flex boxes, each
+   with its own opinion, and this screen only ever needs one thing from it: a box the size of the
+   main box, with two cards in the middle of it. So it takes that box directly. */
+.stage.no-band.mp-center .mp-row{
+  position:absolute; inset:0; margin:0; width:auto; flex:none;
+}
+/* the box it pins to is the CARD, not .tut-content - .tut-content is the flex-grown middle
+   band and pinning to that just reproduced its 106..515 box. .tut-card IS the main box. */
+.stage.no-band.mp-center .tut-card{ position:relative; }
+/* (the .mp-center padding override is gone - the base rule no longer adds any) */
+
+
+/* [r8] THE COVER'S TRACK RUNS THE WIDTH OF THE MAIN BOX.
+   On the activity screens the track is sized off the TRAIN (left/right -7% of the rail), because
+   there it is the line the train arrives along. On the cover the train is a title illustration
+   sitting in a 1114px card, so a track that stops 90px past the buffers reads as a stub of rail
+   rather than as a railway - which is what the reference screenshot shows it should be.
+   Measured: the card spans 1111px and the rail only 476px, dead centre, so the track is pinned to
+   the card's centre and given the card's width less a 42px margin at each end. 1114 is the card's
+   own fixed width, not a number chosen to look right. */
+.train-shell.lt-cover .train-track{
+  left:50%; right:auto; width:1030px; transform:translateX(-50%);
+}

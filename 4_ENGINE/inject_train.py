@@ -22,6 +22,23 @@ js  = io.open(os.path.join(SCRATCH, "train_modules.js"), encoding="utf-8").read(
 css = io.open(os.path.join(SCRATCH, "train_styles.css"), encoding="utf-8").read()
 src = io.open(ENGINE, encoding="utf-8").read()
 
+# ---- closing-tag guard ---------------------------------------------------------------------
+# A literal </style> or </script> anywhere in these sources -- INCLUDING INSIDE A COMMENT --
+# ends the host element at that point, and everything after it becomes body text. It builds
+# clean, the receipt stays green, and the page silently comes apart: on 2026-09-23 exactly this
+# comment...
+#     "This block is injected before the last </style>, so it is later ..."
+# ...pushed the entire stage to x=1797 behind a run of stray CSS text, killed position:fixed on
+# the new sky layers, and made the start button unclickable. Half an hour to find, one line to
+# catch. Write the tag with a break in it (</sty" + "le>) if a comment must mention it.
+for _name, _txt, _bad in (("train_styles.css", css, "</style>"),
+                          ("train_modules.js", js,  "</script>")):
+    if _bad in _txt:
+        _ln = _txt[:_txt.find(_bad)].count("\n") + 1
+        sys.exit("X  %s line %d contains a literal %s -- it would truncate the host element.\n"
+                 "   Break the tag up, even in a comment." % (_name, _ln, _bad))
+
+
 # ---- strip any previous injection (idempotent re-run)
 def strip(s, a, b):
     i, j = s.find(a), s.find(b)
