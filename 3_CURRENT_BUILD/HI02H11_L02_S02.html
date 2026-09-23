@@ -1859,6 +1859,14 @@ body.is-start .phase-gate{
 
 
 
+
+
+
+
+
+
+
+
 /* == TRAIN STYLES :: BEGIN (engine_local, HI02H11_L02_S02) == */
 
 /* ==========================================================================================
@@ -2944,6 +2952,16 @@ body.is-end .sg-sky{
    precisely the thing the note asks to leave alone. Page 1 draws its pairs the same way. */
 .mb-slot,.mb-fly{color:var(--matra-hi,#FF8A00);}
 .mb-eq.mb-say{animation:mbSay 900ms ease-in-out 3;}
+/* THE SOUND BEING SPOKEN, RIGHT NOW. «प। पु। पुल।» plays as three sounds with real silence
+   between them, and each one lifts its own part of the screen as it is said - प in the base word,
+   then पु in the equation, then पुल. Glowing the whole equation for all three is what it did
+   before, which tells the child nothing about which sound is which. */
+.mb-now{animation:mbNow 620ms ease-in-out;}
+@keyframes mbNow{
+  0%{transform:scale(1);filter:none;}
+  35%{transform:scale(1.14);filter:drop-shadow(0 0 16px rgba(255,138,0,.60));}
+  100%{transform:scale(1);filter:none;}
+}
 @keyframes mbSay{0%,100%{box-shadow:0 0 0 0 rgba(255,138,0,0);}
                  50%{box-shadow:0 0 0 6px rgba(255,138,0,.28);}}
 
@@ -2979,7 +2997,7 @@ body.is-end .sg-sky{
 
 @media (prefers-reduced-motion:reduce){
   .mb-panel.mb-in,.mb-fly.mb-fly-go,.mb-fly.mb-fly-done,.mb-slot.mb-slot-in,
-  .mb-syl.mb-syl-in,.mb-eq.mb-settle,.mb-eq.mb-say{animation:none;}
+  .mb-syl.mb-syl-in,.mb-eq.mb-settle,.mb-eq.mb-say,.mb-now{animation:none;}
   .mb-fly{opacity:1;}
 }
 
@@ -3491,6 +3509,13 @@ body.is-end .sg-sky{
     "result_img": "obj_pul",
     "result_emoji": "🌉",
     "travel": "down",
+    "syl_ms": 3304,
+    "join_ms": 332,
+    "sound_ms": [
+     270,
+     1390,
+     2540
+    ],
     "base_img": "obj_pal",
     "base_emoji": "🕑",
     "cap_base": null,
@@ -3557,6 +3582,13 @@ body.is-end .sg-sky{
     "result_img": "obj_phool",
     "result_emoji": "🌻",
     "travel": "down",
+    "syl_ms": 3656,
+    "join_ms": 344,
+    "sound_ms": [
+     140,
+     1440,
+     2570
+    ],
     "base_img": "obj_phal",
     "base_emoji": "🍎",
     "cap_base": null,
@@ -4470,7 +4502,7 @@ function _chainMs(srcs, gapMs){
    no reason to fetch it again and the reviewer keeps hearing the previous take. __AUDIO_V is
    stamped by the builder from the CONTENT of the audio folder, so it changes exactly when a clip
    changes and not otherwise - a fresh URL on every build would defeat caching for no reason. */
-var __AUDIO_V = "bd2db54be7eb";
+var __AUDIO_V = "ae7c91c62e08";
 function _av(src){
   if(typeof src !== "string" || src.indexOf("assets/Audio/") < 0) return src;
   return src.indexOf("?") >= 0 ? src : src + "?v=" + __AUDIO_V;
@@ -10365,7 +10397,8 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
          पल / फल are bare consonant pairs with no combining marks, so splitting them per
          character is safe — there is no cluster for the browser to shape. NEVER do this to a
          word that carries a matra; that is what panel 3 is careful about. */
-      const p1 = document.createElement("div"); p1.className = "mb-panel mb-p1";
+      /* [r18] hidden until the opening line has played — see step 2 */
+      const p1 = document.createElement("div"); p1.className = "mb-panel mb-p1 mb-hidden";
       const baseChars = [...(d.base_word || "")].map(ch =>
         '<span class="mb-c" data-ch="' + ch + '">' + ch + "</span>").join("");
       p1.innerHTML = '<div class="mb-word">' + baseChars + "</div>" +
@@ -10437,7 +10470,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       const finish = ()=>{
         if(finished) return; finished = true;
         state.demoRunning = false;
-        [a1, p2, a2, p3].forEach(e => e.classList.remove("mb-hidden"));
+        [p1, a1, p2, a2, p3].forEach(e => e.classList.remove("mb-hidden"));
         if(consEl) consEl.classList.add("lit");
         slot.innerHTML = chip;
         slot.classList.remove("mb-slot-wait"); slot.classList.add("mb-slot-in");
@@ -10456,7 +10489,11 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         // 1 · «आइए, देखें कि छोटी उ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।»
         (next)=> say(A(slide, "prompt"), ()=> setTimeout(next, 420)),
         // 2 · «यह शब्द देखिए — पल।»
-        (next)=> say(A(slide, "base"), ()=> setTimeout(next, 520)),
+        /* [r18] पल AND ITS PICTURE arrive first, and only then the line that names them.
+           They were on screen from mount, so «आइए, देखें कि …» played over a screen with
+           nothing left to reveal — the same fault as page 3, and why that line read as absent. */
+        (next)=>{ show(p1); sfxPopSoft();
+                  setTimeout(()=> say(A(slide, "base"), ()=> setTimeout(next, 520)), 260); },
         // 3 · the consonant lights inside the base word ("Highlight प")
         (next)=>{ if(consEl) consEl.classList.add("lit"); setTimeout(next, 620); },
         /* 4 · the matra flies to its place BELOW the consonant and hands over to the slot.
@@ -10499,31 +10536,73 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
            appear between two frames; it dissolves up now, and the equation gives a small nod so
            the eye follows the change. */
         (next)=>{
-          sylEl.textContent = d.syllable || "";
-          sylEl.classList.remove("mb-syl-in"); void sylEl.offsetWidth; sylEl.classList.add("mb-syl-in");
-          matraHLSoon(sylEl, d.matra, { glow:true });
+          /* [r18] प BECOMES पु ON THE WORDS THAT SAY SO — the clip starts first and the
+             syllable forms at «बनता», instead of being written and then described. */
           const eq = p2.querySelector(".mb-eq");
-          if(eq){ eq.classList.remove("mb-settle"); void eq.offsetWidth; eq.classList.add("mb-settle"); }
-          sfxSparkle();                      // note: "a light chime when प changes to पु"
-          // «प के साथ छोटी उ की मात्रा लगाने पर 'पु' बनता है।»
-          setTimeout(()=> say(A(slide, "onset"), ()=> setTimeout(next, 560)), 340);
+          const _formSyl = ()=>{
+            sylEl.textContent = d.syllable || "";
+            sylEl.classList.remove("mb-syl-in"); void sylEl.offsetWidth; sylEl.classList.add("mb-syl-in");
+            matraHLSoon(sylEl, d.matra, { glow:true });
+            if(eq){ eq.classList.remove("mb-settle"); void eq.offsetWidth; eq.classList.add("mb-settle"); }
+          };
+          const _t1 = setTimeout(()=>{
+            if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
+            _formSyl();
+            sfxSparkle();                    // note: "a light chime when प changes to पु"
+          }, Math.max(0, d.syl_ms || 340));
+          say(A(slide, "onset"), ()=>{ clearTimeout(_t1);
+            if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
+            _formSyl();                      // never leave the equation half written
+            setTimeout(next, 560); });
         },
         // 6 · ल joins, the finished word and its bridge picture arrive
-        (next)=>{ show(a2); show(p3);
-                  if(typeof sfxCorrect === "function") sfxCorrect();   // "a small success sound"
-                  matraHLSoon(resEl, d.matra, { glow:true });
-                  setTimeout(next, 520); },
+        /* [r18] ल JOINS ON «जुड़ने», inside its own line — the finished word and its picture
+           used to arrive a whole step BEFORE the sentence that announces them. */
+        (next)=>{
+          const _t2 = setTimeout(()=>{
+            if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
+            show(a2); show(p3);
+            if(typeof sfxCorrect === "function") sfxCorrect();   // "a small success sound"
+            matraHLSoon(resEl, d.matra, { glow:true, pulse:true });
+          }, Math.max(0, d.join_ms || 320));
+          say(A(slide, "result"), ()=>{ clearTimeout(_t2);
+            if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
+            [a2, p3].forEach(e => e.classList.remove("mb-hidden"));
+            matraHLSoon(resEl, d.matra, { glow:true });
+            setTimeout(next, 420); });
+        },
         /* 7 · the matra is highlighted inside the finished word while that word is spoken —
            «अब 'ल' जुड़ने पर 'पुल' बनता है।» The note: "In पुल, highlight the ु मात्रा again so
            the child clearly notices where the matra is placed." */
-        (next)=>{ matraHLSoon(resEl, d.matra, { glow:true, pulse:true });
-                  say(A(slide, "result"), ()=> setTimeout(next, 420)); },
+
         /* 8 · the three sounds contrasted — «प। पु। पुल।» One clip, because three clips back to
            back lose the deliberate pause the note asks for. */
         (next)=>{ const src = A(slide, "sounds");
                   if(!src){ next(); return; }
-                  const eq = p2.querySelector(".mb-eq"); if(eq) eq.classList.add("mb-say");
-                  say(src, ()=>{ if(eq) eq.classList.remove("mb-say"); setTimeout(next, 300); }); }
+                  const eq = p2.querySelector(".mb-eq");
+                  /* EACH SOUND LIFTS THE THING IT IS. «प» -> the consonant in पल, «पु» -> the
+                     equation's syllable, «पुल» -> the finished word. `sound_ms` is measured at
+                     build time from the SILENCE BETWEEN THE SOUNDS in this very clip, so the
+                     three cues follow a re-record instead of drifting off it. With no cues
+                     (an older card, or a clip that would not segment) the equation glows once,
+                     as it used to - a weaker beat, never a wrong one. */
+                  const cues = d.sound_ms, marks = [consEl, sylEl, resEl];
+                  const timers = [];
+                  if(cues && cues.length === 3){
+                    cues.forEach((ms, i)=>{
+                      const el = marks[i];
+                      if(!el) return;
+                      timers.push(setTimeout(()=>{
+                        if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
+                        marks.forEach(m => m && m.classList.remove("mb-now"));
+                        void el.offsetWidth; el.classList.add("mb-now");
+                      }, Math.max(0, ms)));
+                    });
+                  } else if(eq){ eq.classList.add("mb-say"); }
+                  say(src, ()=>{ timers.forEach(clearTimeout);
+                                 marks.forEach(m => m && m.classList.remove("mb-now"));
+                                 if(eq) eq.classList.remove("mb-say");
+                                 setTimeout(next, 300); }); }
       ];
 
       let si = 0;
@@ -11850,6 +11929,18 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
 /* ===== FLN ANIMATION KIT: sky-burst END ===== */
 
 /* == TRAIN MODULE SET :: END == */
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

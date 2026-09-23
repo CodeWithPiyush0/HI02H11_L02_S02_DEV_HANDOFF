@@ -76,6 +76,7 @@ Run:  PYTHONUTF8=1 python 1_SPEC/build_skill_HI02H11_L02_S02.py   (from the hand
 """
 import hashlib
 import os, re, sys, json, argparse
+import array
 import contextlib, wave        # [r8] page-1 matra cue, measured off the clip
 
 CODE     = "HI02H11_L02_S02"
@@ -272,6 +273,55 @@ def _matra_cue_ms(audio_id, line, phrase="इसकी"):
     total  = len(line.replace(" ", ""))
     return int(secs * 1000 * (before / float(total)))
 
+def _sound_cues_ms(audio_id, n):
+    """Where each of the `n` sounds STARTS inside «प। पु। पुल।» — in ms.
+
+    This one clip is not prose, it is three sounds with deliberate silence between them, and that
+    silence is measurable. So unlike `_matra_cue_ms`, which has to estimate from character
+    proportion because a sentence has no gaps to find, this reads the ACTUAL onsets: scan for
+    runs of audible samples separated by quiet, and take where each run begins.
+
+    The note asks for the difference between प, पु and पुल to be unmistakable. Lighting each
+    part of the equation exactly as its own sound is spoken is what makes it so; lighting the whole
+    equation for all three says nothing about which is which.
+
+    Returns None when the clip does not resolve into exactly `n` runs — better for the screen to
+    fall back to a single glow than to flash the wrong element confidently.
+    """
+    path = os.path.join(AUD_DIR, audio_id + ".ogg")
+    try:
+        with contextlib.closing(wave.open(path)) as w:
+            if w.getsampwidth() != 2 or w.getnchannels() != 1:
+                return None
+            sr = float(w.getframerate())
+            a = array.array("h"); a.frombytes(w.readframes(w.getnframes()))
+    except Exception:
+        return None
+    if not len(a):
+        return None
+    # frame-wise energy; the threshold is relative to the clip's own peak so a quiet take and a
+    # loud one segment the same way
+    hop  = max(1, int(sr * 0.01))
+    peak = max(1, max(abs(v) for v in a))
+    loud = [max(abs(v) for v in a[i:i + hop]) > peak * 0.10
+            for i in range(0, len(a) - hop, hop)]
+    runs, i, minq = [], 0, int(0.18 / 0.01)        # 180ms of quiet ends a sound
+    while i < len(loud):
+        if loud[i]:
+            j = i
+            q = 0
+            while j < len(loud) and q < minq:
+                j += 1
+                q = 0 if (j < len(loud) and loud[j]) else q + 1
+            runs.append(i)
+            i = j
+        else:
+            i += 1
+    if len(runs) != n:
+        return None
+    return [int(r * 0.01 * 1000) for r in runs]
+
+
 def s_intro(sid):
     """Screen 1. «उ → ◌ु», one pair at a time — matched to the sibling lesson's page 1.
 
@@ -352,6 +402,8 @@ def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, 
         "sounds": vo("vo_sounds_" + g, sounds),
     }
     bk = key_of_opt(base_word)
+    ONSET_LINE  = AUDIO_TEXT.get(a["onset"], "")
+    RESULT_LINE = AUDIO_TEXT.get(a["result"], "")
     return {"id": sid, "phase": "tutorial", "eis": "symbolic", "type": "MATRA_BUILD",
             # NO HEADING. The deck gives this screen no "Heading" section — unlike the tap
             # screens, which say "Keep the heading at the top: …" — and tells it to "keep the
@@ -361,6 +413,16 @@ def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, 
             "data": {"base_word": base_word, "consonant": consonant, "matra": matra,
                      "syllable": syllable, "result_word": result_word,
                      "result_img": pic(rk), "result_emoji": OBJ[rk][1], "travel": "down",
+                     # WHERE THE VISUALS BELONG INSIDE EACH LINE, so the screen follows the voice
+                     # rather than running ahead of it. Both offsets are measured off the clip
+                     # that exists, so a re-record moves them instead of leaving them stranded.
+                     #   onset  «प के साथ … लगाने पर 'पु' बनता है।»  -> पु forms on «बनता»
+                     #   result «अब 'ल' जुड़ने पर 'पुल' बनता है।»     -> ल joins on «जुड़ने»
+                     "syl_ms":  _matra_cue_ms(a["onset"],  ONSET_LINE, "बनता"),
+                     "join_ms": _matra_cue_ms(a["result"], RESULT_LINE, "जुड़ने"),
+                     # «प। पु। पुल।» — which of the three is being said, at each moment.
+                     # SME: "Make the pronunciation difference very clear."
+                     "sound_ms": _sound_cues_ms(a.get("sounds"), 3),
                      "base_img": (pic(bk) if bk else None),
                      "base_emoji": (BASE_OBJ[base_word][1] if base_word in BASE_OBJ
                                    else (OBJ[bk][1] if bk else None)),

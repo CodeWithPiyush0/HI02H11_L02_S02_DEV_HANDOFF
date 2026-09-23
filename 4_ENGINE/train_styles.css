@@ -1082,6 +1082,16 @@ body.is-end .sg-sky{
    precisely the thing the note asks to leave alone. Page 1 draws its pairs the same way. */
 .mb-slot,.mb-fly{color:var(--matra-hi,#FF8A00);}
 .mb-eq.mb-say{animation:mbSay 900ms ease-in-out 3;}
+/* THE SOUND BEING SPOKEN, RIGHT NOW. «प। पु। पुल।» plays as three sounds with real silence
+   between them, and each one lifts its own part of the screen as it is said - प in the base word,
+   then पु in the equation, then पुल. Glowing the whole equation for all three is what it did
+   before, which tells the child nothing about which sound is which. */
+.mb-now{animation:mbNow 620ms ease-in-out;}
+@keyframes mbNow{
+  0%{transform:scale(1);filter:none;}
+  35%{transform:scale(1.14);filter:drop-shadow(0 0 16px rgba(255,138,0,.60));}
+  100%{transform:scale(1);filter:none;}
+}
 @keyframes mbSay{0%,100%{box-shadow:0 0 0 0 rgba(255,138,0,0);}
                  50%{box-shadow:0 0 0 6px rgba(255,138,0,.28);}}
 
@@ -1117,7 +1127,7 @@ body.is-end .sg-sky{
 
 @media (prefers-reduced-motion:reduce){
   .mb-panel.mb-in,.mb-fly.mb-fly-go,.mb-fly.mb-fly-done,.mb-slot.mb-slot-in,
-  .mb-syl.mb-syl-in,.mb-eq.mb-settle,.mb-eq.mb-say{animation:none;}
+  .mb-syl.mb-syl-in,.mb-eq.mb-settle,.mb-eq.mb-say,.mb-now{animation:none;}
   .mb-fly{opacity:1;}
 }
 

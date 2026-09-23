@@ -344,6 +344,13 @@
     "result_img": "obj_pul",
     "result_emoji": "🌉",
     "travel": "down",
+    "syl_ms": 3304,
+    "join_ms": 332,
+    "sound_ms": [
+     270,
+     1390,
+     2540
+    ],
     "base_img": "obj_pal",
     "base_emoji": "🕑",
     "cap_base": null,
@@ -410,6 +417,13 @@
     "result_img": "obj_phool",
     "result_emoji": "🌻",
     "travel": "down",
+    "syl_ms": 3656,
+    "join_ms": 344,
+    "sound_ms": [
+     140,
+     1440,
+     2570
+    ],
     "base_img": "obj_phal",
     "base_emoji": "🍎",
     "cap_base": null,
