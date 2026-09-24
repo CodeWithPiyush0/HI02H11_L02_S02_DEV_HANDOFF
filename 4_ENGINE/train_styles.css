@@ -53,8 +53,13 @@
    of coach/car/wheel CSS that drew the old one are removed rather than left dead. */
 /* ---------- the card tray ---------- */
 /* the sibling's tray sits lower under the train and is allowed to wrap */
+/* [r25] THE TRAY SITS OFF THE BUTTON. "move the draggable elements little upwards as currently
+   its touching the next button" - at margin-top:30 the cards ran down into आगे, so the two
+   read as one block and the bottom row of cards was a hair from the button's hit area. */
+/* [r27] Lowered again now that आगे is gone. [r25] lifted the tray to stop it touching the
+   button; with no button under it there is nothing to clear, and the cards sat oddly high. */
 .tr-tray{ display:flex; gap:16px; justify-content:center; align-items:center; flex-wrap:wrap;
-  margin-top:30px; max-width:1120px; }
+  margin-top:30px; margin-bottom:6px; max-width:1120px; }
 /* the tray card, matched to the sibling's `.tt-card` so the two lessons' trays are the same
    object: paler border, a flatter shadow, and roomier padding than the round-3 version had */
 .tr-card{ width:112px; min-height:112px; border-radius:14px; background:#FFFFFF;
@@ -449,9 +454,27 @@
    deck, so the SETTLED state lives on the base rule and @keyframes only MOVES it. Anything
    that exists only inside a keyframe is invisible in the review captures — that already cost
    four attempts on the landing letter glow (see 4_ENGINE/CHANGES.md). */
-.train-shell{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;
-  margin:auto 0;}                                   /* row #95 "stops at the CENTRE of the screen" */
-.slide-host:has(> .train-shell){display:flex;flex-direction:column;justify-content:center;}
+/* [r27] THE LINE THE TRAIN RUNS ON DOES NOT MOVE BETWEEN PAGES.
+   Yasir: "don't remove (replace) railway track, by this it will feel like one train goes then
+   next train comes."
+   MEASURED: the track sat at y=376 on the tap screens and 332/343/339/338 on the four
+   drag screens - it jumped up to 44px at every hand-off, and jumped AGAIN between two screens of
+   the same kind, because the coach labels and the tray change the shell's height and the track
+   hangs off the shell's bottom edge (top:100%).
+   Fixed height + bottom-aligned contents pins that bottom edge, so the track is at the same y on
+   every train page. Labels and coaches now grow upward into the reserved space instead of
+   pushing the line around. A train leaving and the next one arriving are on ONE line. */
+.train-shell{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-end;gap:10px;
+  /* the reserved block the coaches hang from; its BOTTOM is the line the track is drawn on */
+  height:var(--tc-shell-h,332px);
+  margin:0;}
+/* A FIXED TOP, NOT A CENTRED BLOCK. `margin:auto 0` inside a centred column re-centres the shell
+   whenever its height changes, which is what made a taller shell simply move somewhere else and
+   left the track spread WIDER than before. Anchoring the top and fixing the height is what makes
+   the bottom edge - and so the track - land on the same y on every train page. */
+.slide-host:has(> .train-shell){display:flex;flex-direction:column;justify-content:flex-start;
+  padding-top:var(--tc-shell-top,13px);}
 .train-rail{position:relative;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:0;
   transform:translateX(0);opacity:1;}
 /* [r7] the cover's entrance, not a shorter one of its own: same distance, same curve, same
@@ -460,8 +483,17 @@
 @keyframes trainIn{from{transform:translateX(86%);opacity:0;}
                    6%{opacity:1;}
                    to{transform:translateX(0);opacity:1;}}
+/* [r26] AND OUT AGAIN, TO THE LEFT. The mirror of trainIn on the same curve and the same
+   duration, so the departure reads as the same train continuing its journey rather than a
+   second effect. It carries on past the edge (-120%) instead of stopping at it, and holds
+   there, because the slide behind it is swapped while the rail is off-screen. */
+.train-rail.tr-leaving{animation:trainOut var(--lt-travel,3400ms) cubic-bezier(.40,.20,.45,1) both;}
+@keyframes trainOut{from{transform:translateX(0);opacity:1;}
+                    88%{opacity:1;}
+                    to{transform:translateX(-120%);opacity:0;}}
 @media (prefers-reduced-motion:reduce){
   .train-rail.tr-entering{animation:none;transform:translateX(0);opacity:1;}
+  .train-rail.tr-leaving{animation:none;transform:translateX(0);opacity:1;}
 }
 
 /* [r8] THE COVER'S TRACK, not a second one. Same rail head, same sleeper stubs, same end fade —
@@ -589,12 +621,13 @@
 }
 /* while it is travelling the puffs trail hard to the RIGHT (it is moving left); parked, they drift.
    Both distances are written as px by the module so they scale with the train. */
-.train-rail.tr-entering .train-steam{--tc-drift:var(--tc-drift-move,52px);}
+.train-rail.tr-entering .train-steam,
+.train-rail.tr-leaving  .train-steam{--tc-drift:var(--tc-drift-move,52px);}
 @media (prefers-reduced-motion:reduce){.train-steam span{animation:none;opacity:0;}}
 
 /* the tray of draggable cards under the train (rows #126, #144, #163, #175) */
-.train-tray{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px;margin-top:22px;
-  max-width:1120px;}
+.train-tray{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px;
+  margin-top:26px;margin-bottom:6px;max-width:1120px;}
 .train-tray .tt-card{background:#FFFFFF;border:3px solid #CFE3FA;border-radius:14px;padding:10px 14px;
   display:flex;flex-direction:column;align-items:center;gap:6px;min-width:104px;cursor:grab;
   box-shadow:0 3px 0 rgba(11,61,140,.10);touch-action:none;
@@ -698,14 +731,88 @@
 /* two cards share a 162x158 panel on the word and picture rounds, so a snapped card has to fit
    that: 70px wide leaves a 4px gutter between them and a margin either side. min-height must be
    overridden too or `.tr-card.snapped`'s 86px keeps them tall enough to wrap onto two rows. */
-.coach-face .tr-card.snapped{ width:70px !important; min-height:0 !important; height:auto;
-  padding:3px; border-width:2px; gap:0; }
-.coach-face .tr-card.snapped .tr-pic{ width:38px; height:38px; }
-.coach-face .tr-card.snapped .tr-emoji{ font-size:30px; }
-.coach-face .tr-card.snapped .tr-cardlbl{ font-size:13px; }
-.coach-face.multi{ gap:4px; padding:2px; }
+/* ---------- [r23] A DROPPED ELEMENT IS CARGO, NOT A CARD ----------
+   Yasir: "after dropping the elment, remove that rectangular box of the element after droppin in
+   the coach, keeping only image and name of that element, it should be little bigger that adjust
+   inside the coach."
+
+   THE BOX. The tray card's white panel, border and shadow are what make it look pickup-able;
+   once it is in a cart that reading is wrong, and a white box inside the cream panel is two
+   rectangles nested in each other. Stripping the chrome also returns the 10px of width it ate
+   (2px border + 3px padding a side), which is what pays for the bigger picture.
+
+   BIGGER. 38px sat in the middle of a 175x171 panel using barely half the height, so a dropped
+   element read as a shrunken copy of the tray card. Width is the only real constraint - two
+   share the panel - so the picture goes as wide as the column allows.
+
+   76, NOT 80, AND THE BORDER IS WHY. The panel measures 175x171 on the first cart and 170x172 on
+   the second, but .coach-body.dropzone draws a 3px dashed border on it and box-sizing is
+   border-box, so the usable width on the narrower cart is 170 - 6 - 4 = 160. Two 80s plus a 4px
+   gap want 164: the first cart fits, the second WRAPS - .coach-face.multi is flex-wrap:wrap and a
+   flex item's min-width is auto - and the second element drops onto a row of its own and hangs
+   out under the panel. 76 + 3 + 76 = 155 leaves 5px of slack. min-width:0 keeps the declared
+   width honoured whatever the element turns out to contain. */
+.coach-face .tr-card.snapped{ min-height:0 !important; height:auto;
+  background:none; border:0; box-shadow:none; padding:0; gap:2px; }
+/* [r24] RE-SIZED AGAINST THE REAL PANEL. Until the panel table was measured the face was
+   175x171; the cream rectangle it is supposed to be is 183x104 (179x101 on the middle cart),
+   so everything in it had to come down in height. Budget on the NARROWEST cart, after its 3px
+   border and 2px padding: 169 wide x 91 tall.
+     two side by side : 80 + 3 + 80 = 163, inside 169
+     picture + name   : 62 + 2 + ~22 = 86, inside 91
+   The picture round carries no name, so there the picture takes the height the name would
+   have used. */
+.coach-face.multi{ gap:3px; padding:2px; }
+.coach-face.multi .tr-card.snapped{ width:80px !important; flex:0 0 80px; min-width:0; }
+.coach-face:not(.multi) .tr-card.snapped{ width:auto !important; max-width:150px; }
+.coach-face .tr-card.snapped .tr-pic{ width:62px; height:62px; }
+.coach-face .tr-card.snapped .tr-emoji{ font-size:50px; }
+.coach-face .tr-card.snapped .tr-cardlbl{ font-size:17px; }
+.coach-face .tr-card.k-picture.snapped .tr-pic{ width:80px; height:80px; }
+.coach-face:not(.multi) .tr-card.snapped .tr-pic{ width:84px; height:84px; }
+.coach-face:not(.multi) .tr-card.snapped .tr-cardlbl{ font-size:19px; }
 .coach-face .tr-matra{ font-size:36px; }
-.tr-body .wb-blank.dd-zone{ min-width:52px; height:46px; }
+.coach-face:not(.multi) .tr-card.snapped .tr-matra{ font-size:46px; }
+
+/* [r23] ...AND THE CART'S OWN EMPTY-TARGET CHROME GOES TOO. The dashed outline and the tint mark
+   an EMPTY drop target; drawn around a loaded cart they are exactly the rectangle that is still
+   visible round the element after it lands. "keeping only image and name" means only those. */
+.coach-body.dropzone.tr-has-card .coach-face{ border-color:transparent; background:none; }
+
+/* ---------- [r23] THE DROP TARGET IS THE PANEL, NOT THE WHOLE CART ----------
+   "the drop area should only be that rectangular part made on the coach of the train."
+   It was the whole cart: .dd-zone sits on .coach-body, which measures 228x270 - wheels, roof and
+   coupling included - against a panel of 175x171. makeDraggable hit-tests with
+   elementFromPoint().closest('.dd-zone'), so taking pointer events off the body and giving them
+   to the panel narrows the target to the rectangle the child aims at, while `closest` still
+   walks up to the cart that owns it. */
+/* [r25] NOTHING IS DRAGGABLE WHILE THE VOICE IS TALKING.
+   The engine already freezes drag mechanics during a clip, but its list names `.dd-tile` and this
+   lesson's tray cards are `.tr-card` - so they were never in it, and a card could be picked up and
+   dropped straight through the prompt. The [31n] note in the engine says this gap belongs in the
+   CSS rule rather than in the JS escape-hatch window, which is where it goes. */
+body.vo-lock .tr-card:not(.snapped),
+body.vo-lock .tt-card{ pointer-events:none !important; }
+.coach-body.dd-zone{ pointer-events:none; }
+.coach-body.dd-zone > .coach-face{ pointer-events:auto; }
+/* ...BUT NOT WHILE THE VOICE IS TALKING. The engine kills drops during a prompt with
+   `body.vo-lock .dd-zone{pointer-events:none !important}` - and that lands on .coach-body, the
+   PARENT. A child may re-enable its own pointer events regardless of its parent, so the rule
+   above would quietly re-open the drop target for the whole length of every prompt, defeating a
+   lock that has nothing to do with this change. The panel has to be locked by name. */
+body.vo-lock .coach-body.dd-zone > .coach-face{ pointer-events:none !important; }
+/* [r25] PAGE 11: A BIGGER TARGET AND BIGGER LETTERS. "increase the size of text and the box in
+   which we need to drop the element so that drop zone increase and its easier to drop things."
+   The blank was 52x46 - the smallest drop target in the lesson by a wide margin, on the screen
+   that asks for the most precise aim. The panel is 183x104, so a 92x74 blank still leaves room
+   for the tail letter beside it. */
+.tr-body .wb-blank.dd-zone{ min-width:92px; height:74px; border-width:3px; border-radius:12px; }
+.coach-face .wb-tail{ font-size:42px; }
+.coach-face .wb-inakshar{ font-size:38px; }
+.coach-face .tr-doneword{ font-size:40px; }
+.tr-card.k-akshar{ width:116px; min-height:104px; }
+.tr-card.k-akshar .tr-matra,
+.tr-card.k-akshar .ink-glyph{ font-size:52px; }
 
 /* ---------- MATRA_INTRO inside a painted coach ---------- */
 .mi-stage{ width:100%; }
@@ -1225,3 +1332,24 @@ body.is-end .sg-sky{
    shows the same end state the child reaches. */
 .mp-pic{ transition:opacity .35s ease; }
 .mp-pic.mp-wait{ opacity:0; }
+
+
+/* ---------- [r26] NO आगे FROM PAGE 6 ----------
+   The train is the transition from the first test screen on, so the button has nothing left to
+   do there. It is hidden rather than removed: the engine puts it back (by dropping this class)
+   if an auto-advance ever fails to fire, and a hidden-but-present button is what makes that
+   recovery possible. */
+body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
+
+
+/* ---------- [r27] THE SHADOW A CARD LEAVES IN THE TRAY ----------
+   Yasir: "when we drop the elements, keep its (shadow) empty box at their original places
+   (currently this thing is only happening in page11, but I want it in all the pages where we're
+   dragging & dropping elements)."
+   Page 11 keeps its tile in place and dims it, because a letter belongs to exactly one blank.
+   The sort rounds MOVE the card into the cart, so the tray closed up behind it and the remaining
+   cards slid sideways under the child's finger. An empty box holds the gap open: the row stays
+   still, and what has already been placed stays readable at a glance. */
+.tr-ghost{ border:3px dashed rgba(11,61,140,.16); border-radius:14px;
+  background:rgba(255,255,255,.34); box-sizing:border-box; flex:0 0 auto;
+  pointer-events:none; }

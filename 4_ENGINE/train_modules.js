@@ -476,10 +476,17 @@
     src: "assets/UI/train_still.webp", W: 2171, H: 724,
     ink: { x: 17, y: 48, w: 2138, h: 592 },
     cut: [17, 650, 1151, 1642, 2155],
-    /* the cream panel a word sits on, measured per coach (centre + size, art px) */
-    panel: [null, { cx: 894, cy: 341, w: 409, h: 417 },
-                  { cx: 1392, cy: 340, w: 396, h: 418 },
-                  { cx: 1892, cy: 339, w: 418, h: 417 }]
+    /* [r24] THE CREAM PANEL, MEASURED OFF THE ARTWORK - not estimated.
+       These said h:417/418/417. The painted panels are 228/222/226 art px tall: the declared
+       height was very nearly DOUBLE the real one, so the drop rectangle hung far below the cream
+       and down into the wheels, which is exactly what Yasir's screenshot shows. The widths were
+       out too, by 7-16px.
+       Found by scanning each coach's x-range for rows carrying a long unbroken run of the cream
+       colour and taking that region's bounds, then checked by drawing the result back over the
+       art - the boxes land on the panels with nothing to spare. */
+    panel: [null, { cx: 898, cy: 330, w: 402, h: 228 },
+                  { cx: 1394, cy: 327, w: 392, h: 222 },
+                  { cx: 1898, cy: 330, w: 409, h: 226 }]
   };
   const TRAIN_SPR = {
     src: "assets/UI/train_spritesheet.webp", cw: 634, ch: 182, cols: 6, rows: 6,
@@ -627,8 +634,12 @@
         const face = document.createElement("div"); face.className = "coach-face" + (cfg.multi ? " multi" : "");
         face.style.left   = ((pan.cx - a.x0) * k) + "px";
         face.style.top    = ((pan.cy - A.ink.y) * k) + "px";
-        face.style.width  = (pan.w * k * 0.94) + "px";
-        face.style.height = (pan.h * k * 0.90) + "px";
+        /* [r24] EXACTLY the panel. The 0.94/0.90 shrink was compensating for a panel table
+           that was too big - a fudge on top of a wrong number, which still left the box the
+           wrong shape. With the table measured, the face IS the rectangle painted on the cart:
+           "the drop area should be exactly same as the rectangle made in the coach". */
+        face.style.width  = (pan.w * k) + "px";
+        face.style.height = (pan.h * k) + "px";
         face.innerHTML = _coachCell((cfg.coach_body || [])[i]);
         body.appendChild(face);
 
@@ -705,7 +716,35 @@
         },
         /* "all three coaches glow · train gives a small whistle/steam animation"
            (rows #136, #143, #160, #174) */
-        complete(){ shell.classList.add("complete"); sfxWhistle(); }
+        complete(){ shell.classList.add("complete"); sfxWhistle(); },
+        /* [r26] THE TRAIN LEAVES THE WAY IT CAME.
+           Yasir: "after completing one page the train will animation again and move ahead and
+           get out of the screen (to the left side) and from the right side the train will come
+           for the next page and its instruction of next page will appear."
+           The arrival already exists - .tr-entering slides the rail in from +86% over
+           TRAIN_TRAVEL_MS while the sprite sheet rolls the wheels, then `settle` swaps the
+           sprite for the still. Leaving is that in reverse: put the rolling sprite back (drop
+           .tc-parked), run the same eased cell advance, and carry the rail off to the left.
+           `done` fires when it is gone, whether or not the animation was allowed to run - a
+           child on reduced motion must still get to the next screen. */
+        depart(done){
+          const finish = ()=>{ if(done){ const f = done; done = null; f(); } };
+          if(reduce){ setTimeout(finish, 120); return; }
+          shell.classList.remove("tc-parked");     /* the rolling wheels come back */
+          rail.classList.remove("tr-entering");
+          void rail.offsetWidth;
+          rail.classList.add("tr-leaving");
+          sfxWhistle(); sfxTrainMove();
+          const ease = _trainEase(), t0 = performance.now();
+          const tick = ()=>{
+            if(!rail.isConnected){ finish(); return; }
+            const p = Math.min(1, (performance.now() - t0) / TRAIN_TRAVEL_MS);
+            setCell(Math.floor(ease(p) * S.spin));
+            if(p < 1) _raf = requestAnimationFrame(tick);
+          };
+          _raf = requestAnimationFrame(tick);
+          setTimeout(finish, TRAIN_TRAVEL_MS);
+        }
       };
     },
 
@@ -762,6 +801,7 @@
        the guard and spoke over the next screen: measured, T1's pair chain landing on top of T3.
        Capturing the mount's epoch and checking it before running the callback closes that. */
     const myGen = _voGen;
+    state.trainDepart = null;          /* [r26] cleared per mount; set once the train exists */
     const tc = TrainChrome.mount(host, {
       coaches: n,
       coach_label: (opts.labels || []).map(h => (h == null || h === "") ? null : { html: h }),
@@ -780,6 +820,8 @@
       body.dataset.idx = String(i);
       return { el, body: tc.faceEls[i], zone: body, label: tc.labelEls[i] };
     });
+    /* [r26] the engine drives the departure through this, without knowing about trains */
+    state.trainDepart = (done)=> tc.depart(done);
     return {
       wrap: tc.shell, rail: tc.rail, coaches, chrome: tc,
       /* run `fn` once the train has stopped — immediately if it already has, and never at all
@@ -792,6 +834,21 @@
         c.el.classList.add("is-nudge");
         if(typeof handOnAnswer === "function") handOnAnswer(c.el, slide);
       },
+      /* [r25] THE HAND SHOWS THE MOVE, not just the destination.
+         Yasir: "in case of 2nd wrong attempt you are showing hand nudge but I want to show the
+         animation how to drag and drop using hand nudge." A hand parked on the right cart says
+         WHICH one but never says that the card has to be carried there - which, on a drag screen,
+         is the whole gesture the child is being asked to make.
+         travelNudge already exists in the engine for exactly this ([28o], written for the
+         matching mechanics) and loops the hand from the tile to its target; the train screens
+         simply never called it. `dest` lets WORD_BUILD point at its blank rather than the whole
+         panel. Falls back to the static point wherever the hand cannot travel. */
+      nudgeTo(i, fromEl, slide, dest){ const c = coaches[i]; if(!c) return;
+        c.el.classList.add("is-nudge");
+        const to = dest || c.body.querySelector(".coach-face") || c.body;
+        if(fromEl && typeof travelNudge === "function") travelNudge(fromEl, to, slide);
+        else if(typeof handOnAnswer === "function") handOnAnswer(c.el, slide);
+      },
       shake(i){ const c = coaches[i]; if(!c) return;
         c.el.classList.remove("is-shake"); void c.el.offsetWidth; c.el.classList.add("is-shake");
         setTimeout(()=> c.el.classList.remove("is-shake"), 520);
@@ -802,6 +859,12 @@
       },
       lock(i){ const c = coaches[i]; if(c) c.el.classList.add("is-locked"); },
       popLabels(gap){ tc.popLabels(gap); },
+      /* [r26] Registered here rather than in each mechanic: buildTrain is the one place every
+         train screen passes through, so TRAIN_TAP, TRAIN_SORT and WORD_BUILD all get the
+         departure without knowing it exists - the same reasoning that put the painted train
+         behind this adapter. A screen with no train simply never sets it, and the engine falls
+         back to advancing without one. */
+      depart(done){ tc.depart(done); },
       /* SME, on every sort screen: "all coaches glow, train gives a small whistle/steam
          animation, Next button becomes active". */
       finish(){ coaches.forEach(c => c.el.classList.add("is-correct")); tc.complete(); }
@@ -996,6 +1059,23 @@
             /* SME: "Correct Answer on 3rd Attempt … No VO." Counted PER CARD, because on a sort
                screen each card carries its own attempt ladder. */
             const quiet = (perCard.get(tile) || 0) >= maxTries() - 1;
+            /* [r27] LEAVE A SHADOW WHERE THE CARD WAS - AND MEASURE IT FIRST. Moving the tile
+               into the cart takes it out of the tray's flex row, so the cards after it slid left:
+               the row reshuffled under the child's finger on every drop and nothing showed which
+               had already gone. An empty box of the card's own footprint holds the gap open.
+               It has to be measured BEFORE `snapped` is added - that class resizes the card to
+               its in-cart size (112x124 -> 86x103), so measuring after leaves a shadow smaller
+               than the card that cast it and the row still moves.
+               offsetWidth/offsetHeight, not a client rect: the stage carries a --scale transform,
+               so a rect would be screen px and the box would be wrong on any non-1:1 display. */
+            if(!tile._ghost && tile.parentNode){
+              const g = document.createElement("div");
+              g.className = "tr-ghost";
+              g.style.width  = tile.offsetWidth + "px";
+              g.style.height = tile.offsetHeight + "px";
+              tile.parentNode.insertBefore(g, tile);
+              tile._ghost = g;
+            }
             tile.classList.add("snapped");
             /* the card belongs on the coach's painted CREAM PANEL, not loose in the coach body.
                `body` is the drop target (it is what carries .dd-zone); `.coach-face` is the panel
@@ -1006,6 +1086,9 @@
                `filled` is the flag makeDraggable already hit-tests, so a second drop on a full
                coach springs back instead of counting as a wrong attempt. */
             if(d.single) body.classList.add("filled");
+            /* [r23] THE CART IS CARRYING SOMETHING NOW, so the empty-tray chrome comes off it -
+               see .coach-body.dropzone.tr-has-card in the stylesheet. */
+            body.classList.add("tr-has-card");
             /* On the WORD round the card still shows its word once it is in the coach, so mark
                the matra the child just sorted on. Not on the picture round — the SME is
                explicit there that "the word should not be displayed at any point". */
@@ -1039,7 +1122,8 @@
             } else {
               state.hintUsed = true;
               say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
-                  ()=> train.nudge(binIdx(tile.dataset.bin), slide));
+                  /* [r25] from the card the child is holding to the cart it belongs in */
+                  ()=> train.nudgeTo(binIdx(tile.dataset.bin), tile, slide));
             }
           }
         }, { onPick: ()=>{ if(typeof sfxTap === "function") sfxTap(); } });
@@ -2191,8 +2275,11 @@
                    picture, and the hand is withheld. */
                 const want = d.slots.findIndex(s => tile.dataset.akshar + s.tail === s.word);
                 const at = want >= 0 ? want : i;
-                train.nudge(at, slide);                 // coach glow + the [28f]-gated hand
                 const bl = train.coaches[at].body.querySelector(".wb-blank");
+                /* [r25] the hand carries the letter to the blank it fills. Only when there IS a
+                   blank for it: a distractor completes nothing, so there the cart is glowed and
+                   the hand withheld, exactly as before. */
+                train.nudgeTo(at, (want >= 0 ? tile : null), slide, (want >= 0 ? bl : null));
                 if(bl && want >= 0) bl.classList.add("wb-pulse");
               });
             }
