@@ -803,6 +803,7 @@
    dropped straight through the prompt. The [31n] note in the engine says this gap belongs in the
    CSS rule rather than in the JS escape-hatch window, which is where it goes. */
 body.vo-lock .tr-card:not(.snapped),
+body.vo-lock .sc-opt,                       /* [r31] the sentence screens' cards too */
 body.vo-lock .tt-card{ pointer-events:none !important; }
 .coach-body.dd-zone{ pointer-events:none; }
 .coach-body.dd-zone > .coach-face{ pointer-events:auto; }
@@ -1366,3 +1367,55 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
 .tr-ghost{ border:3px dashed rgba(11,61,140,.16); border-radius:14px;
   background:rgba(255,255,255,.34); box-sizing:border-box; flex:0 0 auto;
   pointer-events:none; }
+
+
+/* ---------- [r29] THE SENTENCE BLANK IS A DROP TARGET ----------
+   .sc-blank now carries .dd-zone so makeDraggable can hit-test it. The engine sizes EVERY
+   .dd-zone 150x150 (a trap this bundle has already hit twice - see the notes on .tr-blank and
+   .wb-blank), which would blow the blank up mid-sentence, so the size is taken back here. */
+/* min-width:0 COLLAPSED IT TO 6x6. Taking back the engine's 150x150 has to leave the blank its
+   OWN size, not strip every size it had - a 6px target is one the test could hit dead-centre and
+   a child could not hit at all. These are the values the screen already used at this breakpoint,
+   with a little more height so the card has something to aim at. */
+.sc-blank.dd-zone{ width:auto; min-width:150px; height:58px; border-radius:10px; }
+.sc-blank.dd-zone.hover{ background:#E6F0FF; box-shadow:0 0 0 4px rgba(56,106,246,.18); }
+.sc-opt{ touch-action:none; }          /* a press that becomes a drag must not scroll the page */
+.sc-opt.dragging{ z-index:50; cursor:grabbing; }
+
+
+/* ---------- [r31] THE SHADOW A CHOSEN WORD LEAVES ON THE SENTENCE SCREENS ----------
+   Yasir: "after dropping the text of that element will be set to drop zone and ghost (box) of
+   that element will remain at their original place."
+   The word already flies into the blank (.sc-fly), but the card it came from stayed sitting in
+   the row looking like it was still there to pick. It becomes an empty box instead - the same
+   reading as the shadow the sort rounds leave in the tray, so the two mechanics say the same
+   thing about a card that has been used. The element itself is kept, not removed, so the row
+   does not close up and the other two options stay exactly where they were. */
+/* [r32] IT DISSOLVES, it does not blink out. Yasir: "when we drop the element the element
+   should dissolve (or fade away) and only text will be set in the box (drop zone)". r31 swapped
+   the card for the empty box in a single frame, so there was nothing to see - the card was
+   simply gone. The picture and the word now fade over 340ms while the chrome softens to the
+   dashed outline underneath them, which is the part that reads as the card emptying out. */
+.sc-opt{ transition:background .34s ease, border-color .34s ease, box-shadow .34s ease; }
+.sc-opt > *{ transition:opacity .34s ease; }
+.sc-opt.sc-ghost{ background:rgba(255,255,255,.34); border:3px dashed rgba(11,61,140,.16);
+  box-shadow:none; cursor:default; }
+.sc-opt.sc-ghost > *{ opacity:0; }
+.sc-opt.sc-ghost.sc-gone > *{ visibility:hidden; }   /* only once the fade has finished */
+
+/* [r32] THE DROP ZONE IS WHAT SAYS NO. "in case of wrong drop wiggle the drop zone and the
+   element will be bounce back to its original place." The shake used to be on the CARD, which
+   on a drag is the one thing that is already moving - so the refusal was told in the wrong
+   place. The blank wiggles now, and the card travels home instead of vanishing from the blank. */
+.sc-blank.sc-zshake{ animation:scZShake .52s ease; }
+@keyframes scZShake{ 0%,100%{transform:translateX(0);} 18%{transform:translateX(-9px);}
+  42%{transform:translateX(8px);} 66%{transform:translateX(-6px);} 86%{transform:translateX(4px);} }
+@media (prefers-reduced-motion:reduce){
+  .sc-blank.sc-zshake{ animation:none; border-color:var(--wrong,#F93544); }
+  .sc-opt{ transition:none; } .sc-opt > *{ transition:none; }
+}
+
+
+/* [r33] the copy of the card that is held over the blank until it dissolves there */
+.sc-opt.sc-pinned{ transition:opacity .34s ease; opacity:1; }
+@media (prefers-reduced-motion:reduce){ .sc-opt.sc-pinned{ transition:none; } }

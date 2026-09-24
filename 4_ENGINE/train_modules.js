@@ -872,6 +872,23 @@
   }
 
   /* Shared 3-attempt ladder. Returns a `wrong()` you call on each miss. */
+  /* [r29] ORDER IS NOT PART OF THE QUESTION.
+     Yasir: "in all the pages if we have multiple options then reshuffle all the options each
+     time." Every screen authored its options in a fixed order, and on most of them the ANSWER
+     was written first - so a child who noticed that could clear the tap screens without reading
+     a word, and a second run through the lesson is the same shape as the first.
+     Fisher-Yates on a COPY: the card's own data is never reordered, so `answer`, `bin` and the
+     correct-coach lookups keep pointing at the same items. Each module works out what is correct
+     from the item itself, never from its position, which is what makes this safe to do at all. */
+  function shuffled(list){
+    const a = (list || []).slice();
+    for(let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
   function makeLadder(slide, train, correctIdx){
     let tries = 0;
     return function wrong(coachIdx){
@@ -919,15 +936,17 @@
     mount(host, slide){
       const d = slide.data;
       newVoEpoch();          /* any chain still running from a previous mount is now stale */
-      const correctIdx = d.coaches.findIndex(c => c.correct);
+      /* [r29] the carts are dealt in a fresh order every time; `correct` travels with the cart */
+      const coachList = shuffled(d.coaches);
+      const correctIdx = coachList.findIndex(c => c.correct);
       /* SME, on all three tap screens: "Train comes through animation from right to left. Train
          stops at the centre of the screen. **After the train stops**, the three coaches पुल, दूध,
          सूरज appear clearly." So the words are held back until the train has parked — they are
          not part of the arriving picture, they are what the child is then asked to read. */
       const train = buildTrain(host, {
-        coaches: d.coaches.length,
-        labels: d.coaches.map(()=> ""),
-        bodies: d.coaches.map(c => '<span class="tr-word ink-glyph tt-hold">' + c.word + "</span>"),
+        coaches: coachList.length,
+        labels: coachList.map(()=> ""),
+        bodies: coachList.map(c => '<span class="tr-word ink-glyph tt-hold">' + c.word + "</span>"),
         dropZone: false,
         on_enter: ()=> [...host.querySelectorAll(".tt-hold")].forEach((w, i)=>
           setTimeout(()=> w.classList.add("tt-in"), i * 180))
@@ -1014,7 +1033,11 @@
 
       const tray = document.createElement("div");
       tray.className = "tr-tray";
-      const cards = d.cards.slice().sort(()=> Math.random() - 0.5);
+      /* [r29] Fisher-Yates, not `sort(()=> Math.random()-0.5)`. That idiom is not a shuffle: the
+         comparator is inconsistent, so the result is not a uniform permutation and V8's sort
+         leaves short lists near their original order far more often than chance. On a four-card
+         tray that is exactly the case that matters. */
+      const cards = shuffled(d.cards);
       cards.forEach(c => {
         const t = document.createElement("div");
         t.className = "tr-card k-" + d.kind;
@@ -1170,7 +1193,7 @@
       });
       const tray = document.createElement("div");
       tray.className = "tr-tray";
-      d.options.forEach(m => {
+      shuffled(d.options).forEach(m => {     /* [r29] */
         const t = document.createElement("div");
         t.className = "tr-card k-matra";
         t.dataset.matra = m;
@@ -2198,7 +2221,7 @@
       tray.className = "tr-tray wb-tray";
       /* SME: "Below the train, show draggable options: पु · फू · सु" plus 1–2 distractors.
          Shuffled, so the answer is never the n-th card two runs running. */
-      d.options.slice().sort(()=> Math.random() - 0.5).forEach(o => {
+      shuffled(d.options).forEach(o => {      /* [r29] see the note on the sort tray */
         const t = document.createElement("div");
         t.className = "tr-card k-akshar";
         t.dataset.akshar = o.akshar;
@@ -2326,6 +2349,11 @@
     mount(host, slide){
       const d = slide.data;
       newVoEpoch();          /* any chain still running from a previous mount is now stale */
+      /* [r33] the pinned copy is parented to <body> so it can sit over the blank in screen
+         coordinates - which also puts it out of clearHost()'s reach, so it is swept here. A
+         slide left mid-drop (navigated away, or the train carrying the page off) would otherwise
+         leave a card floating over the next screen. */
+      document.querySelectorAll(".sc-pinned").forEach(e => e.remove());
       const wrap = document.createElement("div");
       wrap.className = "sc-stage";
       wrap.innerHTML =
@@ -2335,7 +2363,7 @@
         '<div class="sc-right">' +
           '<div class="sc-sentence">' +
             '<span class="sc-txt">' + (d.sentence_pre || "") + "</span>" +
-            '<span class="sc-blank"></span>' +
+            '<span class="sc-blank dd-zone"></span>' +
             '<span class="sc-txt">' + (d.sentence_post || "") + "</span>" +
           "</div>" +
           '<div class="sc-opts"></div>' +
@@ -2347,7 +2375,8 @@
       const optsW = wrap.querySelector(".sc-opts");
       /* SME: "Keep the options visually supported with pictures so the child can independently
          understand the word." Picture AND word on every card, exactly as the mockup draws them. */
-      d.options.forEach(o => {
+      /* [r29] the answer was authored first on all four sentence screens */
+      shuffled(d.options).forEach(o => {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "sc-opt";
@@ -2390,10 +2419,29 @@
         const lbl = b.querySelector(".sc-optlbl");
         const from = lbl && lbl.getBoundingClientRect();
         const to = blank.getBoundingClientRect();
-        blank.classList.add("filled");
-        blank.innerHTML = '<span class="ink-box"><span class="sc-word ink-glyph">' + d.answer + "</span></span>";
-        sent.classList.add("sc-done");
-        if(from && to.width){
+        /* [r34] a DROP has already put the word in the blank and faded the card out - the swap
+           belongs to the gesture. Only a TAP arrives here with the blank still empty. */
+        const alreadySettled = blank.classList.contains("filled");
+        if(!alreadySettled){
+          blank.classList.add("filled");
+          blank.innerHTML = '<span class="ink-box"><span class="sc-word ink-glyph">' + d.answer + "</span></span>";
+          sent.classList.add("sc-done");
+        }
+        if(alreadySettled){
+          /* nothing to animate: it happened when the card landed */
+        } else if(pinned){
+          /* [r33] DROPPED: the card is already lying on the blank. It fades out there and the
+             word fades up underneath it, so the one turns into the other in place. No flight -
+             the card has already made the journey, in the child's own hand. */
+          const word = blank.querySelector(".sc-word");
+          if(word){ word.style.transition = "none"; word.style.opacity = "0"; }
+          const gone = pinned; pinned = null;
+          requestAnimationFrame(()=>{
+            gone.style.opacity = "0";
+            if(word){ word.style.transition = "opacity .30s ease"; word.style.opacity = "1"; }
+          });
+          setTimeout(()=>{ gone.remove(); if(word) word.style.transition = ""; }, 420);
+        } else if(from && to.width){
           const fly = document.createElement("span");
           fly.className = "sc-fly"; fly.textContent = d.answer;
           fly.style.left = from.left + "px"; fly.style.top = from.top + "px";
@@ -2407,7 +2455,17 @@
             fly.style.transform = "translate(" + dx + "px," + dy + "px)";
             fly.style.opacity = "1";
           });
-          setTimeout(()=>{ fly.remove(); if(word) word.style.opacity = ""; }, 460);
+          setTimeout(()=>{
+            fly.remove();
+            if(word) word.style.opacity = "";
+            /* [r31] the card the word came from becomes an empty box, once the word has
+               actually landed - do it any earlier and the child watches the card empty out
+               before the thing that left it has arrived. */
+            b.classList.add("sc-ghost");                       /* [r32] starts the dissolve */
+            setTimeout(()=> b.classList.add("sc-gone"), 380);   /* hidden only once it has faded */
+          }, 460);
+        } else {
+          b.classList.add("sc-ghost", "sc-gone");   /* no flight (reduced motion): straight swap */
         }
         if(typeof sfxCorrect === "function") sfxCorrect();
         if(typeof confettiCannon === "function") confettiCannon();
@@ -2423,15 +2481,64 @@
         if(silent) setTimeout(unlock, 900); else say(A(slide, "correct"), unlock);
       }
 
-      function miss(b){
+      /* [r32] BOUNCE THE CARD HOME FROM THE BLANK. makeDraggable clears the tile's transform
+         before it hands over, so by the time we get here the card has already snapped back in a
+         single frame - the child sees it vanish from under their finger. The offset is
+         reconstructed from the two rects, re-applied without a transition, and then animated
+         away, which is the return journey they actually asked to see.
+         Measured in CSS px (offsets divided by --scale): the stage is transformed, so a raw
+         client-rect delta would overshoot on any display that is not 1:1. */
+      function bounceHome(tile, zone){
+        if(!tile || !zone) return;
+        const sc = parseFloat(getComputedStyle(document.documentElement)
+                    .getPropertyValue("--scale")) || 1;
+        const t = tile.getBoundingClientRect(), z = zone.getBoundingClientRect();
+        const dx = ((z.left + z.width / 2) - (t.left + t.width / 2)) / sc;
+        const dy = ((z.top + z.height / 2) - (t.top + t.height / 2)) / sc;
+        tile.style.transition = "none";
+        tile.style.transform = "translate(" + dx + "px," + dy + "px) scale(1.08)";
+        requestAnimationFrame(()=>{
+          tile.style.transition = "transform 460ms cubic-bezier(.34,1.35,.6,1)";
+          tile.style.transform = "";
+          setTimeout(()=>{ tile.style.transition = ""; }, 500);
+        });
+      }
+
+      /* [r35] THE REFUSAL IS PART OF THE DROP TOO.
+         Yasir: "when we drop the incorrect element to the drop zone it should INSTANTLY wiggle
+         and move back to its original place."
+         Same shape as the fault [r34] fixed on the correct side: the wiggle and the return were
+         inside miss(), and miss() runs only after the word clip has finished - so a wrong card
+         sat on the blank for the length of that clip before anything said no. The answer to a
+         gesture has to arrive with the gesture; the spoken hint can follow at its own pace. */
+      function refuseAtZone(tile, zone){
+        if(!tile || !zone) return;
+        zone.classList.remove("sc-zshake"); void zone.offsetWidth;
+        zone.classList.add("sc-zshake");
+        setTimeout(()=> zone.classList.remove("sc-zshake"), 600);
+        bounceHome(tile, zone);
+        tile._refused = true;          /* so miss() does not play it a second time */
+      }
+
+      function miss(b, fromZone){
         tries++;
         state.attempts = tries;
         if(typeof sfxWrongSoft === "function") sfxWrongSoft();
         if(typeof setSwMood === "function") setSwMood("tryagain");
-        /* "Wrong option card gives a short shake/wiggle animation. Option returns to its original
-           position." — it returns because it never left: a tap, not a drag. */
-        b.classList.remove("sc-shake"); void b.offsetWidth; b.classList.add("sc-shake");
-        setTimeout(()=> b.classList.remove("sc-shake"), 560);
+        if(fromZone){
+          /* dropped in: the blank has already refused it on release - see refuseAtZone */
+          if(!b._refused){
+            fromZone.classList.remove("sc-zshake"); void fromZone.offsetWidth;
+            fromZone.classList.add("sc-zshake");
+            setTimeout(()=> fromZone.classList.remove("sc-zshake"), 600);
+            bounceHome(b, fromZone);
+          }
+          b._refused = false;
+        } else {
+          /* tapped: nothing moved, so the card itself is what shakes - the SME's original note */
+          b.classList.remove("sc-shake"); void b.offsetWidth; b.classList.add("sc-shake");
+          setTimeout(()=> b.classList.remove("sc-shake"), 560);
+        }
         SwiftPAL.emit("answer_wrong", { slide_id: slide.id, phase: slide.phase, attempts: tries });
         if(tries === 1){
           say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});   // SME: no hand on the 1st miss
@@ -2452,21 +2559,130 @@
         }
       }
 
+      /* [r29] THE CARD CAN BE CARRIED TO THE BLANK, not only tapped.
+         The SME's note for this screen says "the option card snaps into the blank space", and
+         these are the only option cards in the lesson that could not be picked up at all - every
+         other screen from page 6 on is a drag. A child arriving here after six drag screens
+         tries to drag, and nothing happened.
+         TAP STILL WORKS, and is still what the note specifies first ("When an option is tapped,
+         play the word VO"). makeDraggable already separates the two: a press that travels less
+         than 6px and lands on no zone is delivered to `onTap`, so both gestures reach the same
+         decision and neither is a special case. */
+      /* [r33] THE CARD STAYS WHERE IT WAS DROPPED.
+         Yasir: "when we drop the correct element to the drop zone it should dissolve (or fade
+         away) there ... currently the element move back to its original place and then it
+         dissolve and text appears at the drop zone."
+         Exactly right, and the cause is makeDraggable: it clears the tile's transform before it
+         calls back, so the card is already home a frame later - and the word VO plays before
+         land() runs, so the child watches it sit in the tray for a second and dissolve THERE.
+         A copy of the card is pinned over the blank at the instant of the drop and the original
+         is emptied at once, so the tray shows the box it left behind while the card itself is
+         still on the blank, waiting to fade. The copy is what dissolves.
+         SIZED IN CSS px AND SCALED BACK UP: the stage carries --scale, so a body-level clone
+         given raw client-rect dimensions would render its picture and text at the wrong size on
+         any display that is not 1:1. */
+      let pinned = null;
+      /* [r34] THE DISSOLVE IS PART OF THE DROP, NOT OF THE FEEDBACK.
+         Yasir: "it should dissolve there INSTANTLY ... currently the element remain near the drop
+         zone for few seconds and then it dissolve."
+         r33 pinned the card on the blank but left the dissolve inside land(), and land() only
+         runs after the word clip has finished - so the card lay on the blank for the length of
+         that clip before anything happened to it. The child's action and the screen's answer to
+         it were a second and a half apart.
+         The exchange now happens in the same gesture: the copy starts fading and the word starts
+         appearing the moment the card is let go. The clip still plays and land() still does the
+         rest (locking, the celebration, the unlock) - it simply no longer owns the swap. */
+      function settleWord(){
+        if(blank.classList.contains("filled")) return;
+        blank.classList.add("filled");
+        blank.innerHTML = '<span class="ink-box"><span class="sc-word ink-glyph">'
+                        + d.answer + "</span></span>";
+        sent.classList.add("sc-done");
+        const word = blank.querySelector(".sc-word");
+        if(word){ word.style.transition = "none"; word.style.opacity = "0"; }
+        const gone = pinned; pinned = null;
+        requestAnimationFrame(()=>{
+          if(gone) gone.style.opacity = "0";
+          if(word){ word.style.transition = "opacity .26s ease"; word.style.opacity = "1"; }
+        });
+        if(gone) setTimeout(()=>{ gone.remove(); }, 340);
+        setTimeout(()=>{ if(word) word.style.transition = ""; }, 360);
+      }
+
+      function pinAtZone(tile, zone){
+        const sc = parseFloat(getComputedStyle(document.documentElement)
+                    .getPropertyValue("--scale")) || 1;
+        const r = tile.getBoundingClientRect(), z = zone.getBoundingClientRect();
+        const c = tile.cloneNode(true);
+        c.className = "sc-opt sc-pinned";
+        c.style.cssText =
+          "position:fixed;margin:0;z-index:60;pointer-events:none;transform-origin:top left;" +
+          "width:" + (r.width / sc) + "px;height:" + (r.height / sc) + "px;" +
+          "transform:scale(" + sc + ");" +
+          "left:" + (z.left + z.width / 2 - r.width / 2) + "px;" +
+          "top:"  + (z.top + z.height / 2 - r.height / 2) + "px;";
+        document.body.appendChild(c);
+        pinned = c;
+        tile.classList.add("sc-ghost", "sc-gone");   // its slot is an empty box immediately
+      }
+
+      const chooseFrom = (b, fromZone)=>{
+        if(state.locked || b.disabled) return;
+        sayOpt(clip(b.dataset.audio), ()=>{
+          if(state.locked) return;
+          if(b.dataset.word === d.answer) land(b); else miss(b, fromZone);
+        });
+      };
       opts.forEach(b => {
-        b.onclick = ()=>{
+        const tap = ()=>{
           if(state.locked || isPlaying || b.disabled) return;
           if(typeof sfxTap === "function") sfxTap();
-          /* the tap READS the word and CHOOSES it, in that order */
-          sayOpt(clip(b.dataset.audio), ()=>{
-            if(state.locked) return;
-            if(b.dataset.word === d.answer) land(b); else miss(b);
-          });
+          chooseFrom(b);                       /* the tap READS the word and CHOOSES it */
         };
+        b.onclick = tap;
+        if(typeof makeDraggable === "function"){
+          makeDraggable(b, (zone, tile)=>{
+            /* dropped on the blank: the same judgement the tap makes. A wrong card is NOT left
+               sitting in the blank - miss() shakes it and it springs back, which is the note's
+               "option returns to its original position". */
+            if(state.locked || tile.disabled) return;
+            if(typeof sfxTap === "function") sfxTap();
+            /* [r33] decided here, not after the clip: the judgement is deterministic, and the
+               card has to be pinned in the SAME frame it is released or it snaps home first. */
+            if(tile.dataset.word === d.answer){
+              pinAtZone(tile, zone);
+              settleWord();                    /* [r34] straight away, in the same frame */
+            } else {
+              refuseAtZone(tile, zone);        /* [r35] ...and so does the refusal */
+            }
+            chooseFrom(tile, zone);            /* [r32] the zone it was dropped on */
+          }, { onTap: tap });
+        }
       });
 
       /* SME: "Picture appears first. Sentence box appears with the blank space. Options slide/fade
          in one by one." Settled by default; `sc-enter` only drives the stagger. */
       requestAnimationFrame(()=>{ wrap.classList.add("sc-enter"); sfxPopSoft(); });
+      /* [r30] THE ENTRY ANIMATION HAS TO LET GO, OR THE CARD CANNOT BE DRAGGED.
+         Yasir: "when we drag and drop it should be visible dragging ... we need to show how the
+         elments are going."
+         .sc-enter's stagger runs `animation:scIn ... both`, and `both` means the animation keeps
+         applying its final frame - `transform:none` - for as long as the class is there. An
+         animated property outranks an inline style, so makeDraggable's
+         `tile.style.transform = translate(dx,dy)` was being written and then ignored: the drop
+         still worked, but the card never moved under the finger. Measured: a sort card travels
+         210px while held, a sentence card travelled 0.
+         The keyframes end exactly where the settled card sits (opacity:1, transform:none), so
+         dropping the class changes nothing on screen - it only hands control back.
+         Removed when the last option lands, with a timer as backstop (a cancelled or skipped
+         animation may never fire animationend) and on first touch, so an impatient child is
+         never the one who finds the gap. */
+      const _settleIn = ()=> wrap.classList.remove("sc-enter");
+      wrap.addEventListener("animationend", (e)=>{
+        if(e.target === opts[opts.length - 1]) _settleIn();
+      });
+      setTimeout(_settleIn, 2400);
+      opts.forEach(b => b.addEventListener("pointerdown", _settleIn, { once:true }));
       say(A(slide, "prompt"), ()=>{});
     }
   };
