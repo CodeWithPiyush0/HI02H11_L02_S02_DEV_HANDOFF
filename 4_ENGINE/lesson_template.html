@@ -1867,6 +1867,10 @@ body.is-start .phase-gate{
 
 
 
+
+
+
+
 /* == TRAIN STYLES :: BEGIN (engine_local, HI02H11_L02_S02) == */
 
 /* ==========================================================================================
@@ -2479,16 +2483,85 @@ body.is-start .phase-gate{
    On the drawn train those hung off `.tr-car`; on the painted train the thing to light is the
    coach's own slice, so the glow lands on `.coach-body` and the shake on the whole coach. */
 .train-coach.is-tappable{ cursor:pointer; }
-.train-coach.is-tappable .coach-body{ transition:transform .14s ease; }
+.train-coach.is-tappable .coach-body{ transition:transform .14s ease, filter .16s ease; }
 .train-coach.is-tappable:hover .coach-body{ transform:translateY(-3px); }
+
+/* ---------- [r19] HOVER AND PRESS ----------
+   Yasir: "when we hover over the cart it should glow with slight golden color, and when we tap on
+   the cart it should glow blue but not too dark."
+
+   Both are held away from is-nudge and is-correct. Those two glows MEAN something - the hand is
+   on the answer, or the answer was right - and a cursor passing over a coach must not repaint
+   them; without the :not() guards, hover (three classes deep) outranks them and the nudge's gold
+   would flicker off under the pointer at the exact moment the child is being pointed at it.
+
+   The blue is --selected, the kit's own mid blue. The obvious blue here would be --navy, and that
+   is the "too dark" one: at glow strength it reads as a shadow under the coach rather than a
+   light on it. Gold is kept deliberately thinner than the nudge's, so "slight" stays slight and
+   the two never compete. */
+@media (hover:hover) and (pointer:fine){
+  .train-coach.is-tappable:not(.is-out):not(.is-nudge):not(.is-correct):not(.is-shake):hover .coach-body{
+    filter:drop-shadow(0 0 2px rgba(255,206,46,.50)) drop-shadow(0 0 10px rgba(255,190,40,.48));
+  }
+  /* the sort screens' coaches are drop targets, not tap targets, but they are the same carts and
+     answer to the same hover */
+  .train-coach:not(.is-nudge):not(.is-correct) .coach-body.dd-zone:not(.filled):hover{
+    filter:drop-shadow(0 0 2px rgba(255,206,46,.50)) drop-shadow(0 0 10px rgba(255,190,40,.48));
+  }
+}
+/* :active alone is unreliable once a finger is involved, so the module mirrors it with .is-press
+   on pointerdown - otherwise the press colour never appears on the devices this ships to. */
+.train-coach.is-tappable:not(.is-out):not(.is-nudge):not(.is-correct):not(.is-shake):active .coach-body,
+.train-coach.is-tappable.is-press:not(.is-out):not(.is-nudge):not(.is-correct):not(.is-shake) .coach-body{
+  transform:translateY(-1px) scale(.985);
+  filter:drop-shadow(0 0 2px rgba(56,106,246,.60)) drop-shadow(0 0 12px rgba(86,146,255,.62));
+}
+
+/* ---------- [r19] A CART THAT HAS BEEN SPENT ----------
+   "if he does mistake 2 times then hand nudge appears on the correct option and that particular
+   cart will be disabled." So after the second mistake the carts the child has already tried stop
+   answering, and the only one left to tap is the one the hand is pointing at.
+
+   Dimmed, never removed: the word on it is the thing being learned, and a cart that vanished
+   would also move the two that remain. pointer-events:none is what actually disables it - it
+   takes the coach out of hover and press as well as click, so a dead cart cannot still light up
+   gold under the cursor. */
+.train-coach.is-out{ pointer-events:none; cursor:default; }
+/* [r20] "why are you making rectangle on the cart" - this line was painting a near-white panel
+   across .coach-face, and .coach-face has no background of its own (the cream panel is part of
+   the cart's artwork), so it read as a white box sitting on top of the cart. The cart is dimmed
+   and nothing else; the word stays legible, which is the thing being learned. */
+.train-coach.is-out .coach-body{ filter:grayscale(.5) opacity(.45); transform:none; }
+@media (prefers-reduced-motion:reduce){
+  .train-coach.is-tappable:active .coach-body,
+  .train-coach.is-tappable.is-press .coach-body{ transform:none; }
+}
 .train-coach.is-correct .coach-body{
   filter:drop-shadow(0 0 0 rgba(76,175,125,.9)) drop-shadow(0 0 14px rgba(76,175,125,.85)); }
 .train-coach.is-nudge .coach-body{
   filter:drop-shadow(0 0 0 rgba(255,206,46,.95)) drop-shadow(0 0 16px rgba(252,188,24,.85)); }
 .train-coach.is-locked .coach-face{ background:rgba(244,250,247,.72); }
-.train-coach.is-shake{ animation:trShake .48s ease; }
+/* [r20] THE WIGGLE NEVER RAN. This said `animation:trShake` and there is no @keyframes trShake
+   anywhere in the bundle - the name is a typo for `coachShake`, which is defined right below
+   .coach-body.wrong and is what the sort screens have always used. An animation naming a
+   keyframe that does not exist is not an error in CSS; it is silently dropped. So every wrong
+   tap on every tap screen has added the class, changed nothing on screen, and removed it 520ms
+   later. Yasir: "when we tap on the wrong cart it should wiggle (shake) showing error."
+
+   It shakes .coach-body, the same element the sort already shakes, so the wheels and the track
+   stay put and only the cart rocks.
+
+   AND IT SHOWS THE ERROR. The sort's wiggle is marked "[r11] wiggle only - no red" and that
+   stands where it is; here the ask is explicit, so the cart flushes red for the length of the
+   shake. That is why :not(.is-shake) appears on hover and press below - both of those are five
+   selectors deep and would otherwise repaint the red gold or blue while the cart is still
+   rocking, which is precisely the moment the colour has something to say. */
+.train-coach.is-shake .coach-body{
+  animation:coachShake 460ms ease-in-out;
+  filter:drop-shadow(0 0 2px rgba(249,53,68,.75)) drop-shadow(0 0 13px rgba(249,53,68,.55));
+}
 @media (prefers-reduced-motion:reduce){
-  .train-coach.is-shake{ animation:none; outline:4px solid var(--wrong,#E8453C); }
+  .train-coach.is-shake .coach-body{ animation:none; }
 }
 /* the word / blank / snapped card sits on the painted cream panel */
 .coach-face .tr-word{ font-size:40px; }
@@ -9129,9 +9202,21 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       setNavActive(false);
       const wrong = makeLadder(slide, train, correctIdx);
 
+      /* [r19/r20] "if user tap on incorrect cart then that cart will wiggle and if he does
+         mistake 2 times then hand nudge appears on the correct option and that particular cart
+         will be disabled." The hand was already here; the wiggle was here in name only (see
+         [r20] in the stylesheet); the disable is below, and applies to that cart alone. */
       train.coaches.forEach((c, i) => {
         c.el.classList.add("is-tappable");
+        /* the press colour, mirrored onto a class because :active does not survive a finger */
+        c.el.addEventListener("pointerdown", ()=>{
+          if(state.locked || isPlaying) return;
+          c.el.classList.add("is-press");
+        });
+        ["pointerup", "pointercancel", "pointerleave"].forEach(ev =>
+          c.el.addEventListener(ev, ()=> c.el.classList.remove("is-press")));
         c.el.onclick = ()=>{
+          c.el.classList.remove("is-press");
           if(state.locked || isPlaying) return;
           if(typeof sfxTap === "function") sfxTap();
           if(i === correctIdx){
@@ -9144,7 +9229,16 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
             if(w && d.matra) matraHLSoon(w, d.matra, { glow:true, pulse:true });
             finishSlide(slide, train, silent, "train_tap_first_try");
           } else {
-            wrong(i);
+            /* [r20] ONLY THE CART JUST TAPPED. r19 retired every cart tried so far, which on a
+               three-cart screen left the answer as the only thing still alive - it removed the
+               choice instead of narrowing it. Yasir: "do not disable both the cart, disable only
+               the cart on which we tap on last." The first miss stays live; the hand does the
+               pointing. */
+            if(wrong(i) >= 2){
+              c.el.classList.remove("is-press", "is-tappable");
+              c.el.classList.add("is-out");
+              c.el.onclick = null;
+            }
           }
         };
       });
@@ -10953,6 +11047,12 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
 /* ===== FLN ANIMATION KIT: sky-burst END ===== */
 
 /* == TRAIN MODULE SET :: END == */
+
+
+
+
+
+
 
 
 

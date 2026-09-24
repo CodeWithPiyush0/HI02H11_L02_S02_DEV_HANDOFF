@@ -874,9 +874,21 @@
       setNavActive(false);
       const wrong = makeLadder(slide, train, correctIdx);
 
+      /* [r19/r20] "if user tap on incorrect cart then that cart will wiggle and if he does
+         mistake 2 times then hand nudge appears on the correct option and that particular cart
+         will be disabled." The hand was already here; the wiggle was here in name only (see
+         [r20] in the stylesheet); the disable is below, and applies to that cart alone. */
       train.coaches.forEach((c, i) => {
         c.el.classList.add("is-tappable");
+        /* the press colour, mirrored onto a class because :active does not survive a finger */
+        c.el.addEventListener("pointerdown", ()=>{
+          if(state.locked || isPlaying) return;
+          c.el.classList.add("is-press");
+        });
+        ["pointerup", "pointercancel", "pointerleave"].forEach(ev =>
+          c.el.addEventListener(ev, ()=> c.el.classList.remove("is-press")));
         c.el.onclick = ()=>{
+          c.el.classList.remove("is-press");
           if(state.locked || isPlaying) return;
           if(typeof sfxTap === "function") sfxTap();
           if(i === correctIdx){
@@ -889,7 +901,16 @@
             if(w && d.matra) matraHLSoon(w, d.matra, { glow:true, pulse:true });
             finishSlide(slide, train, silent, "train_tap_first_try");
           } else {
-            wrong(i);
+            /* [r20] ONLY THE CART JUST TAPPED. r19 retired every cart tried so far, which on a
+               three-cart screen left the answer as the only thing still alive - it removed the
+               choice instead of narrowing it. Yasir: "do not disable both the cart, disable only
+               the cart on which we tap on last." The first miss stays live; the hand does the
+               pointing. */
+            if(wrong(i) >= 2){
+              c.el.classList.remove("is-press", "is-tappable");
+              c.el.classList.add("is-out");
+              c.el.onclick = null;
+            }
           }
         };
       });
