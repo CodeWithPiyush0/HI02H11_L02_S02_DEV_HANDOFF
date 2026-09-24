@@ -1887,6 +1887,12 @@ body.is-start .phase-gate{
 
 
 
+
+
+
+
+
+
 /* == TRAIN STYLES :: BEGIN (engine_local, HI02H11_L02_S02) == */
 
 /* ==========================================================================================
@@ -2354,17 +2360,28 @@ body.is-start .phase-gate{
    Fixed height + bottom-aligned contents pins that bottom edge, so the track is at the same y on
    every train page. Labels and coaches now grow upward into the reserved space instead of
    pushing the line around. A train leaving and the next one arriving are on ONE line. */
-.train-shell{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;
-  justify-content:flex-end;gap:10px;
-  /* the reserved block the coaches hang from; its BOTTOM is the line the track is drawn on */
-  height:var(--tc-shell-h,332px);
-  margin:0;}
-/* A FIXED TOP, NOT A CENTRED BLOCK. `margin:auto 0` inside a centred column re-centres the shell
-   whenever its height changes, which is what made a taller shell simply move somewhere else and
-   left the track spread WIDER than before. Anchoring the top and fixing the height is what makes
-   the bottom edge - and so the track - land on the same y on every train page. */
-.slide-host:has(> .train-shell){display:flex;flex-direction:column;justify-content:flex-start;
-  padding-top:var(--tc-shell-top,13px);}
+.train-shell{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;
+  margin:auto 0;}                                   /* row #95 "stops at the CENTRE of the screen" */
+.slide-host:has(> .train-shell){display:flex;flex-direction:column;justify-content:center;}
+
+/* [r27] THE LINE THE TRAIN RUNS ON DOES NOT MOVE BETWEEN PAGES — SLIDE TRAINS ONLY.
+   Yasir: "don't remove (replace) railway track, by this it will feel like one train goes then
+   next train comes."
+   MEASURED: the track sat at y=376 on the tap screens and 332/343/339/338 on the four drag
+   screens - up to 44px of jump at every hand-off, and a different jump again between two screens
+   of the same kind, because the coach labels and the tray change the shell's height and the
+   track hangs off the shell's bottom edge (top:100%). Anchoring the top and fixing the height
+   pins that bottom edge, so the track lands on the same y on every train page and a train
+   leaving and the next arriving are on ONE line.
+
+   :not(.lt-cover) IS THE WHOLE POINT OF THESE FOUR LINES BEING SEPARATE. I first wrote the fixed
+   height and flex-end straight into `.train-shell` above - which the COVER's train also uses.
+   It dropped the cover's train onto the play button and ran the track through it. The rule
+   belongs to the slide trains; the cover composes itself and must be left alone. */
+.slide-host .train-shell:not(.lt-cover){ justify-content:flex-end; margin:0;
+  height:var(--tc-shell-h,332px); }
+.slide-host:has(.train-shell:not(.lt-cover)){ justify-content:flex-start;
+  padding-top:var(--tc-shell-top,13px); }
 .train-rail{position:relative;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:0;
   transform:translateX(0);opacity:1;}
 /* [r7] the cover's entrance, not a shorter one of its own: same distance, same curve, same
@@ -2960,7 +2977,9 @@ html.rotated .sg-glow,html.rotated .sg-sky{
           mask-image:linear-gradient(#000,#000),linear-gradient(#000,#000);
   -webkit-mask-size:100% 100%,var(--sg-hole-w) var(--sg-hole-h);
           mask-size:100% 100%,var(--sg-hole-w) var(--sg-hole-h);
-  -webkit-mask-position:center,center; mask-position:center,center;
+  /* [r28] positioned on the MEASURED card centre - see _fitSkyHole in the engine */
+  -webkit-mask-position:center,var(--sg-hole-x,50%) var(--sg-hole-y,50%);
+          mask-position:center,var(--sg-hole-x,50%) var(--sg-hole-y,50%);
   -webkit-mask-repeat:no-repeat,no-repeat; mask-repeat:no-repeat,no-repeat;
   -webkit-mask-composite:xor; mask-composite:exclude;
 }
@@ -4354,6 +4373,35 @@ function fit(){
   // viewport is covered edge-to-edge. Any leftover bars on non-16:9 are blue, not white.
   const s = Math.min(vw/1333, vh/750);
   document.documentElement.style.setProperty("--scale", s);
+  _fitSkyHole();
+}
+/* [r28] THE HOLE IN THE SKY HAS TO SIT ON THE CARD, NOT IN THE MIDDLE OF THE WINDOW.
+   Yasir: "the stars and bubble animation should not overlap on the main rectangular box of cover
+   page."
+   The kit already punches a hole so drifting stars do not cross the translucent card - but it is
+   a FIXED 1074x416 centred on the VIEWPORT, while the card is centred inside the scaled stage and
+   is 1111x455. Two mismatches: the hole is 40px smaller than the card in each axis, and it is
+   only in the right place when the stage happens to be centred in the window. Measured on the
+   cover as shipped: 10 of the 87 drifting pieces were over the card, several of them deep inside
+   it rather than in the edge band.
+   Measuring the card and driving the mask from its real rect fixes both at once, and keeps
+   working at any window size - which a hand-tuned constant cannot. 12px of bleed either side so
+   nothing peeks out along the rounded corners. */
+function _fitSkyHole(){
+  const card = document.querySelector(".sg-card");
+  const sky  = document.querySelector(".sg-sky");
+  if(!card || !sky) return;
+  const r = card.getBoundingClientRect();
+  if(!r.width || !r.height) return;          // gate hidden: leave the last good values in place
+  const bleed = 12;
+  sky.style.setProperty("--sg-hole-w", (r.width  + bleed * 2) + "px");
+  sky.style.setProperty("--sg-hole-h", (r.height + bleed * 2) + "px");
+  /* TOP-LEFT, NOT CENTRE. mask-position takes lengths the way background-position does: the
+     value places the image's top-left corner, so feeding it the card's centre put the hole half
+     its own size down and to the right of the card - which is why stars were still crossing the
+     box after the size was already correct. */
+  sky.style.setProperty("--sg-hole-x", (r.left - bleed) + "px");
+  sky.style.setProperty("--sg-hole-y", (r.top  - bleed) + "px");
 }
 window.addEventListener("resize", fit);
 window.addEventListener("load", fit);
@@ -12310,6 +12358,15 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
 /* ===== FLN ANIMATION KIT: sky-burst END ===== */
 
 /* == TRAIN MODULE SET :: END == */
+
+
+
+
+
+
+
+
+
 
 
 
