@@ -17,3 +17,6 @@ CHANGES.md
 README.md
 
 .git/
+
+# The game's SOURCE now lives in 1_SPEC (already excluded above) and its code is compiled
+# into the lesson itself, so there is nothing game-shaped left to ignore here.

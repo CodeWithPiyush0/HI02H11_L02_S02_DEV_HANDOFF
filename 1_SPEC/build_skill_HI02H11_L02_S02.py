@@ -666,7 +666,19 @@ def build_slides():
                         "मीठा ", " खाना अच्छा लगता है।", "तरबूज", ["तरबूज", "फूल", "खुश"],
                         "शाबाश! मीठा तरबूज खाना अच्छा लगता है।"))
 
-    # ---- screen 17 · CELEBRATION ------------------------------------------------------
+    # ---- screen 17 · MINI GAME (मात्रा रनर) -------------------------------------------
+    # [r36] A second, whole game, added at Yasir's request as the last thing before the
+    # celebration: an endless runner where the child steers into the gate whose word carries the
+    # matra named at the top. It is the same skill this lesson has taught for sixteen screens,
+    # asked for at speed and without scaffolding - which is why it belongs HERE and not earlier.
+    # It lives in its own folder and is mounted in an iframe; see the MINI_GAME module.
+    mg_prompt = "अब एक खेल! ऊपर दी गई मात्रा वाले शब्द के द्वार से निकलिए।"
+    S.append({"id": "MG1", "phase": "practice", "eis": "enactive", "type": "MINI_GAME",
+              "prompt_hi": mg_prompt,
+              "audio": {"prompt": vo("vo_mg_prompt", mg_prompt)},
+              "data": {"src": "matra-runner/index.html", "title": "मात्रा रनर"}})
+
+    # ---- screen 18 · CELEBRATION ------------------------------------------------------
     # The deck carries NO recommendation on this page, so it is unchanged — there is no imperative
     # in it to flip.
     recap = ("शाबाश! आज हमने सीखा, छोटी उ और बड़ी ऊ की मात्रा पहचानना, "
@@ -809,11 +821,12 @@ def guard_engine(src):
 
 
 def guard_flow(slides):
-    """The flow must match the SME's round-3 deck screen for screen: 18 screens = landing + 17."""
+    """The flow must match the deck screen for screen, plus the mini-game: landing + 18."""
     want = ["MATRA_PAIRS", "MATRA_BUILD", "MEET_PAIR", "MATRA_BUILD", "MEET_PAIR",
             "TRAIN_TAP", "TRAIN_TAP", "TRAIN_TAP", "TRAIN_SORT", "TRAIN_SORT",
             "WORD_BUILD", "TRAIN_SORT",
             "SENTENCE_COMPLETE", "SENTENCE_COMPLETE", "SENTENCE_COMPLETE", "SENTENCE_COMPLETE",
+            "MINI_GAME",          # [r36] added after the deck was written - see screen 17
             "CELEBRATION"]
     got = [s["type"] for s in slides]
     if got != want:
@@ -954,7 +967,10 @@ def guard_register(slides, card):
 
 
 def guard_mechanics(slides):
-    tests = [s for s in slides if s["phase"] != "tutorial" and s["type"] != "CELEBRATION"]
+    # [r36] MINI_GAME is excluded with CELEBRATION: the drag/pick ratio is about how the lesson
+    # ASKS its questions, and a runner asks none - counting it would skew a balance the deck set.
+    tests = [s for s in slides
+             if s["phase"] != "tutorial" and s["type"] not in ("CELEBRATION", "MINI_GAME")]
     fams = {}
     for s in tests:
         f = GESTURE.get(s["type"])

@@ -1,0 +1,332 @@
+{
+  "language": "hi-IN",
+  "note": "हर पंक्ति के लिए assets/audio/<file> बनाएँ। फ़ाइल न हो तो खेल डिवाइस की हिंदी आवाज़ से बोलेगा।",
+  "voice_guidance": "धीमी गति, साफ़ उच्चारण, बच्चों के लिए। मात्रा की ध्वनि खिंचे नहीं — पुल में छोटा उ, फूल में लंबा ऊ।",
+  "count": 54,
+  "items": [
+    {
+      "file": "pul.mp3",
+      "id": "pul",
+      "text": "पुल",
+      "type": "word"
+    },
+    {
+      "file": "gud.mp3",
+      "id": "gud",
+      "text": "गुड़",
+      "type": "word"
+    },
+    {
+      "file": "sukh.mp3",
+      "id": "sukh",
+      "text": "सुख",
+      "type": "word"
+    },
+    {
+      "file": "chup.mp3",
+      "id": "chup",
+      "text": "चुप",
+      "type": "word"
+    },
+    {
+      "file": "tum.mp3",
+      "id": "tum",
+      "text": "तुम",
+      "type": "word"
+    },
+    {
+      "file": "madhu.mp3",
+      "id": "madhu",
+      "text": "मधु",
+      "type": "word"
+    },
+    {
+      "file": "sui.mp3",
+      "id": "sui",
+      "text": "सुई",
+      "type": "word"
+    },
+    {
+      "file": "kutta.mp3",
+      "id": "kutta",
+      "text": "कुत्ता",
+      "type": "word"
+    },
+    {
+      "file": "gulab.mp3",
+      "id": "gulab",
+      "text": "गुलाब",
+      "type": "word"
+    },
+    {
+      "file": "subah.mp3",
+      "id": "subah",
+      "text": "सुबह",
+      "type": "word"
+    },
+    {
+      "file": "dukan.mp3",
+      "id": "dukan",
+      "text": "दुकान",
+      "type": "word"
+    },
+    {
+      "file": "mukut.mp3",
+      "id": "mukut",
+      "text": "मुकुट",
+      "type": "word"
+    },
+    {
+      "file": "gudiya.mp3",
+      "id": "gudiya",
+      "text": "गुड़िया",
+      "type": "word"
+    },
+    {
+      "file": "jamun.mp3",
+      "id": "jamun",
+      "text": "जामुन",
+      "type": "word"
+    },
+    {
+      "file": "bulbul.mp3",
+      "id": "bulbul",
+      "text": "बुलबुल",
+      "type": "word"
+    },
+    {
+      "file": "kursi.mp3",
+      "id": "kursi",
+      "text": "कुर्सी",
+      "type": "word"
+    },
+    {
+      "file": "pustak.mp3",
+      "id": "pustak",
+      "text": "पुस्तक",
+      "type": "word"
+    },
+    {
+      "file": "chuhiya.mp3",
+      "id": "chuhiya",
+      "text": "चुहिया",
+      "type": "word"
+    },
+    {
+      "file": "murli.mp3",
+      "id": "murli",
+      "text": "मुरली",
+      "type": "word"
+    },
+    {
+      "file": "budhiya.mp3",
+      "id": "budhiya",
+      "text": "बुढ़िया",
+      "type": "word"
+    },
+    {
+      "file": "surahi.mp3",
+      "id": "surahi",
+      "text": "सुराही",
+      "type": "word"
+    },
+    {
+      "file": "kulhadi.mp3",
+      "id": "kulhadi",
+      "text": "कुल्हाड़ी",
+      "type": "word"
+    },
+    {
+      "file": "phool.mp3",
+      "id": "phool",
+      "text": "फूल",
+      "type": "word"
+    },
+    {
+      "file": "jhoola.mp3",
+      "id": "jhoola",
+      "text": "झूला",
+      "type": "word"
+    },
+    {
+      "file": "doodh.mp3",
+      "id": "doodh",
+      "text": "दूध",
+      "type": "word"
+    },
+    {
+      "file": "sooraj.mp3",
+      "id": "sooraj",
+      "text": "सूरज",
+      "type": "word"
+    },
+    {
+      "file": "mooli.mp3",
+      "id": "mooli",
+      "text": "मूली",
+      "type": "word"
+    },
+    {
+      "file": "chooha.mp3",
+      "id": "chooha",
+      "text": "चूहा",
+      "type": "word"
+    },
+    {
+      "file": "joota.mp3",
+      "id": "joota",
+      "text": "जूता",
+      "type": "word"
+    },
+    {
+      "file": "bhaloo.mp3",
+      "id": "bhaloo",
+      "text": "भालू",
+      "type": "word"
+    },
+    {
+      "file": "kabootar.mp3",
+      "id": "kabootar",
+      "text": "कबूतर",
+      "type": "word"
+    },
+    {
+      "file": "aaloo.mp3",
+      "id": "aaloo",
+      "text": "आलू",
+      "type": "word"
+    },
+    {
+      "file": "chaakoo.mp3",
+      "id": "chaakoo",
+      "text": "चाकू",
+      "type": "word"
+    },
+    {
+      "file": "dhoop.mp3",
+      "id": "dhoop",
+      "text": "धूप",
+      "type": "word"
+    },
+    {
+      "file": "choodi.mp3",
+      "id": "choodi",
+      "text": "चूड़ी",
+      "type": "word"
+    },
+    {
+      "file": "jhooth.mp3",
+      "id": "jhooth",
+      "text": "झूठ",
+      "type": "word"
+    },
+    {
+      "file": "pooja.mp3",
+      "id": "pooja",
+      "text": "पूजा",
+      "type": "word"
+    },
+    {
+      "file": "kooda.mp3",
+      "id": "kooda",
+      "text": "कूड़ा",
+      "type": "word"
+    },
+    {
+      "file": "bhookh.mp3",
+      "id": "bhookh",
+      "text": "भूख",
+      "type": "word"
+    },
+    {
+      "file": "angoor.mp3",
+      "id": "angoor",
+      "text": "अंगूर",
+      "type": "word"
+    },
+    {
+      "file": "tarbooj.mp3",
+      "id": "tarbooj",
+      "text": "तरबूज",
+      "type": "word"
+    },
+    {
+      "file": "neemboo.mp3",
+      "id": "neemboo",
+      "text": "नींबू",
+      "type": "word"
+    },
+    {
+      "file": "kaaju.mp3",
+      "id": "kaaju",
+      "text": "काजू",
+      "type": "word"
+    },
+    {
+      "file": "taraaju.mp3",
+      "id": "taraaju",
+      "text": "तराजू",
+      "type": "word"
+    },
+    {
+      "file": "lattoo.mp3",
+      "id": "lattoo",
+      "text": "लट्टू",
+      "type": "word"
+    },
+    {
+      "file": "bandook.mp3",
+      "id": "bandook",
+      "text": "बंदूक",
+      "type": "word"
+    },
+    {
+      "file": "goal_u.mp3",
+      "id": "goal_u",
+      "text": "छोटी उ की मात्रा वाले शब्द चुनो",
+      "type": "line"
+    },
+    {
+      "file": "goal_uu.mp3",
+      "id": "goal_uu",
+      "text": "बड़ी ऊ की मात्रा वाले शब्द चुनो",
+      "type": "line"
+    },
+    {
+      "file": "right.mp3",
+      "id": "right",
+      "text": "शाबाश",
+      "type": "line"
+    },
+    {
+      "file": "wrong.mp3",
+      "id": "wrong",
+      "text": "फिर से देखो",
+      "type": "line"
+    },
+    {
+      "file": "correct_is.mp3",
+      "id": "correct_is",
+      "text": "सही शब्द है",
+      "type": "line"
+    },
+    {
+      "file": "level_up.mp3",
+      "id": "level_up",
+      "text": "बहुत बढ़िया",
+      "type": "line"
+    },
+    {
+      "file": "retry.mp3",
+      "id": "retry",
+      "text": "कोई बात नहीं, फिर से कोशिश करो",
+      "type": "line"
+    },
+    {
+      "file": "win.mp3",
+      "id": "win",
+      "text": "शाबाश, सारे द्वार पार हो गए",
+      "type": "line"
+    }
+  ]
+}

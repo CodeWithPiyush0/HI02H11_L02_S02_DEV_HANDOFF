@@ -1,6 +1,6 @@
 # HI02H11_L02_S02 (भाग 1 — उ / ऊ) · «मात्राओं की रेल» — VO recording list (ROUND 3)
 
-80 clips. Shown text == spoken text; record exactly this.
+81 clips. Shown text == spoken text; record exactly this.
 
 **Register is आप** — the SME asked for it twice, in as many words. Round 2 was तुम, so most of this list is a re-record, not a new line. `guard_register` in the builder fails the build if a तुम form survives anywhere.
 
@@ -41,6 +41,7 @@ The TTS model truncates a clip when an **em-dash precedes a short final word** (
 | `vo_meet_doodh` | दूध, बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है। |
 | `vo_meet_gud` | गुड़, बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है। |
 | `vo_meet_kabootar` | कबूतर, बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है। |
+| `vo_mg_prompt` | अब एक खेल! ऊपर दी गई मात्रा वाले शब्द के द्वार से निकलिए। |
 | `vo_name_aaloo` | आलू |
 | `vo_name_doodh` | दूध |
 | `vo_name_gud` | गुड़ |

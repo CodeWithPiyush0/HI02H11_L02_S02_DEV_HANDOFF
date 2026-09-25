@@ -39,7 +39,7 @@
  "phase_distribution": {
   "tutorial": 5,
   "guided": 5,
-  "practice": 7
+  "practice": 8
  },
  "scaffold_rules": {
   "nudge_timeout_ms": {
@@ -112,6 +112,7 @@
    "vo_meet_doodh": "assets/Audio/vo_meet_doodh.ogg",
    "vo_meet_gud": "assets/Audio/vo_meet_gud.ogg",
    "vo_meet_kabootar": "assets/Audio/vo_meet_kabootar.ogg",
+   "vo_mg_prompt": "assets/Audio/vo_mg_prompt.ogg",
    "vo_name_aaloo": "assets/Audio/vo_name_aaloo.ogg",
    "vo_name_doodh": "assets/Audio/vo_name_doodh.ogg",
    "vo_name_gud": "assets/Audio/vo_name_gud.ogg",
@@ -258,6 +259,7 @@
    "vo_p4_correct": "शाबाश! मैंने सही शब्द चुनकर वाक्य पूरा किया।",
    "vo_p5_correct": "शाबाश! बगीचे में सुंदर फूल खिले हैं।",
    "vo_p6_correct": "शाबाश! मीठा तरबूज खाना अच्छा लगता है।",
+   "vo_mg_prompt": "अब एक खेल! ऊपर दी गई मात्रा वाले शब्द के द्वार से निकलिए।",
    "vo_cel_prompt": "शाबाश! आज हमने सीखा, छोटी उ और बड़ी ऊ की मात्रा पहचानना, और मात्रा वाले शब्द पढ़ना।",
    "vo_matra_u": "छोटी उ की मात्रा",
    "vo_matra_uu": "बड़ी ऊ की मात्रा",
@@ -939,6 +941,20 @@
       "audio": "vo_name_khush"
      }
     ]
+   }
+  },
+  {
+   "id": "MG1",
+   "phase": "practice",
+   "eis": "enactive",
+   "type": "MINI_GAME",
+   "prompt_hi": "अब एक खेल! ऊपर दी गई मात्रा वाले शब्द के द्वार से निकलिए।",
+   "audio": {
+    "prompt": "vo_mg_prompt"
+   },
+   "data": {
+    "src": "matra-runner/index.html",
+    "title": "मात्रा रनर"
    }
   },
   {

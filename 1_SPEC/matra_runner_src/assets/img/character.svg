@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 250" width="200" height="250">
+  <title>शेर का बच्चा — पीछे से</title>
+  <defs>
+    <linearGradient id="fur" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffa94d"/><stop offset="1" stop-color="#e07f2c"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe07a"/><stop offset="1" stop-color="#e0a71c"/>
+    </linearGradient>
+  </defs>
+
+  <!-- पूँछ -->
+  <path d="M100 150 Q135 105 150 62" fill="none" stroke="#f0913c" stroke-width="15" stroke-linecap="round"/>
+  <path d="M146 76 L150 62" fill="none" stroke="#2a1a12" stroke-width="15" stroke-linecap="round"/>
+
+  <!-- पिछले पैर -->
+  <g fill="#e07f2c">
+    <rect x="58" y="186" width="26" height="40" rx="12"/>
+    <rect x="116" y="192" width="26" height="36" rx="12"/>
+  </g>
+  <g fill="#3b2418">
+    <rect x="58" y="216" width="26" height="14" rx="7"/>
+    <rect x="116" y="218" width="26" height="14" rx="7"/>
+  </g>
+
+  <!-- चादर -->
+  <path d="M62 112 Q36 160 68 196 Q100 176 132 196 Q164 160 138 112 Z" fill="#c82c3e" opacity=".95"/>
+
+  <!-- धड़ -->
+  <ellipse cx="100" cy="158" rx="44" ry="50" fill="url(#fur)"/>
+  <g fill="none" stroke="#33200f" stroke-width="8" stroke-linecap="round">
+    <path d="M64 132 Q82 141 92 136"/><path d="M136 132 Q118 141 108 136"/>
+    <path d="M62 158 Q80 167 90 162"/><path d="M138 158 Q120 167 110 162"/>
+    <path d="M66 184 Q84 192 94 188"/><path d="M134 184 Q116 192 106 188"/>
+  </g>
+
+  <!-- कवच -->
+  <rect x="64" y="126" width="72" height="26" rx="11" fill="url(#gold)"/>
+  <rect x="64" y="146" width="72" height="8" rx="4" fill="#c9971d"/>
+  <circle cx="100" cy="138" r="11" fill="#43b8ff"/>
+  <circle cx="97" cy="135" r="4" fill="#ffffff" opacity=".75"/>
+  <ellipse cx="56" cy="124" rx="18" ry="15" fill="url(#gold)"/>
+  <ellipse cx="144" cy="124" rx="18" ry="15" fill="url(#gold)"/>
+
+  <!-- सिर -->
+  <ellipse cx="100" cy="74" rx="38" ry="35" fill="#ffb055"/>
+  <ellipse cx="72" cy="46" rx="14" ry="16" fill="#e78a34" transform="rotate(-20 72 46)"/>
+  <ellipse cx="128" cy="46" rx="14" ry="16" fill="#e78a34" transform="rotate(20 128 46)"/>
+  <ellipse cx="72" cy="47" rx="7" ry="8" fill="#f8b8c0" transform="rotate(-20 72 47)"/>
+  <ellipse cx="128" cy="47" rx="7" ry="8" fill="#f8b8c0" transform="rotate(20 128 47)"/>
+  <g fill="none" stroke="#33200f" stroke-width="6" stroke-linecap="round">
+    <path d="M90 44 L87 58"/><path d="M110 44 L113 58"/>
+    <path d="M68 76 L81 78"/><path d="M132 76 L119 78"/>
+  </g>
+  <ellipse cx="68" cy="90" rx="12" ry="9" fill="#fff1dc" transform="rotate(28 68 90)"/>
+  <ellipse cx="132" cy="90" rx="12" ry="9" fill="#fff1dc" transform="rotate(-28 132 90)"/>
+  <path d="M62 62 A38 35 0 0 1 138 62 L138 68 A38 30 0 0 0 62 68 Z" fill="url(#gold)"/>
+</svg>
