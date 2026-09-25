@@ -1,0 +1,19 @@
+# Only the built lesson needs to reach the CDN. Everything else in this repo is authoring
+# material: the build script and its specs, the SME decks, the engine sources the bundle is
+# generated FROM, and the review screenshots. Left in, they would all be publicly fetchable at
+# their paths, and the review shots alone are tens of megabytes of dead weight on every deploy.
+#
+# 3_CURRENT_BUILD/_review_shots is excluded for the same reason - it ships nothing the game loads.
+# vercel.json's rewrites point at 3_CURRENT_BUILD, which stays.
+
+1_SPEC/
+2_MOCKUPS/
+4_ENGINE/
+5_CURRENT_BUILD_SCREENSHOTS/
+3_CURRENT_BUILD/_review_shots/
+
+*.pptx
+CHANGES.md
+README.md
+
+.git/

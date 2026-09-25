@@ -1,0 +1,47 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/3_CURRENT_BUILD/HI02H11_L02_S02.html"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/3_CURRENT_BUILD/HI02H11_L02_S02.html"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/3_CURRENT_BUILD/assets/UI/favicon.ico"
+    },
+    {
+      "source": "/assets/:path*",
+      "destination": "/3_CURRENT_BUILD/assets/:path*"
+    },
+    {
+      "source": "/card.json",
+      "destination": "/3_CURRENT_BUILD/card.json"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
+  ]
+}
