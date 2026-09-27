@@ -2803,15 +2803,17 @@ function drawRail(r){
    it and bushes fill between. One place, so seeding and recycling cannot disagree - they did
    before, and a recycled verge slowly drifted to a different mix from the one it started with. */
 function decorKind(){
+  /* weighted harder to trees: they are the only thing tall enough to actually cover the
+     ground behind them, which is what "so that the grass is not visible" asks for */
   const r = Math.random();
-  return r < 0.55 ? "tree" : r < 0.78 ? "bush" : "pillar";
+  return r < 0.72 ? "tree" : r < 0.88 ? "bush" : "pillar";
 }
 function seedDecor(){
   G.decor = [];
-  for(let i=0;i<34;i++){
+  for(let i=0;i<54;i++){
     G.decor.push({ z: Math.random(), side: Math.random()<0.5?-1:1,
       kind: decorKind(),
-      off: 1.45 + Math.random()*1.25, hh: 0.85+Math.random()*0.5, hue: Math.random() });
+      off: 1.30 + Math.random()*2.10, hh: 0.85+Math.random()*0.5, hue: Math.random() });
   }
   G.decor.sort((a,b)=>b.z-a.z);
 }
@@ -2849,8 +2851,11 @@ function setGoal(){
 
 function spawnGate(z){
   const L = LEVELS[G.level];
+  /* the colour pair is shuffled every time, so green never means "this one" */
+  const hue = Math.random() < 0.5 ? [0, 1] : [1, 0];
   if(L.target===null){ G.target = Math.random()<0.5?U:UU; setGoal(); }
-  G.gates.push({ z: z, words: makeGateWords(G.target), target:G.target, done:false, reveal:0, okLane:-1 });
+  G.gates.push({ z: z, words: makeGateWords(G.target), target:G.target, done:false, reveal:0,
+                 okLane:-1, hue: hue });
   const g = G.gates[G.gates.length-1];
   g.okLane = g.words.findIndex(w=>w.ok);
   // coins in the gap ahead of this gate
@@ -3003,7 +3008,7 @@ function update(dt){
     d.z -= v;
     if(d.z<-0.06){ d.z += 1.06 + Math.random()*0.2; d.side = Math.random()<0.5?-1:1;
       d.kind = decorKind();
-      d.off = 1.45+Math.random()*1.25; d.hh=0.85+Math.random()*0.5; }
+      d.off = 1.30+Math.random()*2.10; d.hh=0.85+Math.random()*0.5; }
   }
   G.decor.sort((a,b)=>b.z-a.z);
   // fx
@@ -3030,7 +3035,7 @@ function drawGround(){
   ctx.fillStyle=gr; ctx.fillRect(0,hy,W,H-hy);
 
   // path trapezoid
-  const pFar = proj(1.35), pNear = proj(0);
+  const pFar = proj(26), pNear = proj(0);
   const wFar = LANE_W()*pFar.p*1.08, wNear = LANE_W()*pNear.p*1.08;
   ctx.beginPath();
   const cFar = worldX(0, pFar.p), cNear = worldX(0, pNear.p);
@@ -3083,9 +3088,14 @@ function drawDecor(d){
     /* [r50] Roughly twice what it was. The old sizes were set against a drawn silhouette
        and left the verge reading as open ground with ornaments on it; the mockup has trees
        taller than the gates crowding both edges of the frame. */
-    const K = d.kind==="bush" ? 1.05 : d.kind==="pillar" ? 2.15 : 2.45;
+    /* Trees and pillars raised on request. K multiplies the height of the silhouette this
+       function would draw without art, and the width follows from each picture's own ratio -
+       so these grow taller and proportionally wider, they do not stretch. */
+    const K = d.kind==="bush" ? 1.05 : d.kind==="pillar" ? 3.10 : 3.45;
     let dh = h*K, dw = dh*(_da.width/_da.height||0.7);
-    const wmax = LANE_W()*p*2.10;          // a tree may be wider than the road; a pillar may not
+    /* the clamp has to rise with them: it shrinks BOTH dimensions to fit, so leaving it where
+       it was would have quietly cancelled most of the extra height on the widest trees */
+    const wmax = LANE_W()*p*2.85;
     if(dw > wmax){ dh *= wmax/dw; dw = wmax; }
     /* [r51] CULLED ON ITS DRAWN WIDTH, which it never was: the old test dropped anything whose
        CENTRE lay more than 120px outside the canvas, and now that a near tree can be two thirds
@@ -3145,6 +3155,98 @@ function drawCoin(c){
 
 var MR_gateWordOnly = false, MR_wordFade = 1;
 
+/* [r59] THE PORTAL'S LIGHT, drawn rather than painted.
+   `hue` is 0 for the green portal and 1 for the golden one; `t` is 0..1 through the burst when
+   one has been entered. The swirl counter-rotates against the outer glow so the disc reads as
+   moving without anything actually travelling - a rotating sprite would need a sheet. */
+const PORTAL_HUE = [[120,255,190], [255,214,96]];
+
+/* The golden portal is the SAME ring washed warm. source-atop is bounded by whatever is
+   already on the canvas, so doing it on an offscreen that holds only the ring keeps the wash
+   inside the leaves instead of painting a square over the scene. Built once, not per frame. */
+var _goldRing = null;
+function goldRing(img){
+  if(_goldRing) return _goldRing;
+  var c = document.createElement("canvas");
+  c.width = img.width; c.height = img.height;
+  var g = c.getContext("2d");
+  g.drawImage(img, 0, 0);
+  g.globalCompositeOperation = "source-atop";
+  g.fillStyle = "rgba(255,196,64,0.46)";
+  g.fillRect(0, 0, c.width, c.height);
+  _goldRing = c;
+  return c;
+}
+function portalGlow(cx, cy, r, hue, lit, t){
+  const c = PORTAL_HUE[hue] || PORTAL_HUE[0];
+  const col = (a) => "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")";
+  const pulse = 1 + 0.035*Math.sin(G.t*2.2 + hue*2);
+  const rr = r * pulse * (1 + 0.55*t);
+  const fade = 1 - t*t;
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  /* the body of the light */
+  const g1 = ctx.createRadialGradient(cx, cy, rr*0.05, cx, cy, rr);
+  g1.addColorStop(0,    col(0.95*fade));
+  g1.addColorStop(0.55, col(0.55*fade));
+  g1.addColorStop(0.85, col(0.22*fade));
+  g1.addColorStop(1,    col(0));
+  ctx.fillStyle = g1;
+  ctx.beginPath(); ctx.ellipse(cx, cy, rr, rr*1.02, 0, 0, 7); ctx.fill();
+  /* two slow arcs, turning opposite ways */
+  ctx.lineCap = "round";
+  for(let k=0;k<2;k++){
+    const dir = k ? -1 : 1, a0 = G.t*dir*(0.5+0.22*k) + hue*1.7 + k*2.1;
+    ctx.strokeStyle = col((0.30 - 0.08*k) * fade);
+    ctx.lineWidth = rr*(0.12 - 0.04*k);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rr*(0.62 - 0.17*k), rr*(0.60 - 0.17*k), a0, 0.4, 4.2);
+    ctx.stroke();
+  }
+  if(lit){                       /* the flare when this is the one she went through */
+    ctx.fillStyle = "rgba(255,255,245," + (0.75*(1-t)) + ")";
+    ctx.beginPath(); ctx.ellipse(cx, cy, rr*0.52*(1-t*0.4), rr*0.52*(1-t*0.4), 0, 0, 7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* the pool of light the portal casts on the path */
+function portalPool(cx, y, w, hue, t){
+  const c = PORTAL_HUE[hue] || PORTAL_HUE[0];
+  const a = (1 - t) * 0.5;
+  ctx.save();
+  ctx.globalCompositeOperation = "lighter";
+  const g = ctx.createRadialGradient(cx, y, 1, cx, y, w*0.62);
+  g.addColorStop(0, "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + a + ")");
+  g.addColorStop(1, "rgba(" + c[0] + "," + c[1] + "," + c[2] + ",0)");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(cx, y, w*0.62, w*0.17, 0, 0, 7); ctx.fill();
+  ctx.restore();
+}
+
+/* leaves drifting off the ring - a path, not a sprite, so they take the portal's colour */
+function portalLeaves(cx, cy, r, hue, alpha){
+  const c = PORTAL_HUE[hue] || PORTAL_HUE[0];
+  ctx.save();
+  for(let i=0;i<7;i++){
+    const ph = G.t*0.55 + i*0.92 + hue*1.3;
+    const a  = ph % 6.283;
+    const rad = r*(1.02 + 0.22*((ph*0.31) % 1));
+    const x = cx + Math.cos(a)*rad, y = cy + Math.sin(a)*rad*0.98 - ((ph*9) % (r*0.5));
+    const sz = r*0.085, rot = ph*1.4;
+    ctx.globalAlpha = alpha * (0.35 + 0.45*Math.abs(Math.sin(ph)));
+    ctx.fillStyle = "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+    ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+    ctx.beginPath();
+    ctx.moveTo(0, -sz);
+    ctx.quadraticCurveTo(sz*0.8, -sz*0.15, 0, sz);
+    ctx.quadraticCurveTo(-sz*0.8, -sz*0.15, 0, -sz);
+    ctx.fill(); ctx.restore();
+  }
+  ctx.restore();
+}
+
+
 /* [r56] THE BURST ITSELF. Drawn over the gate as it goes: a ring of light expanding from the
    opening and a flash on the arch. Without it the gate simply vanishes, and vanishing is what
    a bug looks like - the ring is what tells the child something was DONE, not undone. */
@@ -3187,97 +3289,52 @@ function drawGate(g){
     /* [r38] THE PAINTED ARCH, when gate_neutral/correct/wrong are present. The word is still
        drawn by the game below - the art's plaque is deliberately blank - so only the frame and
        the curtain are replaced here. */
-    var _gs = (g.done && g.reveal>0) ? (w.ok ? "right" : "wrong") : "neutral";
-    var _ga = window.MR_gateArt && MR_gateArt(_gs);
+    var _ring = window.MR_ringArt && MR_ringArt();
     var _box = null;
-    if(_ga){
-      /* [r40] The gate is two posts and a beam now, and the word hangs from it on a plank -
-         the shape in Yasir's reference sheet. Three things this has to get right:
+    if(_ring){
+      /* [r60] THE PORTAL.
+         One ring, an empty hole, and everything that varies painted into it: the light, the
+         colour, the word. The hole is where the glow and the word go, and its radius is a
+         fraction of the ring's own width, so the two stay locked together at any depth. */
+      /* 0.78 of the lane spacing, not 0.94: portal centres are LANE_W*p apart, so at 0.94 the
+         two rings overlapped and their glows ran into one another - one wide smear of light
+         with two words in it rather than a choice between two doors.
+         The opening's centre and radius are MEASURED off portal_ring.webp (hole centred at
+         0.508 / 0.496 of the image, radius 0.311 of its width) rather than guessed, so the
+         light sits in the hole at every depth. */
+      var rw = LANE_W()*p*0.78, rh = rw*((_ring.height/_ring.width) || 1);
+      var cyR = y - rh*0.504;
+      var hole = rw*0.311;
+      var t = g.done ? Math.min(1, g.fx/0.36) : 0;
+      var gfade = 1 - t*t;
+      var hue = (g.hue && g.hue[i]) || 0;
+      var chosen = g.done && i === g.chosenLane;
 
-         ASPECT. The height and the width used to be set from ah and aw independently, which
-         stretches whatever picture is handed in. The height is chosen and the width follows
-         from the art's own ratio, then both shrink together if the gate is wider than a lane -
-         lane centres are only LANE_W*p apart, so an over-wide gate paints over its neighbour.
+      /* the pool it throws on the path, then the light inside it, then the ring over both */
+      portalPool(cx, y - rh*0.02, rw*0.42, hue, t);
+      portalGlow(cx, cyR, hole, hue, g.done && w.ok, t);
 
-         THE POSTS STAND ON THE GROUND. Drawn from y upwards, so the feet of the posts meet
-         the path at the depth the gate actually is, not somewhere above it. */
-      /* Sized from the NEUTRAL art's ratio whichever state is showing: the three states were
-         drawn separately and their ratios differ by a few percent, so sizing each from its own
-         would make the gate flinch sideways at the moment it turns green or red. */
-      var _gn = (window.MR_gateArt && MR_gateArt("neutral")) || _ga;
-      var gh = ah*1.16, gw = gh*((_gn.width/_gn.height) || 1.3);
-      /* 0.88 of the lane spacing, so there is daylight between the two gates. At 0.99 their
-         posts and vines met in the middle and read as one wide fence carrying two signs. */
-      var gmax = LANE_W()*p*0.88;
-      if(gw > gmax){ gh *= gmax/gw; gw = gmax; }
-      if(g.done){
-        /* [r53] The RIGHT gate lights up whichever one she went through, so a mistake shows
-           the answer instead of only marking the error. The gate she actually chose, when it
-           is the wrong one, is what darkens and shakes. */
-        var lit = w.ok ? "120,255,190" : "150,140,125";
-        var la  = (w.ok ? 0.75 : 0.30) * Math.max(0, 1 - g.fx/0.36);
-        var oy  = y - gh*0.46;
-        var rg  = ctx.createRadialGradient(cx, oy, gh*0.04, cx, oy, gh*0.50);
-        rg.addColorStop(0,   "rgba("+lit+","+la+")");
-        rg.addColorStop(0.6, "rgba("+lit+","+(la*0.55)+")");
-        rg.addColorStop(1,   "rgba("+lit+",0)");
-        ctx.save(); ctx.fillStyle = rg;
-        ctx.beginPath(); ctx.ellipse(cx, oy, gw*0.40, gh*0.46, 0, 0, 7); ctx.fill();
-        ctx.restore();
-      }
-      /* POP AND SHAKE. The right gate swells for a fifth of a second as she goes through it -
-         the "pop" a child reads as a thing opening for them. The wrong one rattles sideways and
-         dims. Both fade out where they stand rather than flying at the camera. */
-      /* [r55] DESTROYED, not dismissed. Pinned, the gate still stood there for the best part
-         of a second while it faded - long enough to read as the arch travelling along with
-         her. It now blows apart: it swells, goes translucent and is gone inside a third of a
-         second, with the sparks and the ring drawn over it below. */
-      var pop = 1, jig = 0, dim = 0, gfade = 1;   /* `fade` above is the distance fade */
-      if(g.done){
-        var t = Math.min(1, g.fx/0.36);
-        gfade = 1 - t*t;                                  /* holds, then goes quickly */
-        if(w.ok) pop = 1 + 0.55*t;                        /* bursting outward */
-        else {
-          pop = 1 + 0.16*t;
-          if(i === g.chosenLane){
-            jig = Math.sin(g.fx*58) * 15*S*p * (1-t);
-            dim = 0.5 * Math.min(1, g.fx/0.06) * (1-t);
-          }
-        }
-      }
+      var pop = g.done ? (w.ok ? 1 + 0.48*t : 1 + 0.10*t) : 1;
+      var jig = (g.done && !w.ok && chosen) ? Math.sin(g.fx*58) * 13*S*p * (1-t) : 0;
+      var dw2 = rw*pop, dh2 = rh*pop, cxj = cx + jig;
+
       ctx.save();
       ctx.globalAlpha *= gfade;
-      var gwp = gw*pop, ghp = gh*pop, cxj = cx + jig;
-      ctx.drawImage(_ga, cxj-gwp/2, y-ghp, gwp, ghp);
-      if(dim > 0){
-        /* THE GATE dimmed, not a rectangle of the scene. A fillRect under `source-atop` paints
-           wherever the destination is opaque - and the destination here is a fully painted
-           jungle, so it would have laid a grey slab over the trees behind the arch as well.
-           Drawing the arch over ITSELF in multiply is bounded by the art's own alpha: where the
-           picture is transparent there is nothing to multiply, so only the gate darkens. */
+      ctx.drawImage(hue === 1 ? goldRing(_ring) : _ring, cxj-dw2/2, y-dh2, dw2, dh2);
+      if(g.done && !w.ok && chosen){
+        /* the one she chose wrongly goes dull - multiply is bounded by the art's own alpha,
+           so only the ring darkens and not a rectangle of the scene behind it */
         ctx.save();
         ctx.globalCompositeOperation = "multiply";
-        ctx.globalAlpha = dim;
-        ctx.drawImage(_ga, cxj-gwp/2, y-ghp, gwp, ghp);
+        ctx.globalAlpha = 0.5 * Math.min(1, g.fx/0.06) * (1-t);
+        ctx.drawImage(_ring, cxj-dw2/2, y-dh2, dw2, dh2);
         ctx.restore();
       }
       ctx.restore();
-      ctx.save(); ctx.globalAlpha *= gfade;
-      var _pl = window.MR_plateArt && MR_plateArt();
-      if(_pl){
-        /* Hung just under the beam, which is the top ~20% of the gate art, and remembered so
-           the word below can be fitted to the plank instead of guessed at a fixed size. */
-        /* 0.62 of the gate, not 0.80. The plank art is a chunky 1.8:1 board, so at 0.80 it
-           came out more than half the gate's HEIGHT as well - it covered the beam completely
-           and left two stubs of post showing below, which is not a gate. Narrower, the beam
-           and most of both posts stay visible and the sign reads as hanging on them. */
-        var plw = gwp*0.62, plh = plw*((_pl.height/_pl.width) || 0.42);
-        var ply = (y-ghp) + ghp*0.33 - plh/2;
-        ctx.drawImage(_pl, cxj-plw/2, ply, plw, plh);
-        _box = { cx: cxj, cy: ply + plh/2, w: plw, h: plh };
-      }
-      ctx.restore();
-      if(g.done) drawGateBurst(g, cxj, y, gwp, ghp, w.ok);
+
+      portalLeaves(cxj, cyR, hole, hue, gfade * (g.done ? 1-t : 0.85));
+
+      _box = { cx: cxj, cy: cyR, w: hole*1.72, h: hole*0.86 };
       MR_gateWordOnly = true;
       MR_wordFade = gfade;
     } else {
@@ -3335,8 +3392,8 @@ function drawGate(g){
     }
     /* Dark ink on the cream plank; the pale ink below is for the dark plaque the game draws
        for itself when there is no art. */
-    ctx.fillStyle = _box ? (g.done ? (w.ok ? "#1f7a4d"
-                                    : (i === g.chosenLane ? "#a8331d" : "#6b5b48")) : "#4a3520")
+    ctx.fillStyle = _box ? (g.done ? (w.ok ? "#14532b"
+                                    : (i === g.chosenLane ? "#7a2411" : "#4a3f2c")) : "#2e2410")
                          : (g.done&&g.reveal>0 ? (w.ok?"#d8ffee":"#ffd9d0") : "#fff4de");
     ctx.textAlign="center"; ctx.textBaseline="middle";
     ctx.save(); ctx.globalAlpha *= MR_wordFade;
@@ -3404,8 +3461,9 @@ function roundRect(x,y,w,h,r){
     hit:      ["swifty_hit.webp", 1],
     happy:    ["swifty_happy.webp", 1],
     sky:      ["bg_sky.webp", 1],
-    temples:  ["bg_temples.webp", 1],
-    canopy:   ["bg_canopy.webp", 1],
+    ring:     ["portal_ring.webp", 1],
+    mountains:["bg_mountains.webp", 1],
+    hills:    ["bg_hills.webp", 1],
     grass:    ["tex_grass.webp", 1],
     path:     ["tex_path.webp", 1],
     tree1:    ["tree_1.webp", 1], tree2: ["tree_2.webp", 1], tree3: ["tree_3.webp", 1],
@@ -3429,8 +3487,9 @@ function roundRect(x,y,w,h,r){
   var UI = {
     "--mr-ui-panel": "ui_banner.webp",   /* the long wooden banner behind the prompt */
     "--mr-ui-badge": "ui_badge.webp",    /* the round wooden medallion the matra sits in */
-    "--mr-ui-btn":   "ui_btn.webp",      /* the little wooden key */
-    "--mr-ui-board": "panel.webp"        /* the notice board the level cards are drawn on */
+    "--mr-ui-btn":   "ui_btn.webp"       /* the little wooden key */
+    /* --mr-ui-board is gone: it asked for panel.webp, which has never existed in the repo.
+       The level cards draw their board through --mr-card-bg, which points at panel2.webp. */
   };
 
 
@@ -3495,9 +3554,12 @@ function roundRect(x,y,w,h,r){
              came out 24% too tall and every line of text landed on the posts.
              Face: 16.3%/17.1% in from the sides, 25.2% down, 34.0% up. Padding resolves
              against WIDTH, so the vertical pair is divided by the board's aspect. */
-          "--mr-card-bg":     'url("' + DIR + 'panel2.webp") center/100% 100% no-repeat',
-          "--mr-card-ar":     "820 / 502",
-          "--mr-card-pad":    "21% 7% 6% 7%",
+          "--mr-card-bg":     'url("' + DIR + 'panel3.webp") center/100% 100% no-repeat',
+          "--mr-card-ar":     "840 / 565",
+          /* measured off the shipped panel3.webp: the cream face sits 18.2% down, 14.5%
+             up and 14.2%/10.2% in, as fractions of the card's WIDTH (which is what CSS
+             padding resolves against). A little extra all round keeps the text off the frame. */
+          "--mr-card-pad":    "20% 12% 16.5% 16%",
           "--mr-card-bw":     "0",
           "--mr-card-bc":     "transparent",
           "--mr-card-r":      "0",
@@ -3711,10 +3773,10 @@ function drawTigerImage(){
   window.MR_drawSky = function(){
     var hy = horizonY();
     if(!ART.has("sky")) return false;
-    layer(ART.img("sky"), 0, hy + 2, 0.045, 0.70, 1.7);
+    layer(ART.img("sky"), 0, hy + 2, 0.045, 0.62, 2.4);
     /* the ridge and the treeline keep their own proportions and repeat across */
-    if(ART.has("temples")) band(ART.img("temples"), hy - hy*0.50, hy*0.50, 0.11);
-    if(ART.has("canopy"))  band(ART.img("canopy"),  hy - hy*0.40, hy*0.42, 0.21);
+    if(ART.has("mountains")) band(ART.img("mountains"), hy - hy*0.52, hy*0.52, 0.10);
+    if(ART.has("hills"))     band(ART.img("hills"),     hy - hy*0.30, hy*0.34, 0.20);
     return true;
   };
 
@@ -3793,7 +3855,7 @@ function drawTigerImage(){
     if(ART.has("path")){
       var pi = ART.img("path");
       if(pathFor !== pi){ pathPat = gcx.createPattern(pi, "repeat"); pathFor = pi; }
-      var pFar = proj(1.35), pNear = proj(0);
+      var pFar = proj(26), pNear = proj(0);
       var wFar = LANE_W()*pFar.p*1.08, wNear = LANE_W()*pNear.p*1.08;
       var cFar = worldX(0, pFar.p), cNear = worldX(0, pNear.p);
       gcx.save();
@@ -3878,6 +3940,7 @@ function drawTigerImage(){
     return ART.has(n) ? ART.img(n) : (ART.has("gateN") ? ART.img("gateN") : null);
   };
   window.MR_plateArt = function(){ return ART.has("plate") ? ART.img("plate") : null; };
+  window.MR_ringArt  = function(){ return ART.has("ring")  ? ART.img("ring")  : null; };
   window.MR_railArt  = function(){ return ART.has("rail")  ? ART.img("rail")  : null; };
   window.MR_hedgeArt = function(){ return ART.has("hedge") ? ART.img("hedge") : null; };
 
