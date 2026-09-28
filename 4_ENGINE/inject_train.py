@@ -40,13 +40,22 @@ for _name, _txt, _bad in (("train_styles.css", css, "</style>"),
 
 
 # ---- strip any previous injection (idempotent re-run)
-def strip(s, a, b):
+def strip(s, a, b, pre="", post=""):
+    """Take the previous block out AND the padding it was put in with.
+    [r68] It used to take only the markers and what lay between them, so the newlines the insert
+    below wraps round the block stayed behind - three more blank lines in the engine on every
+    rebuild, measured as +12 and +18 blank lines after half a dozen runs."""
     i, j = s.find(a), s.find(b)
     if i >= 0 and j > i:
-        return s[:i] + s[j + len(b):]
+        j += len(b)
+        if pre and s[max(0, i - len(pre)):i] == pre:
+            i -= len(pre)
+        if post and s[j:j + len(post)] == post:
+            j += len(post)
+        return s[:i] + s[j:]
     return s
-src = strip(src, JS_BEGIN, JS_END)
-src = strip(src, CSS_BEGIN, CSS_END)
+src = strip(src, JS_BEGIN, JS_END, "\n\n", "\n")
+src = strip(src, CSS_BEGIN, CSS_END, "\n", "\n")
 
 # ---- JS: after the LAST SlideModules alias, so SlideModules exists and nothing shadows us
 aliases = list(re.finditer(r"SlideModules\.[A-Z_0-9]+\s*=\s*SlideModules\.[A-Z_0-9]+;", src))

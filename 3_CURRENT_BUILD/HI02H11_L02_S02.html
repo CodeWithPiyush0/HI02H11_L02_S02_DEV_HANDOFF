@@ -16297,6 +16297,33 @@ const PHASE_GATE_VO    = { tutorial:"vo_pt_tutorial", guided:"vo_pt_guided",
 const PHASE_ROUND = { tutorial:"tutorial", guided:"guided", practice:"round3", independent:"round3" };
 const _gatedPhases = new Set();   // each ROUND gate plays ONCE (Start→tutorial, →guided, →round 3)
 let _gateToken = 0;
+/* [r66] THE GATE BIRD IS FETCHED AND DECODED AT BOOT, NOT WHEN THE GATE OPENS.
+   Yasir: "there is slight delay in playing swifty gif and its VO in transition screen". Two
+   causes, both from r65 setting the src at the moment of the gate: (1) the WebP was first
+   requested THEN, so the gate opened on an empty frame and the bird appeared late; (2) the talk
+   timer ran from the gate opening, not from the bird starting, so once the bird was late the VO
+   drifted against her mouth. Now the art is warm before the first gate, and the timer is
+   anchored to the moment the image has actually loaded. */
+let _gateWarm = null;
+function _warmGate(){
+  const g = (typeof CARD !== "undefined" && CARD && CARD.gate) || null;
+  if(!g || !g.img || _gateWarm) return;
+  const im = new Image();
+  try{ im.fetchPriority = "high"; }catch(e){}
+  im.src = g.img;
+  _gateWarm = (im.decode ? im.decode() : new Promise(r => { im.onload = r; im.onerror = r; }))
+                .catch(()=>{});
+  window.__gateWarmImg = im;                 /* hold a reference so the decoded copy stays cached */
+}
+/* NOT on window 'load': that waits for every other asset, and on a slow link the child can
+   press play before it fires. Measured at 8 Mbit/s: the bird was still downloading when the gate
+   opened and arrived 4.7s late. So the fetch starts as soon as the card is parsed. */
+(function _warmSoon(tries){
+  if(typeof CARD !== "undefined" && CARD){ _warmGate(); return; }
+  if(tries > 200) return;
+  setTimeout(()=> _warmSoon(tries + 1), 25);
+})(0);
+
 function phaseBlurTransition(cb, toPhase){
   const tok = ++_gateToken;
   stopNudge(); stopAudio();
@@ -16315,6 +16342,7 @@ function phaseBlurTransition(cb, toPhase){
   const _talkAt  = _G.img ? Math.max(0, _G.talk_at_ms || 0) : 0;
   if(img){ img.classList.toggle("pg-card", !!_G.img);
            img.removeAttribute("src"); void img.offsetWidth; img.src = _gateSrc; }
+  _warmGate();                                  /* no-op once warm; covers a gate before 'load' */
   const title = $("phaseGateTitle"); if(title) title.textContent = PHASE_GATE_TITLE[toPhase] || "";
   $("stage").classList.add("blurred", "gating");
   document.body.classList.add("gating");
@@ -16325,7 +16353,19 @@ function phaseBlurTransition(cb, toPhase){
   const voId = PHASE_GATE_VO[toPhase];
   const voSrc = voId ? ("assets/Audio/" + voId + "." + AUDIO_EXT) : null;   // [20a] use AUDIO_EXT path so generated clips resolve (was: assets.audio .mp3 map -> silent)
   const openedAt = Date.now();
-  setTimeout(()=>{ if(tok !== _gateToken){ closeGate(); return; }
+  /* [r66] the talk clock starts when the bird does. `complete` is already true when the warm
+     copy is cached, which is the normal case. If she arrives, she speaks talk_at_ms after she
+     STARTS; if she has not arrived in 4s there is no mouth to sync to any more, so the line
+     plays at once rather than keeping the child waiting a further 3.8s on top. */
+  const _startTalkClock = (fn)=>{
+    if(!_G.img || !img || img.complete){ setTimeout(fn, _talkAt); return; }
+    let done = false;
+    const go = (late)=>{ if(done) return; done = true; setTimeout(fn, late ? 0 : _talkAt); };
+    img.addEventListener("load", ()=> go(false), { once:true });
+    img.addEventListener("error", ()=> go(true), { once:true });
+    setTimeout(()=> go(true), 4000);
+  };
+  _startTalkClock(()=>{ if(tok !== _gateToken){ closeGate(); return; }
   play(voSrc, ()=>{
     if(tok !== _gateToken){ closeGate(); return; }               // a newer gate superseded us
     const hold = Math.max(200, 2000 - (Date.now() - openedAt));  // Swiftie peeks ≥2s even with no/short VO
@@ -16338,7 +16378,7 @@ function phaseBlurTransition(cb, toPhase){
       document.body.classList.remove("gating");
     }, hold);
   });
-  }, _talkAt);                                  /* [r65] she speaks when her mouth moves */
+  });                                           /* [r65/r66] she speaks when her mouth moves */
 }
 
 function completeSlide(success){

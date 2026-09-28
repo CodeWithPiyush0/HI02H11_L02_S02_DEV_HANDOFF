@@ -223,3 +223,31 @@ drop landed on the **correct** blank and the first “wrong” attempt was a win
 | 8 | the new play button | `play_btn.svg` replaces the pill, `play_btn_disabled.svg` while the greeting is still speaking; the earned idle pulse is kept; the pill's 186 px min-width removed so the disc is a true 116 px circle | computed: 116×116, correct SVG in both states, no `::after` glyph |
 
 **Harnesses** (`drive_ladder.py`, `happy.py`, `overlap_hints.py`) now *drag* on screens 13–16, because tapping no longer answers there.
+
+
+## r66 — the gate lag
+
+Yasir: "slight delay in playing swifty gif and its VO in transition screen". Measured at a
+tablet-like 8 Mbit/s: the bird was still downloading when the child pressed play, so the gate
+opened on an empty frame, she appeared **4.7 s late**, and the VO then played **~3 s before her
+mouth moved** (its clock ran from the gate opening, not from her). Three fixes:
+the art is fetched at high priority **as soon as the card is parsed** (not after every other
+asset); it is re-encoded at 440 px tall (**2.86 MB → 1.54 MB** — it renders at ≤ 290 CSS px); and
+the talk clock starts **when the image has loaded**, with a 4 s cap after which the line plays at
+once. Re-measured twice on the same link: bird ready at the instant the gate opens, VO
+**3 822 / 3 829 ms** after it — on her first mouth movement.
+
+
+## r67 — a still side painting for the runner: tried and REVERTED
+
+Tried: one static jungle painting down both sides (Temple Run framing), a road a third broader,
+the scrolling grass and streaming roadside objects removed, the camera held still. Yasir: "it
+looks like the character is running on the treadmill" — with nothing beside the road moving, the
+eye has no second speed to measure the run against, so the paving slides under Swifty while the
+world holds still. Reverted: the game source is restored from commit `3473794`, the painting is
+out of the bundle (kept as `1_SPEC/game_art_src/side/bg_side_keyed.webp`), and the runner is back
+to the committed frame. r66 (the gate fix) is kept.
+
+Found on the way: `4_ENGINE/inject_train.py` left the padding of its previous injection behind on
+every run, so each rebuild added blank lines to the engine. It now removes the block together
+with its padding; three consecutive injects leave the engine byte-identical.
