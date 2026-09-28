@@ -231,6 +231,8 @@
    "sfx_wrong": "assets/Audio/sfx_wrong.ogg",
    "sfx_tap": "assets/Audio/sfx_tap.ogg",
    "sfx_pop": "assets/Audio/sfx_pop.ogg",
+   "sfx_fb_correct": "assets/Audio/sfx_fb_correct.ogg",
+   "sfx_fb_incorrect": "assets/Audio/sfx_fb_incorrect.ogg",
    "sfx_train_arrive": "assets/Audio/sfx_train_arrive.ogg",
    "sfx_train_move": "assets/Audio/sfx_train_move.ogg",
    "sfx_whistle": "assets/Audio/sfx_whistle.ogg"

@@ -175,6 +175,13 @@
   }
   const _toneWhistle = ()=> _t([430, 660, 560], "sine", 0.55, 0.075);
   const sfxWhistle      = ()=> sfxFile("sfx_whistle",      _toneWhistle);  // the toot
+  /* [r73] Yasir's feedback sounds for a right and a wrong answer, on every screen of this lesson.
+     The engine's sfxCorrect() / sfxWrongSoft() are synthesised tones; they stay as the fallback
+     if a file cannot play. Levelled to -15 LUFS (prepare step in CHANGES_HINTS r73). */
+  const fbCorrect = ()=> sfxFile("sfx_fb_correct",
+                                 ()=>{ if(typeof sfxCorrect === "function") sfxCorrect(); });
+  const fbWrong   = ()=> sfxFile("sfx_fb_incorrect",
+                                 ()=>{ if(typeof sfxWrongSoft === "function") sfxWrongSoft(); });
   const sfxTrainMove    = ()=> sfxFile("sfx_train_move",   null);          // the chug bed
   const sfxPopSoft = ()=> _t([720], "sine", 0.10, 0.07);
   const sfxSparkle = ()=> _t([1180, 1560], "sine", 0.22, 0.055);
@@ -972,7 +979,7 @@
     return function wrong(coachIdx){
       tries++;
       state.attempts = tries;
-      if(typeof sfxWrongSoft === "function") sfxWrongSoft();
+      fbWrong();
       if(typeof setSwMood === "function") setSwMood("tryagain");
       if(coachIdx != null) train.shake(coachIdx);
       SwiftPAL.emit("answer_wrong", { slide_id: slide.id, phase: slide.phase, attempts: tries });
@@ -1009,7 +1016,7 @@
   function finishSlide(slide, train, silent, signal){
     state.locked = true;
     if(typeof stopNudge === "function") stopNudge();
-    if(typeof sfxCorrect === "function") sfxCorrect();
+    fbCorrect();
     if(typeof setSwMood === "function") setSwMood("celebrate");
     train.finish();
     SwiftPAL.emit(signal || "train_first_try", {
@@ -1357,7 +1364,7 @@
             const n = (perCard.get(tile) || 0) + 1;
             perCard.set(tile, n);
             state.attempts++;
-            if(typeof sfxWrongSoft === "function") sfxWrongSoft();
+            fbWrong();
             if(typeof setSwMood === "function") setSwMood("tryagain");
             train.shake(ci);
             tile.style.transform = "";
@@ -1466,7 +1473,7 @@
             tile.style.transform = "";
             filled++;
             train.correct(i);
-            if(typeof sfxCorrect === "function") sfxCorrect();
+            fbCorrect();
             SwiftPAL.emit("matra_fill_item", { slide_id: slide.id, word: slot.word });
             if(filled >= d.slots.length){
               finishSlide(slide, train, false, "matra_fill_first_try");
@@ -1476,7 +1483,7 @@
           } else {
             const n = (perCard.get(tile) || 0) + 1; perCard.set(tile, n);
             state.attempts++;
-            if(typeof sfxWrongSoft === "function") sfxWrongSoft();
+            fbWrong();
             train.shake(i);
             tile.style.transform = "";
             SwiftPAL.emit("answer_wrong", { slide_id: slide.id, attempts: state.attempts });
@@ -1697,7 +1704,7 @@
           const _t2 = setTimeout(()=>{
             if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
             show(a2); show(p3);
-            if(typeof sfxCorrect === "function") sfxCorrect();   // "a small success sound"
+            fbCorrect();   // "a small success sound"
             matraHLSoon(resEl, d.matra, { glow:true, pulse:true });
           }, Math.max(0, d.join_ms || 320));
           say(A(slide, "result"), ()=>{ clearTimeout(_t2);
@@ -2340,7 +2347,7 @@
             setTimeout(()=>{ ghostFace("idle"); ghost.classList.add("gh-dim", "gh-float"); }, 1300);
             SwiftPAL.emit("poem_word_found", { slide_id: slide.id, word: w.dataset.w, matra: r.matra });
             if(found >= r.targets.length){
-              if(typeof sfxCorrect === "function") sfxCorrect();
+              fbCorrect();
               if(typeof confettiCannon === "function") confettiCannon();
               card.classList.add("ps-round-done");
               setTimeout(()=> card.classList.remove("ps-round-done"), 900);
@@ -2375,7 +2382,7 @@
           } else {
             const n = (wrongCount.get(w) || 0) + 1; wrongCount.set(w, n);
             state.attempts++;
-            if(typeof sfxWrongSoft === "function") sfxWrongSoft();
+            fbWrong();
             w.classList.remove("ps-mag"); w.classList.add("ps-miss");
             setTimeout(()=> w.classList.remove("ps-miss"), 520);
             SwiftPAL.emit("answer_wrong", { slide_id: slide.id, word: w.dataset.w });
@@ -2539,7 +2546,7 @@
             }, 450);
             done++;
             train.correct(i);
-            if(typeof sfxCorrect === "function") sfxCorrect();
+            fbCorrect();
             SwiftPAL.emit("word_build_item", { slide_id: slide.id, word: slot.word });
             /* «शाबाश! पुल बन गया।» / «शाबाश! सुई बन गई।» — per slot, and SILENT if the child
                needed the whole ladder ("Correct Answer on 3rd Attempt … No VO required"). */
@@ -2553,7 +2560,7 @@
           } else {
             const n = (perCard.get(tile) || 0) + 1; perCard.set(tile, n);
             state.attempts++;
-            if(typeof sfxWrongSoft === "function") sfxWrongSoft();
+            fbWrong();
             if(typeof setSwMood === "function") setSwMood("tryagain");
             train.shake(i);
             /* "गलत डिब्बे में डाला गया अक्षर soft shake करके अपनी जगह वापस आ जाएगा।" */
@@ -2787,6 +2794,7 @@ function audioReady(){
       for(let i=0;i<n;i++) d[i] = Math.random()*2-1;
     }
     if(AC.state === "suspended") AC.resume();
+    loadFb();
     return AC;
   }catch(e){ return null; }
 }
@@ -2846,11 +2854,30 @@ function whoosh(o){
 
 /* ---------- the cues ---------- */
 const A4=440, sc = n => A4*Math.pow(2,(n-9)/12);       /* semitones from C */
-const sfxRight = ()=>{ MUSIC.sfxDuck(0.55);                                  /* up the pentatonic, and a shimmer */
+/* [r73] Yasir's feedback sounds, decoded once into buffers and played through the effects bus,
+   so they duck the music like every other effect. The synthesised cues stay as the fallback. */
+const FB = { correct:null, incorrect:null, asked:false };
+function loadFb(){
+  if(FB.asked || !AC) return; FB.asked = true;
+  [["correct", "assets/Audio/sfx_fb_correct.ogg"], ["incorrect", "assets/Audio/sfx_fb_incorrect.ogg"]]
+    .forEach(([k, u]) => fetch(u).then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(ab => new Promise((res, rej) => AC.decodeAudioData(ab, res, rej)))
+      .then(b => { FB[k] = b; }).catch(()=>{}));
+}
+function playFb(k, vol){
+  const ac = audioReady(); if(!ac) return false;
+  loadFb();
+  const b = FB[k]; if(!b) return false;
+  const src = ac.createBufferSource(), g = ac.createGain();
+  g.gain.value = vol; src.buffer = b; src.connect(g); g.connect(SFXBUS); src.start();
+  MUSIC.sfxDuck(b.duration);
+  return true;
+}
+const sfxRight = ()=>{ if(playFb("correct", 0.85)) return; MUSIC.sfxDuck(0.55);                                  /* up the pentatonic, and a shimmer */
   [0,4,7,12].forEach((n,i)=> note({f:sc(n+12), at:i*0.055, dur:.42, vol:.17, tick:.5, open:9}));
   whoosh({from:1800, to:6500, dur:.5, vol:.055, q:1.4});
 };
-const sfxWrong = ()=>{ MUSIC.sfxDuck(0.45);                                  /* a soft thud that falls, not a buzzer */
+const sfxWrong = ()=>{ if(playFb("incorrect", 0.85)) return; MUSIC.sfxDuck(0.45);                                  /* a soft thud that falls, not a buzzer */
   note({f:196, glide:132, dur:.34, vol:.16, type:"sine", open:3, tick:.35});
   note({f:98,  glide:66,  dur:.4,  vol:.12, type:"sine", open:2, at:.02});
 };
@@ -5165,7 +5192,7 @@ if(document.fonts && document.fonts.load){
         } else {
           b.classList.add("sc-ghost", "sc-gone");   /* no flight (reduced motion): straight swap */
         }
-        if(typeof sfxCorrect === "function") sfxCorrect();
+        fbCorrect();
         if(typeof confettiCannon === "function") confettiCannon();
         if(typeof setSwMood === "function") setSwMood("celebrate");
         sparkAt(b); sfxSparkle();
@@ -5221,7 +5248,7 @@ if(document.fonts && document.fonts.load){
       function miss(b, fromZone){
         tries++;
         state.attempts = tries;
-        if(typeof sfxWrongSoft === "function") sfxWrongSoft();
+        fbWrong();
         if(typeof setSwMood === "function") setSwMood("tryagain");
         if(fromZone){
           /* dropped in: the blank has already refused it on release - see refuseAtZone */
@@ -5479,6 +5506,27 @@ if(document.fonts && document.fonts.load){
        that is really a title illustration. Marked here rather than hidden globally, because the
        activity screens still want it. */
     (tc.shell || el).classList.add("lt-cover");
+    /* [r73] the steam stays under the title. The plume rose 0.62 of the
+       train's height - on the cover, straight into the title - so here it rises a little over a
+       third of that, and the title is layered above the train so any wisp passes behind it. */
+    const st = el.querySelector(".train-steam");
+    if(st){
+      const r = parseFloat(st.style.getPropertyValue("--tc-rise")) || -96;
+      /* [r75] OUT OF THE CHIMNEY'S MOUTH. Measured: the puffs were born 6px down inside the yellow
+         cap and, with the short rise, sat on it like a blob. They now start at the rim, climb a
+         little higher, and lean back-left - away from the title, which starts just right of the
+         chimney - so they read as steam leaving the stack rather than something resting on it. */
+      const top0 = parseFloat(st.style.top) || 0;
+      st.style.top = (top0 - 7) + "px";
+      st.style.setProperty("--tc-rise", Math.round(r * 0.36) + "px");
+      st.style.setProperty("--tc-drift", "-14px");
+      const pf = parseFloat(st.style.getPropertyValue("--tc-puff")) || 26;
+      st.style.setProperty("--tc-puff", Math.round(pf * 0.8) + "px");
+    }
+    /* [r74] the title stays TEXT (Yasir asked for the original back); it is still layered
+       above the train, so the steam passes behind it */
+    const ttl = document.getElementById("sgTitle");
+    if(ttl) ttl.classList.add("lt-title-front");
     void tc;
     return true;
   }

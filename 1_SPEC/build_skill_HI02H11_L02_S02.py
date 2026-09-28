@@ -111,6 +111,7 @@ STOCK_MODULES = ["CELEBRATION"]
 # the "soft train arrival / whistle SFX" the SME asks for on the landing and on every train screen.
 COPY_AUDIO = ["vo_pt_tutorial", "vo_pt_guided", "vo_pt_practice",
               "sfx_celebrate", "sfx_correct", "sfx_wrong", "sfx_tap", "sfx_pop",
+              "sfx_fb_correct", "sfx_fb_incorrect",   # [r73] Yasir's feedback sounds
               "sfx_train_arrive", "sfx_train_move", "sfx_whistle"]
 
 U, UU = "ु", "ू"

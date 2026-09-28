@@ -357,3 +357,40 @@ of being talked over. All synthesised in WebAudio - no files.
 ## r72 — music to 80 %
 
 Yasir: "60% isn't enough make it 80%". Bus level 0.60 -> **0.80**; the ducks keep their proportions: a quarter under speech (0.20), half under an effect (0.40). Peak headroom at 80 %: -2.9 dBFS after the master gain.
+
+
+## r73 — cover title image, smoke off the title, speaker disabled during VO, new feedback sounds
+
+- **Cover title:** `title.png` (trimmed to its ink, 1200x341) replaces the text title; original kept
+  in `1_SPEC/game_art_src/cover/`.
+- **Smoke:** the steam rose 0.62 of the train's height - on the cover, straight into the title.
+  On the cover only it now rises 0.38 of that with slightly smaller puffs, and the title sits above
+  the train (z 6). Measured over 40 samples of the arrival: 0 visible puffs over the title.
+- **Speaker buttons** (header chip, tutorial-card chip, cover chip): no pointer events and dimmed
+  (opacity .45, greyed) while any clip plays, driven off the engine's `vo-lock`; back to normal the
+  moment it ends. Measured on the cover and on a lesson screen, during and after VO.
+- **Feedback sounds:** the lesson never played its sfx_correct/sfx_wrong files - right and wrong
+  answers went through two synthesised tones. Yasir's `correct.mp3` / `incorrect.mp3` replace them on
+  every screen (7 + 7 call sites in the train module set) and in the runner (decoded buffers through
+  the effects bus, so they duck the music). Levelled first: correct was -8 LUFS with peaks over full
+  scale and incorrect -14.2, so both are now -15 LUFS (`sfx_fb_correct.ogg`, `sfx_fb_incorrect.ogg`,
+  declared in the card so they preload). The synthesised tones stay as the fallback. Verified: a
+  wrong tap plays sfx_fb_incorrect, the right one sfx_fb_correct; the runner fetches both.
+
+
+## r74 — text title back, cover train lifted
+
+Yasir: remove the title image and bring back the original text; move the train a little up.
+The image injection is gone and the text title is back (the image is kept in
+`1_SPEC/game_art_src/cover/`). The cover train is lifted 22 px (`position:relative`, so nothing
+else on the cover moves). The title stays layered above the train, and because the chimney is
+now closer to it the plume is shorter again (0.26 of its activity-screen rise).
+
+
+## r75 — cover steam out of the chimney's mouth
+
+Measured with the plume frozen: the puffs were born 6 px down inside the yellow chimney cap and,
+with the short rise, sat on it like a blob. On the cover they now start at the rim (7 px higher),
+climb a little further (0.36 of the activity-screen rise) and lean 14 px back-left - away from the
+title, which begins just right of the chimney. The faintest top puffs reach the empty lower-left
+corner of the title's layout box but stay clear of the letters, and the title is layered above them.

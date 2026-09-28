@@ -343,6 +343,7 @@ function audioReady(){
       for(let i=0;i<n;i++) d[i] = Math.random()*2-1;
     }
     if(AC.state === "suspended") AC.resume();
+    loadFb();
     return AC;
   }catch(e){ return null; }
 }
@@ -402,11 +403,30 @@ function whoosh(o){
 
 /* ---------- the cues ---------- */
 const A4=440, sc = n => A4*Math.pow(2,(n-9)/12);       /* semitones from C */
-const sfxRight = ()=>{ MUSIC.sfxDuck(0.55);                                  /* up the pentatonic, and a shimmer */
+/* [r73] Yasir's feedback sounds, decoded once into buffers and played through the effects bus,
+   so they duck the music like every other effect. The synthesised cues stay as the fallback. */
+const FB = { correct:null, incorrect:null, asked:false };
+function loadFb(){
+  if(FB.asked || !AC) return; FB.asked = true;
+  [["correct", "assets/Audio/sfx_fb_correct.ogg"], ["incorrect", "assets/Audio/sfx_fb_incorrect.ogg"]]
+    .forEach(([k, u]) => fetch(u).then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
+      .then(ab => new Promise((res, rej) => AC.decodeAudioData(ab, res, rej)))
+      .then(b => { FB[k] = b; }).catch(()=>{}));
+}
+function playFb(k, vol){
+  const ac = audioReady(); if(!ac) return false;
+  loadFb();
+  const b = FB[k]; if(!b) return false;
+  const src = ac.createBufferSource(), g = ac.createGain();
+  g.gain.value = vol; src.buffer = b; src.connect(g); g.connect(SFXBUS); src.start();
+  MUSIC.sfxDuck(b.duration);
+  return true;
+}
+const sfxRight = ()=>{ if(playFb("correct", 0.85)) return; MUSIC.sfxDuck(0.55);                                  /* up the pentatonic, and a shimmer */
   [0,4,7,12].forEach((n,i)=> note({f:sc(n+12), at:i*0.055, dur:.42, vol:.17, tick:.5, open:9}));
   whoosh({from:1800, to:6500, dur:.5, vol:.055, q:1.4});
 };
-const sfxWrong = ()=>{ MUSIC.sfxDuck(0.45);                                  /* a soft thud that falls, not a buzzer */
+const sfxWrong = ()=>{ if(playFb("incorrect", 0.85)) return; MUSIC.sfxDuck(0.45);                                  /* a soft thud that falls, not a buzzer */
   note({f:196, glide:132, dur:.34, vol:.16, type:"sine", open:3, tick:.35});
   note({f:98,  glide:66,  dur:.4,  vol:.12, type:"sine", open:2, at:.02});
 };
