@@ -12983,6 +12983,11 @@ function proj(z){
 }
 const LANES = 2;
 const LANE_W = () => W*0.30;                 // gap between the two gates
+/* [r68] THE BRIDGE is on when its three parts have loaded. The deck is a little broader than the
+   old road (1.22 against 1.08 lane-widths either side of centre) - Yasir asked for a broader path,
+   and a parapet needs a hand's width of stone between it and the portals or they look jammed in. */
+const bridgeOn = () => !!(window.MR_ART && MR_ART.has("deck") && MR_ART.has("post") && MR_ART.has("wall"));
+const roadHalf = () => bridgeOn() ? 1.22 : 1.08;
 
 /* [r47] THE CAMERA. It trails the runner sideways by a third of her lane offset, which is what
    stops a lane change from looking like a sprite sliding across a still picture: the whole
@@ -13090,21 +13095,21 @@ function whoosh(o){
 
 /* ---------- the cues ---------- */
 const A4=440, sc = n => A4*Math.pow(2,(n-9)/12);       /* semitones from C */
-const sfxRight = ()=>{                                  /* up the pentatonic, and a shimmer */
+const sfxRight = ()=>{ MUSIC.sfxDuck(0.55);                                  /* up the pentatonic, and a shimmer */
   [0,4,7,12].forEach((n,i)=> note({f:sc(n+12), at:i*0.055, dur:.42, vol:.17, tick:.5, open:9}));
   whoosh({from:1800, to:6500, dur:.5, vol:.055, q:1.4});
 };
-const sfxWrong = ()=>{                                  /* a soft thud that falls, not a buzzer */
+const sfxWrong = ()=>{ MUSIC.sfxDuck(0.45);                                  /* a soft thud that falls, not a buzzer */
   note({f:196, glide:132, dur:.34, vol:.16, type:"sine", open:3, tick:.35});
   note({f:98,  glide:66,  dur:.4,  vol:.12, type:"sine", open:2, at:.02});
 };
-const sfxCoin  = ()=>{ note({f:sc(24), dur:.18, vol:.10, tick:.6, open:12});
+const sfxCoin  = ()=>{ MUSIC.sfxDuck(0.22); note({f:sc(24), dur:.18, vol:.10, tick:.6, open:12});
                        note({f:sc(31), at:.05, dur:.22, vol:.07, open:12}); };
-const sfxLevel = ()=>{ [0,4,7,12,16].forEach((n,i)=>
+const sfxLevel = ()=>{ MUSIC.sfxDuck(1.00); [0,4,7,12,16].forEach((n,i)=>
                          note({f:sc(n+12), at:i*0.1, dur:.55, vol:.16, tick:.4, open:9}));
                        whoosh({from:900, to:7000, dur:.9, vol:.05, q:1.2}); };
 /* the gate coming apart: a bright shatter over a low body hit */
-const sfxGate  = (ok)=>{
+const sfxGate  = (ok)=>{ MUSIC.sfxDuck(0.5);
   if(ok){
     whoosh({from:2600, to:9000, dur:.42, vol:.10, q:1.1});
     [0,7,12,19].forEach((n,i)=> note({f:sc(n+24), at:i*0.03, dur:.3, vol:.09, open:14}));
@@ -13114,12 +13119,100 @@ const sfxGate  = (ok)=>{
   }
 };
 
+/* [r71] THE CARTOON PRATFALL. Three sounds every child knows from cartoons, built from raw
+   oscillators so they cost no files:
+     bonk   - a hollow wooden knock: two partials that drop in pitch as they die, and a click
+     whistle- a slide whistle falling two and a half octaves, with a wobble on it
+     boing  - a spring: a low tone whose pitch is shaken by a fast wobble that dies away */
+function _osc(type, f, t0, dur, vol, bus){
+  const ac = AC, o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t0);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.connect(bus || SFXBUS); o.connect(g);
+  o.start(t0); o.stop(t0 + dur + 0.05);
+  return { o, g };
+}
+const sfxBonk = ()=>{
+  const ac = audioReady(); if(!ac) return; MUSIC.sfxDuck(0.35);
+  const t = ac.currentTime + 0.005;
+  [[330, 170, 0.20, 0.34], [820, 520, 0.07, 0.16]].forEach(([f0, f1, d, v])=>{
+    const n = _osc("sine", f0, t, d + 0.05, v);
+    n.o.frequency.exponentialRampToValueAtTime(f1, t + d);
+    n.g.gain.exponentialRampToValueAtTime(v, t + 0.003);
+    n.g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.04);
+  });
+  whoosh({ from:2500, to:4200, dur:.03, vol:.12, q:1.2 });          /* the click of the knock */
+};
+const sfxSlideWhistle = (at)=>{
+  const ac = audioReady(); if(!ac) return;
+  const t = ac.currentTime + (at || 0), dur = 0.85; MUSIC.sfxDuck((at || 0) + dur + 0.1);
+  const n = _osc("sine", 1650, t, dur, 0.16);
+  n.o.frequency.exponentialRampToValueAtTime(260, t + dur);
+  const lfo = ac.createOscillator(), lg = ac.createGain();         /* the player's wobbly breath */
+  lfo.frequency.value = 7; lg.gain.value = 28; lfo.connect(lg); lg.connect(n.o.detune);
+  lfo.start(t); lfo.stop(t + dur + 0.05);
+  n.g.gain.exponentialRampToValueAtTime(0.16, t + 0.03);
+  n.g.gain.setValueAtTime(0.16, t + dur - 0.12);
+  n.g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  const h = _osc("triangle", 3300, t, dur, 0.03);                   /* a breath of edge on top */
+  h.o.frequency.exponentialRampToValueAtTime(520, t + dur);
+  h.g.gain.exponentialRampToValueAtTime(0.03, t + 0.03);
+  h.g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+};
+const sfxBoing = (at)=>{
+  const ac = audioReady(); if(!ac) return;
+  const t = ac.currentTime + (at || 0), dur = 0.6; MUSIC.sfxDuck((at || 0) + dur);
+  const n = _osc("triangle", 150, t, dur, 0.3);
+  n.o.frequency.linearRampToValueAtTime(240, t + dur * 0.5);
+  const lfo = ac.createOscillator(), lg = ac.createGain();         /* the spring's shake, dying */
+  lfo.frequency.value = 17; lfo.connect(lg); lg.connect(n.o.frequency);
+  lg.gain.setValueAtTime(70, t); lg.gain.exponentialRampToValueAtTime(2, t + dur);
+  lfo.start(t); lfo.stop(t + dur + 0.05);
+  n.g.gain.exponentialRampToValueAtTime(0.3, t + 0.01);
+  n.g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+};
+
 /* ---------- the bed ---------- *
    Four bars, C major pentatonic. Scheduled a bar ahead against the audio clock: setTimeout
    drifts with the frame rate and a bed that stutters is worse than no bed at all. */
+/* [r70] the rendered track: see the header of this change in CHANGES_HINTS.md (r70) */
+const BGM = { url:"assets/MatraRunner/bgm_game.ogg", buf:null, loading:false, failed:false,
+              src:null, gain:null };
+function loadBgm(){
+  if(BGM.buf || BGM.loading || BGM.failed || !AC) return;
+  BGM.loading = true;
+  fetch(BGM.url).then(r => { if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(ab => new Promise((res, rej) => AC.decodeAudioData(ab, res, rej)))
+    .then(b => { BGM.buf = b; BGM.loading = false; if(MUSIC.on) MUSIC.playFile(); })
+    .catch(() => { BGM.loading = false; BGM.failed = true; });
+}
 const MUSIC = {
-  on:false, next:0, bar:0, tmr:0,
+  on:false, next:0, bar:0, tmr:0, file:false,
   BPM:96,
+  LEVEL:0.16, DUCK:0.045, SFXDUCK:0.08,   /* the synth bed's levels; the file sets its own */
+  _claims:{}, _sfxUntil:0, _sfxT:0,
+  /* [r71] ONE PLACE DECIDES THE LEVEL. Each voice source claims the duck under its own name, so
+     one finishing cannot lift the music while another is still speaking; effects claim it for
+     their length. */
+  target(){
+    if(!AC) return this.LEVEL;
+    for(const k in this._claims) if(this._claims[k]) return this.DUCK;
+    return AC.currentTime < this._sfxUntil ? this.SFXDUCK : this.LEVEL;
+  },
+  apply(tc){
+    if(!AC || !MUSBUS || !this.on) return;
+    const v = this.target(), now = AC.currentTime;
+    MUSBUS.gain.cancelScheduledValues(now);
+    MUSBUS.gain.setTargetAtTime(v, now, tc || (v < this.LEVEL ? 0.08 : 0.45));
+  },
+  setDuck(src, on){ this._claims[src] = !!on; this.apply(); },
+  sfxDuck(sec){
+    if(!AC) return;
+    this._sfxUntil = Math.max(this._sfxUntil, AC.currentTime + sec);
+    this.apply(0.04);
+    clearTimeout(this._sfxT);
+    this._sfxT = setTimeout(()=> this.apply(), sec * 1000 + 30);
+  },
   pad: [[0,7,16],[ -3,4,12],[ -5,2,9],[ -1,4,11]],       /* one chord a bar */
   fig: [0,7,12,7,4,12,16,12],                             /* eighths over it */
   start(){
@@ -13127,9 +13220,25 @@ const MUSIC = {
     this.on = true; this.bar = 0; this.next = ac.currentTime + 0.12;
     MUSBUS.gain.cancelScheduledValues(ac.currentTime);
     MUSBUS.gain.setValueAtTime(0.0001, ac.currentTime);
-    MUSBUS.gain.exponentialRampToValueAtTime(0.16, ac.currentTime + 2.2);
+    if(BGM.buf){ this.playFile(); return; }
+    MUSBUS.gain.exponentialRampToValueAtTime(Math.max(0.001, this.target()), ac.currentTime + 2.2);
+    loadBgm();                                    /* the bed covers the wait */
     this.tick();
     this.tmr = setInterval(()=>this.tick(), 220);
+  },
+  /* the track, looped on the audio clock through its own gain into the music bus */
+  playFile(){
+    const ac = AC; if(!ac || !BGM.buf || this.file) return;
+    /* Yasir: "60% isn't enough make it 80%"; still a quarter under speech, half under an effect */
+    this.file = true; this.LEVEL = 0.80; this.DUCK = 0.20; this.SFXDUCK = 0.40;
+    clearInterval(this.tmr); this.tmr = 0;         /* the bed schedules no new bars */
+    const t = ac.currentTime;
+    BGM.gain = ac.createGain(); BGM.gain.gain.setValueAtTime(0.0001, t);
+    BGM.gain.gain.exponentialRampToValueAtTime(1.0, t + 1.2);
+    BGM.gain.connect(MUSBUS);
+    const src = ac.createBufferSource(); src.buffer = BGM.buf; src.loop = true;
+    src.connect(BGM.gain); src.start(t + 0.02); BGM.src = src;
+    this.apply(0.4);                               /* whatever is speaking right now still wins */
   },
   stop(){
     this.on = false; clearInterval(this.tmr); this.tmr = 0;
@@ -13137,13 +13246,14 @@ const MUSIC = {
       MUSBUS.gain.cancelScheduledValues(AC.currentTime);
       MUSBUS.gain.setTargetAtTime(0.0001, AC.currentTime, 0.25);
     }
+    /* the track stops after the fade, and a fresh one starts next time */
+    if(BGM.src){ const s0 = BGM.src, g0 = BGM.gain; BGM.src = null; BGM.gain = null;
+      try{ s0.stop((AC ? AC.currentTime : 0) + 1.2); }catch(e){}
+      setTimeout(()=>{ try{ g0.disconnect(); }catch(e){} }, 1500); }
+    this.file = false;
   },
   /* down while a word is being spoken, back up after - the lesson's voice comes first */
-  duck(on){
-    if(!AC || !MUSBUS || !this.on) return;
-    MUSBUS.gain.cancelScheduledValues(AC.currentTime);
-    MUSBUS.gain.setTargetAtTime(on ? 0.045 : 0.16, AC.currentTime, on ? 0.12 : 0.6);
-  },
+  duck(on){ this.setDuck("voice", on); },       /* the game's own voice - see setDuck */
   tick(){
     const ac = AC; if(!ac || !this.on) return;
     const beat = 60/this.BPM, barLen = beat*4;
@@ -13164,6 +13274,15 @@ const MUSIC = {
   }
 };
 window.MR_audioStop = function(){ try{ MUSIC.stop(); if(AC) AC.suspend(); }catch(e){} };
+/* [r71] the lesson around the game speaks too - its opening instruction plays while the music is
+   already running. It is ducked from the game loop, off the engine's own "a clip is playing"
+   flag (body.vo-lock), NOT off a timer: measured, the instruction can start seconds after the
+   game mounts, and a timer had already let the music back up by then. */
+let _lessonVO = false;
+function watchLessonVO(){
+  const on = !!(document.body && document.body.classList.contains("vo-lock"));
+  if(on !== _lessonVO){ _lessonVO = on; MUSIC.setDuck("lesson", on); }
+}
 
 const VOICE = {
   mode: 2,
@@ -13305,7 +13424,10 @@ function seedRails(){
   /* k is the segment's own number and never changes, so "a hedge every third post" keeps
      selecting the same evenly-spaced subset however the array is later reordered */
   let k = 0;
-  for(let z = -0.05; z < 1.25; z += RAIL_STEP) G.rails.push({ z: z, k: k++ });
+  /* [r68] out to 2.05, not 1.25: the old railing faded out behind the treeline's skirt, but
+     the bridge's posts must keep coming out of the distance or the far half of the bridge is a
+     bare wall. The old railing still stops at HEDGE_FAR, so this changes nothing without it. */
+  for(let z = -0.05; z < 2.05; z += RAIL_STEP) G.rails.push({ z: z, k: k++ });
 }
 /* The hedge rides the railing's own z list, so the two can never drift apart, and is drawn
    first - the kerb stands in front of the planting, not behind it. Copies overlap by a tenth
@@ -13459,7 +13581,7 @@ function resolveGate(g){
     G.shake = 0.30; G.flashCol="rgba(150,130,110,.18)"; G.flash=0.3;
     dust(laneX(G.lane,1), groundY()-95*S, 26);
     G.pops.push({text:"सही शब्द: "+rightWord, sub:(g.target===U?"छोटी उ ( ु )":"बड़ी ऊ ( ू )"), col:"#ffb0a0", life:1.7});
-    sfxGate(false); sfxWrong(); VOICE.clear(); VOICE.say("wrong");
+    sfxGate(false); sfxWrong(); sfxBonk(); VOICE.clear(); VOICE.say("wrong");
     VOICE.say("correct_is"); VOICE.say(g.words[g.okLane].id, rightWord);
     if(G.hearts<=0){ gameOver(); return; }
   }
@@ -13579,7 +13701,7 @@ function drawGround(){
 
   // path trapezoid
   const pFar = proj(26), pNear = proj(0);
-  const wFar = LANE_W()*pFar.p*1.08, wNear = LANE_W()*pNear.p*1.08;
+  const wFar = LANE_W()*pFar.p*roadHalf(), wNear = LANE_W()*pNear.p*roadHalf();
   ctx.beginPath();
   const cFar = worldX(0, pFar.p), cNear = worldX(0, pNear.p);
   ctx.moveTo(cFar-wFar, pFar.y); ctx.lineTo(cFar+wFar, pFar.y);
@@ -14004,6 +14126,11 @@ function roundRect(x,y,w,h,r){
     hit:      ["swifty_hit.webp", 1],
     happy:    ["swifty_happy.webp", 1],
     sky:      ["bg_sky.webp", 1],
+    /* [r68] the valley: its poster frame (shown until the video can play), and the bridge */
+    valley:   ["bg_valley.webp", 1],
+    deck:     ["bridge_deck.webp", 1],
+    post:     ["bridge_post.webp", 1],
+    wall:     ["bridge_wall.webp", 1],
     ring:     ["portal_ring.webp", 1],
     mountains:["bg_mountains.webp", 1],
     hills:    ["bg_hills.webp", 1],
@@ -14313,8 +14440,47 @@ function drawTigerImage(){
     var start = x0 - ((x0 % pw) + pw) % pw;
     for(var x = start; x < x1; x += pw) ctx.drawImage(pair, x, top, pw, h);
   }
+  /* [r68] YASIR'S VALLEY. A muted, looping, inline video, drawn into the canvas every frame.
+     Only the waterfalls move in it; the loop is 9 s and seamless (prepare_bridge.py cross-fades
+     its last second into its first). It is drawn through the canvas rather than laid behind it
+     as a DOM element so the screen shake, the vignette and everything else keep working the way
+     they always have, with no second layer to keep in step.
+     THE ANCHOR: the sun's centre is at 0.525 of the frame's width and its lower edge - the
+     horizon - at 0.40 of its height, measured off the first frame. That point is pinned to the
+     game's vanishing point, so the bridge runs into the sun. */
+  var VALLEY_CX = 0.525, VALLEY_HY = 0.40;
+  var vid = document.createElement("video");
+  vid.muted = true; vid.defaultMuted = true; vid.loop = true; vid.playsInline = true;
+  vid.preload = "auto";
+  vid.setAttribute("muted", ""); vid.setAttribute("playsinline", ""); vid.setAttribute("webkit-playsinline", "");
+  vid.src = "assets/MatraRunner/bg_valley.mp4";   /* this closure has no DIR; same folder as the art */
+  var vidAsked = 0;
+  function valleyFrame(){
+    /* ask to play at most once a second while paused: play() returns a promise that rejects if
+       the browser wants a gesture, and asking every frame would only flood the console */
+    if(vid.paused && G.mode !== "over"){
+      var now = Date.now();
+      if(now - vidAsked > 1000){ vidAsked = now; var pr = vid.play(); if(pr && pr.catch) pr.catch(function(){}); }
+    }
+    if(vid.readyState >= 2 && vid.videoWidth) return vid;
+    return ART.has("valley") ? ART.img("valley") : null;
+  }
+  /* stop it with the music when the lesson leaves this screen - a looping video in memory keeps
+     decoding, and on a tablet that is battery the child is not getting anything for */
+  var _audioStop = window.MR_audioStop;
+  window.MR_audioStop = function(){ try{ vid.pause(); }catch(e){} if(_audioStop) _audioStop(); };
+
   window.MR_drawSky = function(){
     var hy = horizonY();
+    var vf = bridgeOn() ? valleyFrame() : null;
+    if(vf){
+      var vw = vf.videoWidth || vf.width, vh = vf.videoHeight || vf.height;
+      /* cover the screen with the sun pinned to (W/2, horizon) */
+      var sc = Math.max(W / (2 * Math.min(VALLEY_CX, 1 - VALLEY_CX) * vw),
+                        hy / (VALLEY_HY * vh), (H - hy) / ((1 - VALLEY_HY) * vh));
+      ctx.drawImage(vf, W/2 - VALLEY_CX*vw*sc, hy - VALLEY_HY*vh*sc, vw*sc, vh*sc);
+      return true;
+    }
     if(!ART.has("sky")) return false;
     layer(ART.img("sky"), 0, hy + 2, 0.045, 0.62, 2.4);
     /* the ridge and the treeline keep their own proportions and repeat across */
@@ -14346,31 +14512,199 @@ function drawTigerImage(){
     return { p: p, z: (1/p - 1) / K };
   }
 
-  function bands(g2, pat, base, texH, halfLanes){
+  /* [r69] k = the offscreen's pixel ratio (1 = CSS pixels, as the old road always used), and
+     bandH = CSS rows per band. The bridge deck passes DPR and 2: at CSS resolution on a 2x screen
+     the deck was painted at half the display's resolution and stretched, and 4-row bands drew each
+     diagonal slab joint as a staircase of 8-device-pixel steps. */
+  function bands(g2, pat, base, texH, halfLanes, kpx, bandH){
+    kpx = kpx || 1; var B = bandH || BAND;   /* kpx, NOT k: k is this function's own tile-wrap offset below */
     var hy = horizonY(), gy = groundY();
     var vz = isoZ() / base;                  // texture rows per unit z: isotropic at the feet
-    for(var y = hy; y < H; y += BAND){
-      var lo = depthAt(y + BAND), hi = depthAt(y);   // lo = nearer/lower, hi = farther/higher
+    for(var y = hy; y < H; y += B){
+      var lo = depthAt(y + B), hi = depthAt(y);   // lo = nearer/lower, hi = farther/higher
       if(hi.p < 0.012 || lo.p <= 0) continue;        // the last slice into the horizon
       var vLo = (lo.z + G.ground) * vz, vHi = (hi.z + G.ground) * vz;
       var span = vHi - vLo;                          // texture rows this band has to show
       if(!(span > 0) || !isFinite(span)) continue;
       var sx = ((lo.p + hi.p) * 0.5) * base;         // across the track: texels scale with p
       if(sx < 0.04) continue;
-      var sy = BAND / span;                          // along it: with p squared, via the span
+      var sy = B / span;                          // along it: with p squared, via the span
       /* wrapped to whole tiles - the pattern is periodic, so this is invisible, and it keeps
          the numbers small enough that a long session stays exact */
       var k = Math.floor(vLo / texH) * texH;
       vLo -= k;
       /* v grows away from the camera while screen y grows toward it, hence the negative sy.
          The offscreen holds only the ground, so hy comes off the vertical placement. */
-      g2.setTransform(sx, 0, 0, -sy, worldX(0, lo.p), (y + BAND - hy) + vLo*sy);
+      g2.setTransform(sx*kpx, 0, 0, -sy*kpx, worldX(0, lo.p)*kpx, ((y + B - hy) + vLo*sy)*kpx);
       g2.fillStyle = pat;
       var half = halfLanes ? LANE_W() * lo.p * halfLanes : W;
       g2.fillRect(-half/sx - 2, vLo, (half*2)/sx + 4, span + 1/sy);
     }
     g2.setTransform(1, 0, 0, 1, 0, 0);
   }
+
+  var deckPat = null, deckFor = null;
+  /* [r68] THE DECK. The same projection the road used, with the slab tile, and NOTHING outside
+     it: off the bridge the valley shows, so the offscreen is cleared, not filled. The deck's edges
+     run straight to the vanishing point all the way to the foot of the screen - the parapet does,
+     and a deck that went vertical under it (the old road stopped widening at the runner's line)
+     would leave a sliver of valley showing beneath the wall. */
+  function drawDeck(){
+    var hy = horizonY(), gy = groundY(), gh = Math.max(1, Math.round(H - hy + 2));
+    var gw = Math.max(1, Math.round(W));
+    if(!gcv){ gcv = document.createElement("canvas"); gcx = gcv.getContext("2d"); }
+    /* [r69] at the display's own resolution: see bands() */
+    var kd = Math.max(1, Math.min(3, DPR || 1));
+    var dw = Math.round(gw * kd), dh = Math.round(gh * kd);
+    if(gcv.width !== dw || gcv.height !== dh){
+      gcv.width = dw; gcv.height = dh;
+      grassPat = pathPat = grassFor = pathFor = null; deckPat = deckFor = null;
+    }
+    var di = ART.img("deck");
+    if(deckFor !== di){ deckPat = gcx.createPattern(di, "repeat"); deckFor = di; }
+    gcx.setTransform(1, 0, 0, 1, 0, 0);
+    gcx.clearRect(0, 0, dw, dh);
+    gcx.setTransform(kd, 0, 0, kd, 0, 0);        /* the clip path below is in CSS pixels */
+    /* [r69] 3% wider than the wall's foot line: the deck's clip and the wall's clip are both
+       antialiased, and where two soft edges share a line the lake shows through the seam as a
+       blue hairline. Tucked under the wall, the deck's edge is hidden and the wall's blends
+       onto stone. */
+    var RH = roadHalf() * 1.03, pFar = proj(26), pFoot = (H - hy) / (gy - hy);
+    var wFar = LANE_W()*pFar.p*RH, wFoot = LANE_W()*pFoot*RH;
+    var cFar = worldX(0, pFar.p), cFoot = worldX(0, pFoot);
+    gcx.save();
+    gcx.beginPath();
+    gcx.moveTo(cFar - wFar, pFar.y - hy); gcx.lineTo(cFar + wFar, pFar.y - hy);
+    gcx.lineTo(cFoot + wFoot, gh);        gcx.lineTo(cFoot - wFoot, gh);
+    gcx.closePath(); gcx.clip();
+    /* 0.6: about five slabs across the deck at the runner's line, as in his mockup */
+    /* 1-row bands: a band's single across-track scale is off by (offset x rows) / (p x ground
+       depth), about 1.2 px at the deck's edge per CSS row - at 2 rows the slab joints zig-zagged */
+    bands(gcx, deckPat, 0.6, di.height, RH + 0.1, kd, 1);
+    gcx.restore();
+    ctx.drawImage(gcv, 0, hy, W, gh);
+  }
+
+  /* [r68] THE PARAPET AND THE POSTS.
+     The wall's inner face is an upright plane running along the deck's edge. Canvas cannot map a
+     picture onto a perspective plane, so it is drawn in thin upright slices - each slice is one
+     depth, so its texture column is that depth's, and it is scaled to the wall's height THERE.
+     The whole face is clipped to its exact outline first (a straight line to the vanishing point
+     along the foot, another along the top), so the slices' square tops never show as steps.
+     The texture scrolls with the deck: its column comes from the same travelled distance. */
+  var WALL_H = 0.44, POST_H = 0.74, POST_EVERY = 4, SLICE = 5;   /* chunky, as in his mockup;
+     [r69] 5px slices, each sheared to the face's mid-height slope: the leftover step at the top
+     and foot of the wall is SLICE x the slope difference / 2, under a pixel at 5 */
+  function edgeX(side, p){ return worldX(side * roadHalf(), p); }
+  /* [r69] pre-shrunk copies of the wall texture: canvas has no mipmaps, so a slice squeezed to a
+     few pixels samples the full-size art sparsely and shimmers as it scrolls */
+  var wallMips = null, wallMipsFor = null;
+  function wallMip(scale){
+    var w = ART.img("wall");
+    if(wallMipsFor !== w){
+      wallMips = [w]; wallMipsFor = w;
+      var src = w;
+      for(var i = 0; i < 2; i++){
+        var c = document.createElement("canvas");
+        c.width = Math.max(2, Math.round(src.width / 2)); c.height = Math.max(2, Math.round(src.height / 2));
+        var g = c.getContext("2d"); g.imageSmoothingQuality = "high";
+        g.drawImage(src, 0, 0, c.width, c.height);
+        wallMips.push(c); src = c;
+      }
+    }
+    /* scale = drawn height / full texture height */
+    var lvl = scale < 0.25 ? 2 : scale < 0.5 ? 1 : 0;
+    return wallMips[lvl];
+  }
+  var SHOW_POSTS = false;          /* [r69] Yasir: "remove the pillars" */
+  function drawParapets(){
+    var wall = ART.img("wall"), post = ART.img("post");
+    var hy = horizonY(), gy = groundY(), LW = LANE_W();
+    var wH = WALL_H * LW;
+    var texPerZ = ((gy - hy) * K) * (wall.height / wH);        // full-size texture px per unit depth
+    var p0 = 0.012;
+    var pTop = (H - hy) / Math.max(1, (gy - hy) - wH);
+    var pMax = Math.min(3.0, pTop);
+    var footY = function(p){ return hy + (gy - hy) * p; };
+    var topY  = function(p){ return footY(p) - wH * p; };
+    for(var si = 0; si < 2; si++){
+      var side = si ? 1 : -1;
+      var x0 = edgeX(side, p0), x1 = edgeX(side, pMax);
+      ctx.save();
+      /* compose with whatever is current - the DPR scale AND the screen shake - rather than
+         replacing it, or the walls would stand still while the rest of the frame shakes */
+      var base = ctx.getTransform();
+      ctx.beginPath();
+      ctx.moveTo(x0, footY(p0)); ctx.lineTo(x1, footY(pMax));
+      ctx.lineTo(x1, topY(pMax)); ctx.lineTo(x0, topY(p0));
+      ctx.closePath(); ctx.clip();
+      var span = Math.abs(roadHalf() * LW - side * camLane() * LW);
+      var dp = SLICE / Math.max(1, span);
+      for(var pa = p0; pa < pMax; pa += dp){
+        var pb = Math.min(pMax, pa + dp);
+        var xa = edgeX(side, pa), xb = edgeX(side, pb);
+        if(Math.max(xa, xb) < -2 || Math.min(xa, xb) > W + 2) continue;
+        var za = (1/pa - 1) / K, zb = (1/pb - 1) / K;
+        var hA = wH * pa, hB = wH * pb, hm = (hA + hB) * 0.5;
+        var tex = wallMip(hm / wall.height), k = tex.height / wall.height;
+        var tw = tex.width;
+        var u = ((zb + G.ground) * texPerZ * k) % tw; if(u < 0) u += tw;
+        var du = (za - zb) * texPerZ * k;
+        if(!(du > 0.01)) continue;
+        /* a slice may straddle the texture's wrap point: draw it in two pieces */
+        var pieces = u + du <= tw ? [[u, du, 0]] : [[u, tw - u, 0], [0, du - (tw - u), (tw - u) / du]];
+        for(var q = 0; q < pieces.length; q++){
+          var pu = pieces[q][0], pdu = pieces[q][1], f0 = pieces[q][2], f1 = f0 + pdu / du;
+          /* the slice runs from depth pb (texture column u, screen xb) towards pa (u+du, xa);
+             this piece covers the fraction f0..f1 of that run */
+          var sx0 = xb + (xa - xb) * f0, sx1 = xb + (xa - xb) * f1;
+          /* the face's MID-HEIGHT line, not its top: top and foot run to the vanishing point at
+             different slopes, and an affine slice can follow only one. Following the top left the
+             lowest courses stepping by the whole difference (3.6 px a slice); following the middle
+             splits it, half above and half below, and at 5 px slices that is under a pixel. */
+          var mB = (topY(pb) + footY(pb)) * 0.5, mA = (topY(pa) + footY(pa)) * 0.5;
+          var my0 = mB + (mA - mB) * f0, my1 = mB + (mA - mB) * f1;
+          var hh  = hB + (hA - hB) * ((f0 + f1) * 0.5);
+          var ax = (sx1 - sx0) / pdu, ay = (my1 - my0) / pdu, dy = hh / tex.height;
+          ctx.setTransform(base);
+          ctx.transform(ax, ay, 0, dy, sx0 - ax * pu, my0 - ay * pu - hh * 0.5);
+          /* half a texel of overlap each side hides the hairline seam between neighbours */
+          ctx.drawImage(tex, pu, 0, pdu, tex.height, pu - 0.5, -0.5, pdu + 1, tex.height + 1);
+        }
+      }
+      ctx.setTransform(base);
+      ctx.restore();
+    }
+    if(!SHOW_POSTS) return;
+    /* the posts, far to near, both sides - drawn over the walls they stand in */
+    var aspect = post.width / post.height;
+    for(var i = 0; i < G.rails.length; i++){
+      var r = G.rails[i];
+      if(r.k % POST_EVERY) continue;
+      if(r.z < -0.045) continue;
+      var pr = proj(r.z), p = pr.p;
+      if(p < 0.05) continue;
+      var ph = POST_H * LW * p, pw = ph * aspect;
+      for(var sj = 0; sj < 2; sj++){
+        var sd = sj ? 1 : -1;
+        var cx = edgeX(sd, p) + sd * pw * 0.12;
+        if(cx + pw < 0 || cx - pw > W) continue;
+        if(sd > 0){
+          ctx.save(); ctx.translate(cx, 0); ctx.scale(-1, 1);
+          ctx.drawImage(post, -pw/2, pr.y - ph + ph*0.02, pw, ph);
+          ctx.restore();
+        } else {
+          ctx.drawImage(post, cx - pw/2, pr.y - ph + ph*0.02, pw, ph);
+        }
+      }
+    }
+  }
+  window.MR_drawBridge = function(){
+    if(!bridgeOn()) return false;
+    drawDeck();
+    drawParapets();
+    return true;
+  };
 
   window.MR_drawGroundArt = function(){
     if(!ART.has("grass")) return false;
@@ -14585,7 +14919,9 @@ function render(){
   if(!(window.MR_drawSky && MR_drawSky())){
     if(backdrop) ctx.drawImage(backdrop, 0,0, W, horizonY()+2);
   }
-  drawGround();
+  /* [r68] the bridge replaces the ground, the verge, its decor and its railing in one go */
+  const _bridge = !!(window.MR_drawBridge && MR_drawBridge());
+  if(!_bridge) drawGround();
   /* [r50] THE TREELINE'S SKIRT. The backdrop's treeline stops exactly at the horizon and the
      ground begins there, which leaves a band of open verge between the far hedge and the
      trees - the same flat green, just narrower and higher up. Drawing the treeline again over
@@ -14596,10 +14932,10 @@ function render(){
     ctx.drawImage(MR_ART.img("canopy"), 0, hy2 - sk*0.55, W, sk*1.55);
   }
   // far to near
-  for(const d of G.decor) drawDecor(d);
+  if(!_bridge) for(const d of G.decor) drawDecor(d);
   /* after the scattered decor and before the gates: the railing is always nearer the camera
      than anything growing out on the verge, and always further than a gate at the same depth */
-  for(const r of G.rails){ drawHedge(r, r.k); drawRail(r); }
+  if(!_bridge) for(const r of G.rails){ drawHedge(r, r.k); drawRail(r); }
   const items = G.gates.map(g=>({z:g.z,k:"g",o:g}))
              .concat(G.coins.map(c=>({z:c.z,k:"c",o:c})));
   items.sort((a,b)=>b.z-a.z);
@@ -14612,6 +14948,18 @@ function render(){
        to foreshortening long before the horizon, and without haze that stretch reads as a flat
        green field rather than as distance - the depth the bands earn is thrown away in the
        one place the eye checks for it. */
+    /* [r68] over the valley, not a band across the whole screen - the video has its own air -
+       but a glow where the bridge meets the sun, so its far end melts into the light instead
+       of stopping on a hard point */
+    if(_bridge){
+      const hy2 = horizonY(), R = W * 0.16, cx2 = worldX(0, 0);
+      const rg = ctx.createRadialGradient(cx2, hy2, 0, cx2, hy2, R);
+      rg.addColorStop(0, "rgba(255,214,140,.70)");
+      rg.addColorStop(0.45, "rgba(255,200,130,.28)");
+      rg.addColorStop(1, "rgba(255,196,130,0)");
+      ctx.fillStyle = rg; ctx.fillRect(cx2 - R, hy2 - R, R * 2, R * 2);
+      return;
+    }
     const hy = horizonY(), band = (groundY()-hy)*0.38;
     const hz = ctx.createLinearGradient(0, hy-band*0.22, 0, hy+band);
     hz.addColorStop(0,    "rgba(255,196,130,0)");
@@ -14694,7 +15042,12 @@ function levelDone(){
 }
 function gameOver(){
   G.mode="over"; G.deadT = G.t; hud();     /* the heart she just lost has to leave the row */
-  VOICE.clear(); VOICE.say("retry");
+  /* [r71] the pratfall: the hit already bonked; a slide whistle while she tumbles, a boing as she
+     lands on her seat - and "try again" waits for them rather than being talked over */
+  sfxSlideWhistle(0.10);
+  sfxBoing(0.72);
+  VOICE.clear();
+  setTimeout(function(){ if(G.mode === "over") VOICE.say("retry"); }, 1350);
   if(G.score>G.best){ G.best=G.score; saveBest(); }
   const t = G.target===U ? "छोटी उ — नीचे छोटी रेखा ( ु )"
                          : "बड़ी ऊ — नीचे लंबी रेखा ( ू )";
@@ -14714,7 +15067,7 @@ function fullReset(){ G.score=0; G.hearts=3; clearTimeout(G.nextT); hud(); }
 let last=0;
 function loop(ts){
   const dt = Math.min(0.05, (ts-last)/1000 || 0.016); last=ts;
-  update(dt); render();
+  update(dt); render(); watchLessonVO();
   MR_RAF(loop);
 }
 function boot(){
@@ -14749,6 +15102,9 @@ window.MR_DEBUG = function(){
            rails: G.rails.length, railsOutOfOrder: outOfOrder,
            hedgeGaps: gaps.filter(function(v,k,a){ return a.indexOf(v)===k; }),
            audio: AC ? { state: AC.state, music: MUSIC.on, bar: MUSIC.bar,
+                   bgm: BGM.buf ? +BGM.buf.duration.toFixed(3) : (BGM.failed ? "failed" : (BGM.loading ? "loading" : "idle")),
+                   bgmPlaying: !!BGM.src, bgmChannels: BGM.buf ? BGM.buf.numberOfChannels : 0,
+                   busGain: MUSBUS ? +MUSBUS.gain.value.toFixed(3) : null,
                          gain: +MUSBUS.gain.value.toFixed(3) } : null,
            screen: sc ? sc.id : "",
            gates: G.gates.map(function(g){

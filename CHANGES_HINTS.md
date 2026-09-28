@@ -251,3 +251,109 @@ to the committed frame. r66 (the gate fix) is kept.
 Found on the way: `4_ENGINE/inject_train.py` left the padding of its previous injection behind on
 every run, so each rebuild added blank lines to the engine. It now removes the block together
 with its padding; three consecutive injects leave the engine byte-identical.
+
+
+## r68 — the valley bridge
+
+Yasir supplied a valley video (only the waterfalls move) and a painting of the bridge.
+
+**Background:** the video, drawn into the canvas every frame, muted, looping. Re-cut by
+`1_SPEC/prepare_bridge.py`: audio dropped, the last second cross-faded into the first so the 9 s
+loop has no seam (1.8 grey levels, i.e. compression noise), **4.7 MB -> 1.5 MB**. Its sun is pinned
+to the game's vanishing point (measured: centre 0.525 of the width, horizon 0.40 of the height),
+so the bridge runs into the sun. A poster frame shows until the video can play, and the video is
+paused with the music when the lesson leaves the screen. Verified playing: with the world frozen,
+the waterfall's pixels still change.
+
+**The bridge is built, not pasted.** Drawn as a still, his painting would be r67's treadmill again;
+scrolled as a floor, its upright posts grow ~2x too fast on the way in. So it is the style
+reference for three parts (`1_SPEC/gen_bridge_parts.py`): a top-down slab tile (mirrored down so its
+rows meet), one post, and one parapet section (keyed, cropped to its solid rows, mirrored across so
+its ends meet). The game lays the deck in perspective as the road was, draws the parapet's inner
+face in thin upright slices clipped to its exact outline, and stands the posts at a steady beat
+along both edges - the posts streaming past are what says "travelling". The camera sway stays: the
+valley is at infinity and does not shift, the bridge does. Deck is 1.22 lane-widths either side
+(was 1.08) - a little broader, with room between the portals and the walls.
+
+The grass, scattered trees/bushes/pillars, hedge and railing are off while the bridge is on; with
+the bridge files absent the game is what it was. Frame cost: overdraw **2.28x** (committed game
+6.38x), 271 draw calls. Full playthrough reaches the level card.
+
+Also fixed: `embed_matra_runner.py` wrote its outputs with Windows line endings, so every rebuild
+showed ~14,000 changed lines in `train_modules.js` / `train_styles.css`. It writes LF now.
+Sources (video, bridge painting, generated candidates) are in `1_SPEC/game_art_src/bridge/`, not the bundle.
+
+
+## r69 — the parapet redrawn; pillars removed
+
+Yasir: "remove the pillars and why this railing looks distorted and low quality".
+
+- **Pillars off** (`SHOW_POSTS = false`; the code stays). The wall's blocks and carved panels scroll
+  past along both edges at the deck's speed, which is the near motion the posts were carrying.
+- **Why it stepped:** the wall's inner face was drawn in upright slices scaled straight up and down,
+  so inside each slice every stone course was LEVEL while on the face it slopes to the vanishing
+  point - a staircase. Each slice is now sheared by an affine transform to the face's mid-height
+  slope, so a course leaves one slice where the next picks it up (leftover under a pixel at 5 px
+  slices). Composed with the current transform, so the walls still shake with the frame.
+- **Why it was soft:** the texture had been shrunk to 240 px and the nearest wall is ~500 device px
+  tall. It ships at its painted height (3168x384) now, with two pre-shrunk copies so the far wall
+  does not shimmer (canvas has no mipmaps).
+- **Blue hairline at the wall's foot:** deck and wall both had soft clip edges on the same line, so
+  the lake showed through. The deck now runs 3 % under the wall.
+- **The deck, same class of fault:** it was rendered at CSS resolution and stretched 2x on a 2x
+  screen, with 4-row bands that drew each diagonal slab joint as a staircase. Device resolution,
+  1-row bands now. (A variable-name collision in `bands()` was caught by the fill measurement on
+  the way: the new scale parameter shared the name of the tile-wrap offset.)
+
+Cost per frame: sprite overdraw 2.03x, fill overdraw 1.81x. Full playthrough reaches the level card.
+
+
+## r70 — new background music
+
+Yasir: "generate a better bgm for the game just like subway surfer, kid friendly and not dull".
+
+An **original** piece in that spirit (nothing taken from Subway Surfers, which is copyrighted),
+composed and rendered in code by `1_SPEC/gen_bgm.py`: 112 BPM, C major over C-G-Am-F; punchy kick,
+clap on 2 and 4, busy hats and shaker, a bouncing octave bass and off-beat chord stabs pumped by the
+kick, a bright singable pulse lead with a dotted-eighth echo, bells answering it. 32 bars (68.6 s)
+in four sections - groove + tune, hook, a breakdown that builds back up, everything - ending on a
+drum fill into bar 1. Rendered twice end to end and the second pass kept, so the file is circular
+to the sample; the browser decodes it to exactly 68.571 s, i.e. no encoder padding and no gap.
+Measured: RMS -14.3 dBFS, crest 13.3 dB, 0 clipped samples, the breakdown 4 dB down. 978 KB (Vorbis).
+
+It plays through the existing music bus, looped on the audio clock (an `<audio loop>` leaves a gap
+at the wrap), so it still fades up, ducks under every spoken word (bus 0.28 -> 0.07) and stops
+with the lesson. Until the file decodes, or if it ever fails, the old synthesised bed plays, so the
+game is never silent. Verified in the browser: decoded, stereo, playing, ducked under the opening
+instruction and up to full level after it.
+
+
+## r71 — Yasir's music at 60 %, ducking under every voice and effect, cartoon hit/fall
+
+**The music.** His `game_bgm1.mp3` is 11 min 15 s and 11.6 MB - two pieces joined by a gap at 1:34 -
+mastered loud (-12.6 LUFS) with peaks over full scale. A level lasts a couple of minutes and a
+file that long cannot loop cleanly, so the game plays a **seamless loop cut from it**
+(`1_SPEC/prepare_bgm_loop.py`): tempo measured at ~94 BPM, and out of every start and whole-bar
+length in the steady stretch 1:40-3:52 the pair whose seam sounds most alike was taken -
+**1:52.1 -> 3:44.5, exactly 44 bars (112.3 s)**, 0.966 similarity, aligned to the sample and joined
+with a 0.4 s equal-power crossfade. **1.87 MB** instead of 11.6. His mastering is untouched; the
+60 % is a gain in the game. The full file is in `1_SPEC/game_art_src/bgm/`.
+
+**Levels, from one controller.** Every source claims the duck under its own name, so one ending
+cannot lift the music while another is still going: someone speaking -> 0.15 (a quarter of 0.6);
+a sound effect -> 0.30 for its length; neither -> 0.60. Speech covers the game's own voice lines
+AND the lesson's instruction that opens the game - which was never ducked before. That one is
+watched off the engine's own "a clip is playing" flag every frame, not off a timer: measured, the
+instruction can start seconds after the game mounts, and a timer had already released the duck.
+Measured in the browser: 0.15 for the whole of the instruction (vo-lock on 11.5-15.2 s), back to
+0.6 after it, 0.15 under the voice lines after each hit, 0.30 through the fall's effects.
+
+**Hit and fall.** Every wrong-portal hit gets a cartoon **bonk** (a hollow wooden knock). The fall
+that ends a run adds a **slide whistle** falling 2.5 octaves while she tumbles and a **boing** as she
+lands on her seat, timed to the fall sheet; her "try again" line now waits 1.35 s for them instead
+of being talked over. All synthesised in WebAudio - no files.
+
+
+## r72 — music to 80 %
+
+Yasir: "60% isn't enough make it 80%". Bus level 0.60 -> **0.80**; the ducks keep their proportions: a quarter under speech (0.20), half under an effect (0.40). Peak headroom at 80 %: -2.9 dBFS after the master gain.
