@@ -148,7 +148,23 @@ SCENE = {
 }
 
 MATRA_VO   = {U: "vo_matra_u", UU: "vo_matra_uu"}
+# The bare LETTER, for Review-1's rung 2 on the sort screens: "read the two coach labels one by
+# one". MATRA_VO says «छोटी उ की मात्रा», which is the name of the mark; these say the letter
+# itself, which is what is painted on the coach roof.
+LETTER_VO  = {U: "vo_letter_u", UU: "vo_letter_uu"}
+LETTER_TEXT = {"vo_letter_u": "उ", "vo_letter_uu": "ऊ"}
+# Where the scene glows during rung 2 on the sentence screens, as fractions of the ARTWORK
+# (cx, cy, rx, ry) - the module maps them through the image's object-fit:cover itself, so they
+# stay correct whatever size the panel is drawn at. Read off the shipped 800x600 PNGs.
+SCENE_GLOW = {
+    "scn_seema_khush":   [[0.505, 0.375, 0.115, 0.140]],   # her face
+    "scn_subah_uthna":   [[0.575, 0.165, 0.185, 0.160],    # the sun coming up outside
+                          [0.135, 0.675, 0.115, 0.140]],   # and the clock
+    "scn_bageecha":      [[0.500, 0.835, 0.500, 0.190]],   # the whole flower bed
+    "scn_tarbooj_khana": [[0.505, 0.485, 0.195, 0.140]],   # the slice in his hands
+}
 MATRA_TEXT = {"vo_matra_u": "छोटी उ की मात्रा", "vo_matra_uu": "बड़ी ऊ की मात्रा"}
+MATRA_TEXT.update(LETTER_TEXT)
 MATRA_NAME = {U: "छोटी उ", UU: "बड़ी ऊ"}      # the shipped G1 convention for this exact pair
 LETTER     = {U: "उ", UU: "ऊ"}                # what the COACH LABELS show in round 3
 
@@ -476,28 +492,41 @@ def s_pair(sid, words, lead, lines):
 
 
 def s_tap(sid, words, target, matra, correct_line):
-    """Tap the coach whose word carries the matra. 3-attempt ladder, आप register.
+    """Tap the coach whose word carries the matra. THREE rungs now, आप register.
 
-    Prompt and both hints are keyed by TEXT (`once`), so screens 6 and 8 — which the SME gives the
-    same छोटी-उ wording — share one recording each instead of three.
+    Prompt and the two shared hints are keyed by TEXT (`once`), so screens 6 and 8 — which the SME
+    gives the same छोटी-उ wording — share one recording each instead of three. Rung 3 names the
+    answer out loud, so it is per screen.
+
+    REVIEW-1 RUNG 2 IS A DEMONSTRATION, NOT A SENTENCE: "read the three words one by one,
+    highlighting each word's matra as you read it". That needs the words' own name clips and the
+    matra each one actually carries — neither of which the coach carried before. मुकुट carries ु
+    twice and the ink mask marks both, which is what the doc asks for in as many words.
     """
     n = MATRA_NAME[matra]
     tag = "u" if matra == U else "uu"
+    # [r65] Yasir: put inverted commas on the letter in the heading - «छोटी “उ” की मात्रा …».
+    # On screen only; the recordings say the same words either way, so their ids do not move.
+    nq = n.replace(LETTER[matra], "“%s”" % LETTER[matra])
     return {"id": sid, "phase": "guided", "eis": "symbolic", "type": "TRAIN_TAP",
-            "prompt_hi": "%s की मात्रा वाले शब्द पर टैप कीजिए।" % n,
+            "prompt_hi": "%s की मात्रा वाले शब्द पर टैप कीजिए।" % nq,
             "audio": {
                 "prompt": once("vo_tap_prompt_" + tag,
                                "जिस डिब्बे में %s की मात्रा वाला शब्द है, उस डिब्बे पर टैप कीजिए।" % n),
-                "hint1": once("vo_tap_hint1_" + tag,
-                              "फिर से सोचिए। %s की मात्रा वाला शब्द कौन-सा है?" % n),
-                "hint2": once("vo_tap_hint2_" + tag,
-                              "ध्यान से देखिए और %s की मात्रा वाले शब्द पर टैप कीजिए।" % n),
+                "hint1": once("vo_tap_h1_" + tag,
+                              "फिर से पढ़िए। जिस शब्द में %s की मात्रा आ रही है, उस पर टैप कीजिए।" % n),
+                "hint2": once("vo_tap_h2_" + tag,
+                              "जिस शब्द में %s की मात्रा है, उस पर टैप कीजिए।" % n),
+                "hint3": vo("vo_%s_h3" % sid.lower(),
+                            "देखिए, %s में %s की मात्रा है। %s पर टैप कीजिए।" % (target, n, target)),
                 "correct": vo("vo_%s_correct" % sid.lower(), correct_line)},
             "data": {"target": target, "matra": matra,
-                     "coaches": [{"word": w, "correct": (w == target)} for w in words]}}
+                     "coaches": [{"word": w, "correct": (w == target),
+                                  "audio": name_clip(w), "matra": matra_of(w)} for w in words]}}
 
 
-def s_sort(sid, phase, kind, bins, cards, heading, prompt, hint1, hint2, single=False):
+def s_sort(sid, phase, kind, bins, cards, heading, prompt, hint1, hint2, single=False,
+           hint3_fallback=None):
     """Drag cards into coaches.
 
     ROUND 3 CHANGES, all from the deck:
@@ -508,8 +537,14 @@ def s_sort(sid, phase, kind, bins, cards, heading, prompt, hint1, hint2, single=
     """
     return {"id": sid, "phase": phase, "eis": "enactive", "type": "TRAIN_SORT",
             "prompt_hi": heading,
-            "audio": {"prompt": vo("vo_%s_prompt" % sid.lower(), prompt),
-                      "hint1": hint1, "hint2": hint2},
+            # Rungs 2 and 3 are PER CARD on the word and picture rounds — Review-1 writes both
+            # with the card's own name in them — so there is no screen-level line to record and
+            # none is emitted. `guard_audio` accepts a rung satisfied item by item, the same way
+            # it already accepts the praise line.
+            "audio": dict([("prompt", vo("vo_%s_prompt" % sid.lower(), prompt)),
+                           ("hint1", hint1)]
+                          + ([("hint2", hint2)] if hint2 else [])
+                          + ([("hint3", hint3_fallback)] if hint3_fallback else [])),
             "data": {"kind": kind, "bins": bins, "cards": cards, "single": single}}
 
 
@@ -533,6 +568,13 @@ def s_word_build(sid):
         gone = "गई" if word == "सुई" else "गया"
         slots.append({"word": word, "head": head, "tail": tail, "matra": matra_of(word),
                       "img": pic(k), "emoji": OBJ[k][1],
+                      # Review-1 rung 2 reads the three PICTURE NAMES out in turn, glowing each
+                      # picture and blinking its blank; rung 3 names this coach and sounds the
+                      # word out syllable by syllable, which is the doc's own «पु, ल… पुल»।
+                      "name_audio": name_clip(word),
+                      "hint3_audio": vo("vo_p1_h3_" + slug(k),
+                                        "%s को %s वाले डिब्बे में डालिए। %s, %s… %s।"
+                                        % (head, word, head, tail, word)),
                       "correct_audio": vo("vo_wb_" + slug(k),
                                           "शाबाश! %s बन %s।" % (word, gone))})
         opts.append({"akshar": head, "audio": vo("vo_ak_" + slug(k), head)})
@@ -545,16 +587,23 @@ def s_word_build(sid):
             "prompt_hi": "चित्र देखकर सही अक्षर खींचकर शब्द पूरा कीजिए।",
             "audio": {
                 "prompt": vo("vo_%s_prompt" % sid.lower(), "चित्र देखकर सही अक्षर से शब्द पूरा कीजिए।"),
-                "hint1": vo("vo_%s_hint1" % sid.lower(), "फिर से सोचिए और चित्र को ध्यान से देखिए।"),
-                "hint2": vo("vo_%s_hint2" % sid.lower(),
-                            "ध्यान से देखिए, कौन-सा अक्षर लगाने से शब्द पूरा होगा?")},
+                "hint1": vo("vo_%s_h1" % sid.lower(),
+                            "फिर से देखिए। चित्र का नाम सोचिए और देखिए शब्द पूरा करने के लिए "
+                            "कौन-सा अक्षर लगेगा।"),
+                "hint2": vo("vo_%s_h2" % sid.lower(),
+                            "नाम ध्यान से सुनिए। जिस शब्द की शुरुआत इस अक्षर से होती है, उसी "
+                            "डिब्बे में इसे डालिए।"),
+                # the per-slot line is what actually plays; this is the fallback for the पा
+                # distractor, which completes no coach of its own
+                "hint3": vo("vo_%s_h3_any" % sid.lower(),
+                            "जो अक्षर चमक रहा है, उसे उसी डिब्बे में डालिए।")},
             "data": {"slots": slots, "options": opts}}
 
 
 SC_HEADING = "सही शब्द चुनकर वाक्य पूरा कीजिए।"
 
 
-def s_sentence(sid, scene, pre, post, answer, options, correct_line):
+def s_sentence(sid, scene, pre, post, answer, options, correct_line, ask):
     """Screens 13–16 — the new module, four instances.
 
     The three instruction lines are identical on all four screens, so `once` gives them one
@@ -566,17 +615,43 @@ def s_sentence(sid, scene, pre, post, answer, options, correct_line):
     o = []
     for w in options:
         k = key_of(w)
-        o.append({"word": w, "img": pic(k), "emoji": OBJ[k][1], "audio": name_clip(w)})
+        # REVIEW-1 RUNG 2: "put each of the three words in the blank in turn and read the whole
+        # sentence out". So every option carries the sentence it makes — including the two that
+        # make nonsense, which is the entire point: the wrong ones have to be HEARD to be wrong.
+        o.append({"word": w, "img": pic(k), "emoji": OBJ[k][1], "audio": name_clip(w),
+                  "sentence_audio": vo("vo_%s_try_%s" % (sid.lower(), slug(k)),
+                                       (pre + w + post).replace("  ", " ").strip())})
     return {"id": sid, "phase": "practice", "eis": "symbolic", "type": "SENTENCE_COMPLETE",
             "prompt_hi": SC_HEADING,
             "audio": {
                 "prompt": once("vo_sc_prompt", "चित्र देखकर सही शब्द चुनकर वाक्य पूरा कीजिए।"),
-                "hint1": once("vo_sc_hint1", "फिर से सोचिए। कौन-सा शब्द वाक्य को पूरा करेगा?"),
-                "hint2": once("vo_sc_hint2", "चित्र को ध्यान से देखिए और सही शब्द चुनिए।"),
+                # rung 1 asks a DIFFERENT question of the picture on each of the four screens,
+                # so it is per screen and not `once`
+                "hint1": vo("vo_%s_h1" % sid.lower(),
+                            "फिर से पढ़िए। चित्र देखिए, %s? सही शब्द चुनकर वाक्य पूरा कीजिए।" % ask),
+                "hint2": once("vo_sc_h2", "जो वाक्य सही लग रहा है, वही शब्द चुनिए।"),
+                "hint3": vo("vo_%s_h3" % sid.lower(),
+                            "%s %s चुनिए।" % ((pre + answer + post).replace("  ", " ").strip(),
+                                              answer)),
                 "correct": vo("vo_%s_correct" % sid.lower(), correct_line)},
             "data": {"scene_img": pic(scene), "scene_emoji": SCENE[scene],
                      "sentence_pre": pre, "sentence_post": post,
-                     "answer": answer, "options": o}}
+                     "answer": answer, "options": o,
+                     "scene_glow": SCENE_GLOW.get(scene, [])}}
+
+
+def sort_hints(card, tag, h2_fmt, h3_fmt):
+    """Hang Review-1's per-card rungs 2 and 3 on a sort card.
+
+    Both name the card and its matra, so neither can be a screen-level line — «'सूरज' में बड़ी 'ऊ'
+    की मात्रा है» is only true of that one card. The screen-level clips stay as the fallback the
+    engine reaches for if a card is ever added without its own pair.
+    """
+    w, m = card["word"], card["bin"]
+    k = slug(key_of(w))
+    card["hint2_audio"] = vo("vo_%s_h2_%s" % (tag, k), h2_fmt % (w, MATRA_NAME[m]))
+    card["hint3_audio"] = vo("vo_%s_h3_%s" % (tag, k), h3_fmt % (w, MATRA_NAME[m]))
+    return card
 
 
 def sort_card(word, correct_audio):
@@ -611,60 +686,85 @@ def build_slides():
                    "शाबाश! सुई शब्द में छोटी उ की मात्रा है।"))
 
     # word -> matra coach. Labels «उ (ु)» / «ऊ (ू)», which is what the SME wrote for THIS screen.
-    hint_listen = vo("vo_sort_hint_listen", "फिर से सुनिए और सही मात्रा पहचानिए।")
+    # Review-1 gives each sort screen its OWN rung-1 line, so the shared one retires.
+    g4_h1 = vo("vo_g4_h1", "फिर से पढ़िए। शब्द में कौन-सी मात्रा है, देखिए और उसे उसी मात्रा वाले "
+                           "डिब्बे में डालिए।")
+    p2_h1 = vo("vo_p2_h1", "फिर से सुनिए। चित्र का नाम ध्यान से सुनिए और देखिए उसमें कौन-सी "
+                           "मात्रा है।")
     S.append(s_sort("G4", "guided", "word",                                    # deck slide 10
-                    [{"key": m, "label": "%s (%s)" % (LETTER[m], m)} for m in (U, UU)],
-                    [sort_card(w, vo("vo_ok_%s" % slug(key_of(w)),
-                                     "शाबाश! %s शब्द में %s की मात्रा है।" % (w, LETTER[matra_of(w)])))
+                    [{"key": m, "label": "%s (%s)" % (LETTER[m], m), "audio": LETTER_VO[m],
+                      "matra": m} for m in (U, UU)],
+                    [sort_hints(sort_card(w, vo("vo_ok_%s" % slug(key_of(w)),
+                                     "शाबाश! %s शब्द में %s की मात्रा है।" % (w, LETTER[matra_of(w)]))),
+                                "g4",
+                                "%s में %s की मात्रा है। अब यही मात्रा ऊपर डिब्बों पर खोजिए और "
+                                "शब्द वहीं डालिए।",
+                                "%s को %s की मात्रा वाले डिब्बे में डालिए।")
                      for w in ["आलू", "सूरज", "सुई", "गुड़"]],
                     "हर शब्द को उसकी सही मात्रा वाले डिब्बे में डालिए।",
                     "हर शब्द को उसकी सही मात्रा वाले डिब्बे में डालिए।",
-                    hint_listen,
-                    vo("vo_g4_hint2", "ध्यान से देखिए, इस शब्द में कौन-सी मात्रा है?")))
+                    g4_h1, None))
 
     # the REVERSE round: coaches carry the LETTER, the child drags the MATRA. Round 2 put the
     # WORDS पुल / फूल on these coaches; the SME asks for उ / ऊ instead, and for no matra symbol in
     # the label — otherwise the label would simply show the answer.
     S.append(s_sort("G5", "guided", "matra",                                   # deck slide 11
-                    [{"key": m, "label": LETTER[m]} for m in (U, UU)],
+                    [{"key": m, "label": LETTER[m], "audio": LETTER_VO[m], "matra": m}
+                     for m in (U, UU)],
                     [{"bin": m, "word": "◌" + m, "audio": MATRA_VO[m],
+                      # rung 2 here is one line for the whole screen (it explains BOTH marks at
+                      # once), so only rung 3 is per card
+                      "hint3_audio": vo("vo_g5_h3_%s" % ("u" if m == U else "uu"),
+                                        "%s की मात्रा को %s वाले डिब्बे में डालिए."
+                                        % (MATRA_NAME[m], LETTER[m])),
                       "correct_audio": vo("vo_ok_matra_%s" % ("u" if m == U else "uu"),
                                           "शाबाश! यह %s की मात्रा है।" % LETTER[m])}
                      for m in (U, UU)],
                     "सही मात्रा को सही डिब्बे में डालिए।",
                     "सही मात्रा को उसके सही डिब्बे में डालिए।",
-                    vo("vo_g5_hint1", "फिर से देखिए और सही मात्रा पहचानिए।"),
-                    vo("vo_g5_hint2", "ध्यान से देखिए, यह किसकी मात्रा है?"),
+                    vo("vo_g5_h1", "फिर से देखिए। मात्रा को ध्यान से देखिए और उसे सही डिब्बे में "
+                                   "डालिए।"),
+                    # THE DOC'S OWN WORDING, and it prints two BARE COMBINING MARKS. A synthesiser
+                    # has nothing to say for a mark with no consonant under it, so this clip may
+                    # come back as «उ की मात्रा है और ऊ की मात्रा है» — the same sentence twice.
+                    # Shipped as written (this build does not rewrite the SME's Hindi to dodge a
+                    # TTS limit) and flagged instead: the VISUAL half of this rung shows ु beside
+                    # उ and ू beside ऊ, and that half carries the distinction on its own.
+                    vo("vo_g5_h2", "उ की मात्रा ु है और ऊ की मात्रा ू है। अब मात्रा को सही "
+                                   "डिब्बे में डालिए।"),
                     single=True))
 
     # ---- screens 11-16 · PRACTICE ----------------------------------------------------
     S.append(s_word_build("P1"))                                               # deck slide 12
 
     S.append(s_sort("P2", "practice", "picture",                               # deck slide 13
-                    [{"key": m, "label": LETTER[m]} for m in (U, UU)],
-                    [sort_card(w, vo("vo_okp_%s" % slug(key_of(w)),
-                                     "शाबाश! %s में %s की मात्रा है।" % (w, LETTER[matra_of(w)])))
+                    [{"key": m, "label": LETTER[m], "audio": LETTER_VO[m], "matra": m}
+                     for m in (U, UU)],
+                    [sort_hints(sort_card(w, vo("vo_okp_%s" % slug(key_of(w)),
+                                     "शाबाश! %s में %s की मात्रा है।" % (w, LETTER[matra_of(w)]))),
+                                "p2",
+                                "%s में %s की मात्रा है। अब इसे सही मात्रा वाली बोगी में डालिए।",
+                                "%s को %s की मात्रा वाली बोगी में डालिए।")
                      for w in ["मुकुट", "पुल", "तरबूज", "कबूतर"]],
                     "चित्र को सुनिए और उसे सही मात्रा वाली बोगी में डालिए।",
                     "चित्र को सुनिए और उसे सही मात्रा वाली बोगी में डालिए।",
-                    hint_listen,
-                    vo("vo_p2_hint2", "शब्द को ध्यान से सुनिए।")))
+                    p2_h1, None))
 
     # Four sentence screens. Sentence 4 is the NOTE's wording, «मीठा ___ खाना अच्छा लगता है।» — the
     # mockup draws «गर्मी में मीठा ___ …», a different sentence. Confirmed with the user on
     # 2026-09-23: the note wins (CHANGES.md Q1).
     S.append(s_sentence("P3", "scn_seema_khush",                               # deck slide 14
                         "सीमा आज बहुत ", " है।", "खुश", ["खुश", "फूल", "तरबूज"],
-                        "शाबाश! सीमा आज बहुत खुश है।"))
+                        "शाबाश! सीमा आज बहुत खुश है।", "सीमा कैसी दिख रही है"))
     S.append(s_sentence("P4", "scn_subah_uthna",                               # deck slide 15
                         "मैं ", " जल्दी उठता हूँ।", "सुबह", ["सुबह", "दूध", "मुकुट"],
-                        "शाबाश! मैंने सही शब्द चुनकर वाक्य पूरा किया।"))
+                        "शाबाश! मैंने सही शब्द चुनकर वाक्य पूरा किया।", "बच्चा कब उठ रहा है"))
     S.append(s_sentence("P5", "scn_bageecha",                                  # deck slide 16
                         "बगीचे में सुंदर ", " खिले हैं।", "फूल", ["फूल", "तरबूज", "सुबह"],
-                        "शाबाश! बगीचे में सुंदर फूल खिले हैं।"))
+                        "शाबाश! बगीचे में सुंदर फूल खिले हैं।", "बगीचे में क्या खिले हैं"))
     S.append(s_sentence("P6", "scn_tarbooj_khana",                             # deck slide 17
                         "मीठा ", " खाना अच्छा लगता है।", "तरबूज", ["तरबूज", "फूल", "खुश"],
-                        "शाबाश! मीठा तरबूज खाना अच्छा लगता है।"))
+                        "शाबाश! मीठा तरबूज खाना अच्छा लगता है।", "बच्चा क्या खा रहा है"))
 
     # ---- screen 17 · MINI GAME (मात्रा रनर) -------------------------------------------
     # [r36] A second, whole game, added at Yasir's request as the last thing before the
@@ -739,11 +839,21 @@ def build_card(slides):
         "phase_transition_title": {"tutorial": "चलिए, रेल चलाएँ!", "guided": "साथ में करें।",
                                    "practice": "अब आपकी बारी।"},
         "phase_distribution": counts,
-        # 3-attempt ladder, per the SME on every test screen: wrong 1 = hint VO only and NO hand;
-        # wrong 2 = hint VO + hand on the correct answer (tutorial/guided; practice gets the glow
-        # instead, under ruling [28f]); 3rd-try correct = confetti but silent.
+        # [r65] the gate bird is Yasir's seeking/speaking Swifty. Cropped to the bird and encoded
+        # as animated WebP (the source GIF is 9.7 MB at 1500^2; it lives in 1_SPEC/game_art_src/
+        # gate/). She starts talking 3.82 s in - measured frame by frame - so the gate VO waits.
+        "gate": {"img": "assets/UI/swifty_gate.webp", "talk_at_ms": 3820},
+        # REVIEW-1 LADDER — three rungs on every test screen:
+        #   wrong 1 = rung-1 VO, nothing else moves and nothing is highlighted
+        #   wrong 2 = rung-2 VO plus a DEMONSTRATION (words read out, matras glowed, sentences
+        #             tried in the blank) — and still no hand
+        #   wrong 3 = rung-3 VO, the hand on the answer, and everything else LOCKS
+        # `hand_on_hint3` is the one switch for flag F2: ruling [28f] keeps the hand out of
+        # practice, and Review-1 asks for it on six practice screens. Set it false and the hand
+        # goes back to tutorial/guided only, with the glow carrying rung 3 on its own.
         "scaffold_rules": {"nudge_timeout_ms": {"guided": 6000, "practice": 8000},
-                           "max_attempts": 3, "hand_on_attempt": 2,
+                           "max_attempts": 3, "hint_levels": 3, "hand_on_attempt": 3,
+                           "hand_on_hint3": True, "lock_after_hint3": True,
                            "reveal_on_attempt": None, "silent_on_late_correct": True},
         "signals_expected": ["slide_entered", "slide_completed", "intro_letter_tap",
                              "train_tap_first_try", "matra_sort_item", "matra_sort_first_try",
@@ -1029,19 +1139,29 @@ def guard_audio(slides, card):
             if v and v not in declared:
                 miss.append("%s.%s -> %s" % (s["id"], k, v))
         items = (d.get("cards") or []) + (d.get("slots") or [])
-        for group in ("cards", "slots", "options", "examples", "pairs"):
+        for group in ("cards", "slots", "options", "examples", "pairs", "bins", "coaches"):
             for it in d.get(group, []) or []:
                 if not isinstance(it, dict):
                     continue
-                for k in ("audio", "correct_audio", "audio_line", "matra_audio"):
+                for k in ("audio", "correct_audio", "audio_line", "matra_audio",
+                          "hint2_audio", "hint3_audio", "name_audio", "sentence_audio"):
                     if it.get(k) and it[k] not in declared:
                         miss.append("%s %s.%s -> %s" % (s["id"], group, k, it[k]))
         if s["type"] in GESTURE:
             per_item = bool(items) and all(c.get("correct_audio") for c in items)
-            for rung in ("prompt", "hint1", "hint2", "correct"):
+            # REVIEW-1: rungs 2 and 3 may be satisfied PER ITEM as well. On the word and picture
+            # rounds both lines name the card («'सूरज' में बड़ी 'ऊ' की मात्रा है»), so a
+            # screen-level recording would be a line nothing ever plays.
+            per_h2 = bool(items) and all(c.get("hint2_audio") for c in items)
+            per_h3 = bool(items) and all(c.get("hint3_audio") for c in items)
+            for rung in ("prompt", "hint1", "hint2", "hint3", "correct"):
                 if (s.get("audio") or {}).get(rung):
                     continue
                 if rung == "correct" and per_item:
+                    continue
+                if rung == "hint2" and per_h2:
+                    continue
+                if rung == "hint3" and per_h3:
                     continue
                 ladders.append("%s missing %s" % (s["id"], rung))
     if miss:

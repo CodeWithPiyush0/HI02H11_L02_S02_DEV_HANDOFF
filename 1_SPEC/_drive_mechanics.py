@@ -124,9 +124,43 @@ def shot(name):
     d.save_screenshot("%s/%s" % (SHOTS, name))
 
 
+BUSY = ("return (typeof isPlaying !== 'undefined' && !!isPlaying) ||"
+        "       (typeof state !== 'undefined' && !!(state && state.revealing));")
+
+
+def idle(limit=25.0):
+    """Wait until the screen is neither speaking nor mid-demonstration.
+
+    `state` and `isPlaying` are top-level `let`/`const` in a classic script, so they live in the
+    global LEXICAL environment and are NOT on `window` - reading `window.state` returns undefined
+    and every wait passes instantly. And since the Review-1 round, `state.revealing` is also
+    raised for the whole of a rung-2 demonstration, so this is what keeps one miss from landing in
+    the middle of the last one's chain. """
+    t0 = time.time()
+    while time.time() - t0 < limit:
+        if not d.execute_script(BUSY):
+            time.sleep(0.35)
+            if not d.execute_script(BUSY):
+                return
+        time.sleep(0.2)
+
+
 def mount(i):
     d.execute_script("mountSlide(arguments[0]);", i)
-    time.sleep(1.2)
+    time.sleep(0.6)
+    d.execute_script("window.__log=[];")
+    # THE SCREEN IS READY WHEN ITS PROMPT HAS SPOKEN, not when it is quiet. `isPlaying` is false
+    # in the gap before the entry chain reaches say(prompt) - and since Review-1 the tap carts do
+    # not arm until that moment, so a tap before it is simply dropped and every miss reads as
+    # "no hint fired".
+    pid = d.execute_script("const a = CARD.slides[arguments[0]].audio || {};"
+                           "return a.prompt || null;", i)
+    t0 = time.time()
+    while pid and time.time() - t0 < 25:
+        if pid in " ".join(d.execute_script("return window.__log.slice();")):
+            break
+        time.sleep(0.25)
+    idle()
     d.execute_script("window.__log=[];")
 
 
@@ -160,17 +194,22 @@ for i, s in enumerate(slides):
 
     if t == "TRAIN_TAP":
         coaches = d.find_elements("css selector", ".is-tappable")
+        # BY WORD, NOT BY INDEX. [r29] deals the coaches in a fresh order on every mount, so the
+        # n-th coach on screen is not the n-th entry in data.coaches - this used to find the
+        # "correct" coach by position and so, two runs in three, tapped the answer as a miss.
         right = d.execute_script(
-            "return [...document.querySelectorAll('.is-tappable')].findIndex("
-            "  (c,i)=>CARD.slides[arguments[0]].data.coaches[i].correct);", i)
+            "const t = CARD.slides[arguments[0]].data.target;"
+            "return [...document.querySelectorAll('.is-tappable')].findIndex(c=>{"
+            "  const w = c.querySelector('.tr-word');"
+            "  return w && w.textContent.trim() === t; });", i)
         wrongs = [c for n, c in enumerate(coaches) if n != right]
-        d.execute_script(CLICK, wrongs[0]); time.sleep(0.6)
+        idle(); d.execute_script(CLICK, wrongs[0]); time.sleep(0.6)
         a1 = logs(); hand1 = d.execute_script("return document.querySelectorAll('.is-nudge').length;"); hh1 = hand()
         d.execute_script("window.__log=[];")
-        d.execute_script(CLICK, wrongs[1]); time.sleep(0.8)
+        idle(); d.execute_script(CLICK, wrongs[1]); time.sleep(0.8)
         a2 = logs(); hand2 = d.execute_script("return document.querySelectorAll('.is-nudge').length;"); hh2 = hand()
         d.execute_script("window.__log=[];")
-        d.execute_script(CLICK, coaches[right]); time.sleep(0.9)
+        idle(); d.execute_script(CLICK, coaches[right]); time.sleep(0.9)
         a3 = logs()
         nav = d.execute_script("return !document.getElementById('navBtn').classList.contains('disabled')"
                                " && !document.getElementById('navBtn').disabled;")
@@ -184,15 +223,15 @@ for i, s in enumerate(slides):
         right = d.execute_script(
             "return [...document.querySelectorAll('.sc-opt')].findIndex(o=>o.dataset.word===arguments[0]);", ans)
         wrongs = [c for n, c in enumerate(opts) if n != right]
-        d.execute_script(CLICK, wrongs[0]); time.sleep(0.7)
+        idle(); d.execute_script(CLICK, wrongs[0]); time.sleep(0.7)
         a1 = logs(); nudge1 = d.execute_script("return document.querySelectorAll('.sc-opt.sc-nudge').length;")
         d.execute_script("window.__log=[];")
-        d.execute_script(CLICK, wrongs[1]); time.sleep(0.9)
+        idle(); d.execute_script(CLICK, wrongs[1]); time.sleep(0.9)
         a2 = logs(); nudge2 = d.execute_script("return document.querySelectorAll('.sc-opt.sc-nudge').length;")
         hand = d.execute_script("var n=document.getElementById('nudgeHand');"
                                 "return !!(n && n.classList.contains('show'));")
         d.execute_script("window.__log=[];")
-        d.execute_script(CLICK, opts[right]); time.sleep(0.9)
+        idle(); d.execute_script(CLICK, opts[right]); time.sleep(0.9)
         a3 = logs()
         filled = d.execute_script("var b=document.querySelector('.sc-blank');"
                                   "return b ? b.textContent.trim() : null;")
@@ -209,14 +248,14 @@ for i, s in enumerate(slides):
         t0 = tiles[0]
         want = t0.get_attribute("data-bin")
         wrong_i = 0 if bins[0] != want else 1
-        drag(t0, bodies[wrong_i]); time.sleep(0.7)
+        idle(); drag(t0, bodies[wrong_i]); time.sleep(0.7)
         a1 = logs(); h1 = d.execute_script("return document.querySelectorAll('.is-nudge').length;"); hh1 = hand()
         d.execute_script("window.__log=[];")
-        drag(t0, bodies[wrong_i]); time.sleep(0.9)
+        idle(); drag(t0, bodies[wrong_i]); time.sleep(0.9)
         a2 = logs(); h2 = d.execute_script("return document.querySelectorAll('.is-nudge').length;"); hh2 = hand()
         d.execute_script("window.__log=[];")
         ok_i = bins.index(want)
-        drag(t0, bodies[ok_i]); time.sleep(0.8)
+        idle(); drag(t0, bodies[ok_i]); time.sleep(0.8)
         a3 = logs()
         snapped = d.execute_script("return document.querySelectorAll('.tr-card.snapped').length;")
         # finish the rest
@@ -267,7 +306,7 @@ for i, s in enumerate(slides):
             z = blank(hm)
             if z is None:
                 continue
-            drag(tl, z); time.sleep(0.9)
+            idle(); drag(tl, z); time.sleep(0.9)
         time.sleep(1.0)
         fin = d.execute_script("return {words:[...document.querySelectorAll('.tr-doneword')]"
                                ".map(e=>e.dataset.mhWord||e.textContent),"

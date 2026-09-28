@@ -804,6 +804,14 @@
    CSS rule rather than in the JS escape-hatch window, which is where it goes. */
 body.vo-lock .tr-card:not(.snapped),
 body.vo-lock .sc-opt,                       /* [r31] the sentence screens' cards too */
+/* [h3] AND THE TAP COACHES. Review-1's third common rule is "Options and items are not tappable
+   or draggable while any VO is playing", and the tap screens were the one mechanic held only by
+   the JS check inside their onclick - measured: with body.vo-lock forced on, a tap coach still
+   computed pointer-events:auto while every card and drop zone in the lesson computed none.
+   The JS check does refuse the tap, so nothing was getting through; but [31n] is explicit that
+   the CSS rule is the primary gate and the JS window is the 4s backstop, and a mechanic sitting
+   on the backstop alone is one refactor away from being a hole. Named here, like the rest. */
+body.vo-lock .train-coach.is-tappable,
 body.vo-lock .tt-card{ pointer-events:none !important; }
 .coach-body.dd-zone{ pointer-events:none; }
 .coach-body.dd-zone > .coach-face{ pointer-events:auto; }
@@ -1456,6 +1464,134 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
 .mr-root.mr-fullscreen #mrStage{ aspect-ratio:auto !important; width:100% !important;
   height:100% !important; max-height:none !important; border-radius:0 !important;
   box-shadow:none !important; }
+
+/* ============================================================================================
+   [h3] REVIEW-1 HINT LADDER — the three rungs, seen
+   ============================================================================================
+   Rung 1 shakes and says a line. Rung 2 SHOWS: words and labels light up as they are read, a
+   picture-card lends its word for a beat, a blank blinks, each option takes its turn in the
+   sentence. Rung 3 glows, points and locks.
+
+   Every rule here carries its settled appearance on the base selector — an @keyframes is used
+   only to move something that is already visible without it, because the review capture kills
+   animation outright (engine fact 1). */
+
+/* ---- the card coming home from a coach it does not belong in ------------------------------
+   "गलत डिब्बे में डाला गया शब्द soft shake करके अपनी जगह वापस आ जाएगा।" The coach shook already;
+   this is the CARD. makeDraggable has cleared its transform by the time the module is called,
+   so without this the card is simply home a frame later and the refusal has no gesture. */
+.tr-card.tr-cshake{ animation:trCardShake .52s ease; }
+@keyframes trCardShake{
+  0%,100%{ transform:translateX(0) rotate(0) }
+  15%{ transform:translateX(-7px) rotate(-2.5deg) }
+  32%{ transform:translateX(6px)  rotate(2deg) }
+  50%{ transform:translateX(-5px) rotate(-1.5deg) }
+  70%{ transform:translateX(4px)  rotate(1deg) }
+  86%{ transform:translateX(-2px) rotate(0) }
+}
+@media (prefers-reduced-motion:reduce){
+  .tr-card.tr-cshake{ animation:none; outline:4px solid var(--wrong,#E8453C); outline-offset:2px; }
+}
+
+/* ---- rung 2 on the tap screens: the coach whose word is being read ------------------------
+   Deliberately NOT is-nudge's gold. That glow means "this is the answer"; this one means only
+   "this is the word you are hearing", and all three coaches get it in turn. */
+.train-coach.is-read .coach-body{
+  filter:drop-shadow(0 0 0 rgba(56,106,246,.55)) drop-shadow(0 0 13px rgba(56,106,246,.55)); }
+
+/* ---- rung 2 on the sort screens: the coach label being read out ---------------------------- */
+.coach-label.tr-lblread{
+  box-shadow:0 0 0 4px rgba(56,106,246,.30), 0 6px 16px rgba(11,61,140,.18);
+  background:#EAF2FF; }
+/* «'उ' के पास 'ु'» — the mark itself, conjured beside the bare letter for the length of the clip
+   and taken away again. Only screen 5 needs it; screen 4's labels already read «उ (ु)». */
+.coach-label .tr-lblmatra{
+  display:inline-block; margin-left:.28em; font-family:var(--font-hi);
+  font-size:.86em; font-weight:800; color:var(--matra-hi,#FF8A00);   /* [r65] the highlight orange, not the wrong-answer red */
+  opacity:0; transform:translateY(-4px) scale(.7);
+  transition:opacity .22s ease, transform .22s cubic-bezier(.34,1.4,.6,1); }
+.coach-label .tr-lblmatra.in{ opacity:1; transform:none; }
+
+/* ---- rung 2 on the picture round: the word, lent for one beat -----------------------------
+   The round-3 note says the word is never shown here; Review-1's rung 2 shows it, and only here.
+   It is positioned OUTSIDE the card's flow so lending it cannot resize the card mid-drag. */
+.tr-card.k-picture{ position:relative; }
+/* [r65] The card's picture lifts while the word is lent, and the word takes the room it
+   leaves - inside the card, not hanging off its foot. */
+.tr-card.k-picture .tr-pic, .tr-card.k-picture .tr-emoji{ transition:transform .22s cubic-bezier(.34,1.4,.6,1); }
+.tr-card.k-picture.tr-revealing .tr-pic, .tr-card.k-picture.tr-revealing .tr-emoji{ transform:translateY(-15px); }
+.tr-card .tr-revealword{
+  position:absolute; left:50%; bottom:5px; transform:translate(-50%,6px);
+  font-family:var(--font-hi); font-size:19px; font-weight:800; line-height:1.2;
+  color:var(--navy-dk,#0B3D8C); background:#FFF6E0; border:2px solid #F7C948;
+  border-radius:9px; padding:1px 9px; white-space:nowrap; pointer-events:none;
+  box-shadow:0 5px 12px rgba(11,61,140,.16);
+  opacity:0; transition:opacity .22s ease, transform .22s cubic-bezier(.34,1.4,.6,1); z-index:6; }
+.tr-card .tr-revealword.in{ opacity:1; transform:translate(-50%,0); }
+
+/* ---- rung 2 on the word-build screen ------------------------------------------------------
+   "नाम बोलते समय वह चित्र glow करे और उसके डिब्बे की खाली जगह blink करे।" */
+.coach-label.wb-read{
+  box-shadow:0 0 0 4px rgba(56,106,246,.30), 0 6px 16px rgba(11,61,140,.18);
+  background:#EAF2FF; border-radius:12px; }
+.wb-blank.wb-blink{ border-color:#386AF6; background:#EAF2FF;
+  box-shadow:0 0 0 4px rgba(56,106,246,.22);
+  animation:wbBlink 780ms ease-in-out infinite; }
+@keyframes wbBlink{ 0%,100%{ box-shadow:0 0 0 4px rgba(56,106,246,.22) }
+                    50%{ box-shadow:0 0 0 9px rgba(56,106,246,.05) } }
+/* the letter the hand is sent to fetch when the child has been placing the पा distractor —
+   it is not the card they are holding, so it has to say so on its own */
+.tr-card.wb-callout{ border-color:#F7C948; background:#FFFBF0;
+  box-shadow:0 0 0 4px rgba(247,201,72,.45), 0 8px 18px rgba(11,61,140,.16); }
+
+/* ---- rung 2 on the sentence screens -------------------------------------------------------
+   Each option stands in the blank while its whole sentence is read. The blank has to look like
+   it is TRYING the word, not like it has accepted it — .filled is solid and green, so this is
+   dashed and amber and never sets .filled. */
+.sc-blank.sc-try{ border-style:dashed; border-color:#F7C948; background:#FFFBF0; }
+.sc-opt.sc-trying{ border-color:#F7C948; background:#FFFBF0;
+  box-shadow:0 0 0 4px rgba(247,201,72,.40), 0 8px 18px rgba(11,61,140,.16); }
+/* "चित्र में सीमा के मुस्कुराते चेहरे पर soft glow करें" — a soft round wash over the part of the
+   scene that answers the question. Positioned by the module from fractions of the ARTWORK, so
+   it has to be able to sit anywhere inside the panel. */
+.sc-scene{ position:relative; }
+/* IT HAS TO READ ON BRIGHT ARTWORK. The first cut was a warm wash in mix-blend-mode:screen,
+   which is exactly the wrong instrument here: screen can only lighten, and every one of these
+   four regions is ALREADY bright - a sunrise, a white clock face, a lit cheek, a bed of yellow
+   flowers. Measured: the panel changed by under 2 grey levels, i.e. not at all. So the glow is
+   drawn as a soft RING with a wash inside it rather than as light added on top: a ring has an
+   edge, and an edge is visible against anything. */
+.sc-glow{ position:absolute; pointer-events:none; border-radius:50%;
+  background:radial-gradient(closest-side, rgba(255,236,160,.34), rgba(255,222,120,.14) 62%,
+                                            rgba(255,214,90,0) 100%);
+  box-shadow:0 0 0 3px rgba(255,176,32,.92), 0 0 0 7px rgba(255,205,92,.42),
+             0 0 22px 8px rgba(255,190,60,.55);
+  animation:scGlowPulse 1.5s ease-in-out infinite; z-index:3; }
+@keyframes scGlowPulse{ 0%,100%{ opacity:.72; transform:scale(1) }
+                        50%{ opacity:1; transform:scale(1.07) } }
+/* rung 3: "'फूल' और 'तरबूज' lock हो जाएँगे (चुने नहीं जा सकेंगे)।" `disabled` already refuses the
+   tap and the drop; this refuses the PICK-UP, because a card that lifts under the finger and
+   then silently will not land reads as broken rather than as locked. */
+.sc-opt.sc-locked{ pointer-events:none; filter:grayscale(.5) opacity(.45); }
+
+
+/* ============================================================================================
+   [r65] THE PLAY BUTTON IS THE DRAWN ONE NOW. Yasir supplied play_btn.svg and its grey twin for
+   the waiting state. The pill, its text, its ::after triangle, its border and its shadow all go;
+   the SVG carries its own shadow. The two earned states stay: idle-pulse still scales it, and
+   sg-waiting swaps the art for the grey disc instead of recolouring a pill.
+   ============================================================================================ */
+.sg-btn, .sg-btn.sg-waiting{
+  width:116px; min-width:0; height:116px; padding:0; border:none; border-radius:50%; font-size:0; color:transparent;
+  background:url("assets/Images/play_btn.svg") center/contain no-repeat; box-shadow:none; }
+.sg-btn::after{ content:none; }
+.sg-btn.sg-waiting{ background-image:url("assets/Images/play_btn_disabled.svg"); }
+.sg-btn:active{ transform:translateX(-50%) translateY(3px); }
+
+/* [r65] THE GATE BIRD SEEKS, THEN SPEAKS. Its rise is inside the art now, so the engine's own
+   pgPeek slide-up would rise it twice; and the frame is cropped to the bird, so the height clamp
+   applies to the bird itself rather than to a mostly-empty square. */
+.phase-gate #phaseGateImg.pg-card{ animation:none; height:clamp(200px,30vh,290px); }
 
 /* ==== MATRA-RUNNER CSS BEGIN ==== */
 /* GENERATED by 1_SPEC/embed_matra_runner.py - do not hand-edit.

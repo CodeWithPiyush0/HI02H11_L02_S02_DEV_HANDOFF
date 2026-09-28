@@ -1,0 +1,225 @@
+# CHANGES — Hint Logic (Review -1)
+
+Source: **“Hindi Matra Train Activity (उ / ऊ): Hint Logic”**, Google Doc `13WqhpliETy…`,
+read 2026-09-28. A verbatim copy is kept at [`1_SPEC/HINT_LOGIC_REVIEW1.md`](1_SPEC/HINT_LOGIC_REVIEW1.md).
+
+This is the contract for the round **and** the scorecard it was checked against — the same
+document on purpose. It does not supersede `CHANGES.md` (round 3); it sits on top of it, and
+where the two disagree **this file wins**, because it is the later SME document.
+
+**Status: 30 rows implemented and proved · 0 pending · 8 flagged for the SME · 2 VO clashes found and fixed.**
+
+---
+
+## Slide map
+
+The doc numbers its own eleven screens. They are the eleven **test** screens of the build, in
+order, and the word sets match item for item — nothing had to be interpreted to line them up.
+
+| doc | build | module | correct answer |
+|---|---|---|---|
+| 1 | `G1` | TRAIN_TAP | पुल |
+| 2 | `G2` | TRAIN_TAP | फूल |
+| 3 | `G3` | TRAIN_TAP | सुई |
+| 4 | `G4` | TRAIN_SORT · word | सुई, गुड़ → उ · सूरज, आलू → ऊ |
+| 5 | `G5` | TRAIN_SORT · matra | ु → उ · ू → ऊ |
+| 6 | `P1` | WORD_BUILD | पु→\_ल · फू→\_ल · सु→\_ई · पा = distractor |
+| 7 | `P2` | TRAIN_SORT · picture | मुकुट, पुल → उ · कबूतर, तरबूज → ऊ |
+| 8 | `P3` | SENTENCE_COMPLETE | खुश |
+| 9 | `P4` | SENTENCE_COMPLETE | सुबह |
+| 10 | `P5` | SENTENCE_COMPLETE | फूल |
+| 11 | `P6` | SENTENCE_COMPLETE | तरबूज |
+
+---
+
+## What the three rungs now are
+
+The shipped ladder was two rungs of the same kind — a sentence, then the same sentence with a
+hand on the answer. Review-1 makes them three different **kinds** of help, and that, not the
+extra clip, is the substance of this round:
+
+| rung | kind | what happens |
+|---|---|---|
+| 1 | refocus | the wrong thing shakes, one line is spoken. **Nothing is marked and no hand appears.** |
+| 2 | demonstrate | the screen *shows* — words read out with their matras lit, coach labels read with their marks conjured beside them, picture names read with their blanks blinking, the sentence read three times over with each option standing in the blank. Still no hand. |
+| 3 | guide | the answer is named, it glows, the hand goes to it, and **everything else stops accepting the item.** |
+
+---
+
+## Common rules
+
+| # | change | evidence |
+|---|---|---|
+| C1 | Hint 1 after the 1st wrong, Hint 2 after the 2nd, **Hint 3 after the 3rd** | ✅ driven wrong→wrong→wrong on all 11 screens: rung 1 emits no `hint_shown`, rung 2 emits level 2, rung 3 emits level 3, every screen |
+| C2 | On drag screens the attempt count is **per item** and resets for the next | ✅ measured on `G4`: after one card was walked to rung 3, the next card played `vo_g4_h1` with no `hint_shown` and no lock |
+| C3 | Nothing is tappable or draggable while any VO is playing | ✅ **three gaps found and closed** — (i) the tap coaches computed `pointer-events:auto` under `body.vo-lock`, held only by their own JS check; now named in the CSS gate (6 screens × every grabbable element = `none`, 0 leaks). (ii) the gaps *between* the clips of a rung-2 chain left the screen live. (iii) the tap coaches were live before their prompt had spoken. See **Two VO clashes** below |
+| C4 | **After Hint 3 only the correct answer can be selected or placed** | ✅ measured on `G4`: a 4th drop on the wrong coach does not land, does not increment `state.attempts` (3→3) and emits nothing, while the right coach still accepts it. Tap screens retire both wrong coaches; sentence screens lock both wrong words |
+
+## Screens 1–3 · `G1` `G2` `G3` — TRAIN_TAP
+
+| # | change | evidence |
+|---|---|---|
+| 1a | Hint 1 VO → “फिर से पढ़िए। जिस शब्द में {छोटी उ/बड़ी ऊ} की मात्रा आ रही है, उस पर टैप कीजिए।” | ✅ `vo_tap_h1_u` · `vo_tap_h1_uu` |
+| 1b | Hint 1 UI: soft shake on the wrong coach, **no** correct-answer highlight | ✅ rung 1 shows `is-out=0 hand=0 nudge=0` on all three |
+| 1c | Hint 2 UI: read the three words **one by one**, glowing each word’s own matra | ✅ three name clips in order + `.is-read` + `.mh-ov`; मुकुट’s **two** ु are both marked (the ink mask covers every occurrence) |
+| 1d | Hint 2 VO → “जिस शब्द में {…} की मात्रा है, उस पर टैप कीजिए।” | ✅ `vo_tap_h2_u` · `vo_tap_h2_uu` |
+| 1e | Hint 3 UI: soft glow + hand on the correct coach; **the other two lock** | ✅ `is-out=2`, `nudge=1`, `hand=1` — see `_review_shots/hints/G1_rung3.png` |
+| 1f | Hint 3 VO → “देखिए, ‘पुल’ में छोटी ‘उ’ की मात्रा है। ‘पुल’ पर टैप कीजिए।” | ✅ `vo_g1_h3` · `vo_g2_h3` · `vo_g3_h3` |
+
+## Screen 4 · `G4` — TRAIN_SORT (word → matra coach)
+
+| # | change | evidence |
+|---|---|---|
+| 4a | Hint 1 VO → “फिर से पढ़िए। शब्द में कौन-सी मात्रा है, देखिए और उसे उसी मात्रा वाले डिब्बे में डालिए।” | ✅ `vo_g4_h1` |
+| 4b | Hint 1 UI: the mis-dropped **card** shakes on its way home | ✅ `.tr-cshake` — the coach already shook; makeDraggable clears the card’s transform before the module is called, so the card had no gesture at all |
+| 4c | Hint 2 UI: read the mis-dropped word + glow its matra, then read **both** coach labels उ · ऊ | ✅ word clip + `.mh-ov`, then `vo_letter_u` + `vo_letter_uu` with `.tr-lblread` |
+| 4d | Hint 2 VO, per word (4 clips) | ✅ `vo_g4_h2_{aaloo,sooraj,sui,gud}` |
+| 4e | Hint 3 UI: glow the right coach, hand drags card→coach, **the other coach locks** | ✅ `hand=1`, `.is-nudge`, card bound to bin 1 |
+| 4f | Hint 3 VO, per word (4 clips) | ✅ `vo_g4_h3_{aaloo,sooraj,sui,gud}` |
+
+## Screen 5 · `G5` — TRAIN_SORT (matra → letter coach)
+
+| # | change | evidence |
+|---|---|---|
+| 5a | Hint 1 VO → “फिर से देखिए। मात्रा को ध्यान से देखिए और उसे सही डिब्बे में डालिए।” | ✅ `vo_g5_h1` |
+| 5b | Hint 2 UI: read उ then ऊ, and beside each **show and glow its matra** for a beat | ✅ `.tr-lblmatra.in` — see `_review_shots/hints/G5_rung2.png`, ◌ू lit beside ऊ |
+| 5c | Hint 2 VO → “‘उ’ की मात्रा ‘ु’ है और ‘ऊ’ की मात्रा ‘ू’ है। …” | ✅ `vo_g5_h2` — **but see F6** |
+| 5d | Hint 3: glow + drag-hand, other coach locks, per-matra VO | ✅ `vo_g5_h3_u` · `vo_g5_h3_uu` |
+
+## Screen 6 · `P1` — WORD_BUILD
+
+| # | change | evidence |
+|---|---|---|
+| 6a | Hint 1 VO → “फिर से देखिए। चित्र का नाम सोचिए और …” | ✅ `vo_p1_h1` |
+| 6b | Hint 2 UI: read the three picture names in turn; the picture glows and **its blank blinks** | ✅ `.wb-read` + `.wb-blink` with `vo_name_{pul,phool,sui}` in order; a coach already filled is skipped |
+| 6c | Hint 2 VO → “नाम ध्यान से सुनिए। …” | ✅ `vo_p1_h2` |
+| 6d | Hint 3: glow the right blank, hand drags letter→blank, **the letter goes nowhere else** | ✅ `.wb-pulse` + `hand=1` + `vo_p1_h3_{pul,phool,sui}` |
+| 6e | The **पा** distractor: at Hint 3 nudge the correct letter for the **next empty** blank | ✅ dropped पा three times → **पु** is called out, blank 0 pulses, the hand travels पु→blank 0, VO `vo_p1_h3_pul`. See `_review_shots/hints/` and the note below |
+
+## Screen 7 · `P2` — TRAIN_SORT (picture → matra bogie)
+
+| # | change | evidence |
+|---|---|---|
+| 7a | Hint 1 VO → “फिर से सुनिए। चित्र का नाम ध्यान से सुनिए और …” | ✅ `vo_p2_h1` |
+| 7b | Hint 2 UI: say the picture’s name, **briefly show the word under it** and glow its matra | ✅ `.tr-revealword.in` + `.mh-ov`, removed again when the rung ends — **see F3** |
+| 7c | Hint 2 VO, per picture (4 clips) | ✅ `vo_p2_h2_{mukut,pul,tarbooj,kabootar}` |
+| 7d | Hint 3: glow the right bogie, drag-hand, other bogie locks | ✅ `vo_p2_h3_{…}` + `hand=1` + `.is-nudge` |
+
+## Screens 8–11 · `P3`–`P6` — SENTENCE_COMPLETE
+
+| # | change | evidence |
+|---|---|---|
+| 8a | Hint 1 VO, per screen — each asks its own question of the picture | ✅ `vo_p3_h1` … `vo_p6_h1` |
+| 8b | Hint 2 UI: put **each** of the three words in the blank in turn and read the whole sentence | ✅ `.sc-blank.sc-try` + `.sc-opt.sc-trying` + `vo_pN_try_*` ×3 per screen (12 clips) |
+| 8c | Hint 2 UI: soft glow on the named part of the scene | ✅ placed from fractions of the **artwork** and mapped through `object-fit:cover` in JS. Measured: P4 carries **two** regions (the sunrise and the clock), as the doc asks. See `_review_shots/hints/P*_rung2.png` — **and F8** |
+| 8d | Hint 2 VO → “जो वाक्य सही लग रहा है, वही शब्द चुनिए।” | ✅ `vo_sc_h2`, shared |
+| 8e | Hint 3: glow + hand on the right word, **other two lock** | ✅ `.sc-locked` + `hand=1` + `vo_pN_h3` |
+
+---
+
+## Flagged — decisions taken, for the SME to overturn if they disagree
+
+| # | | |
+|---|---|---|
+| **F1** | **The hand moves from rung 2 to rung 3.** The shipped ladder puts the hand on the 2nd wrong (round-3 deck: “Hint VO should play. Show hand nudge on the correct answer.”). This doc makes rung 2 a demonstration and gives the hand to rung 3. | doc wins — it is the later document |
+| **F2** | **The hand on practice screens.** Ruling [28f] (Yasir 2026-07-28, re-confirmed 2026-09-23) allows the hand in tutorial and guided and **never in practice**. Doc screens 6–11 are all practice and all ask for a Hint-3 hand. | **implemented per the doc.** [28f] is not edited — it is enforced at `pointNudgeAt`, the single choke point, and `withHand3()` widens the phase set around that one synchronous call. Set `scaffold_rules.hand_on_hint3` to `false` and [28f] applies exactly as before, with the glow carrying rung 3 alone |
+| **F3** | **The word on the picture round.** The round-3 deck: on `P2` “the word should not be displayed at any point.” This doc’s Hint 2 shows it briefly under the picture. | doc wins; shown only for that one beat, then removed |
+| **F4** | **Retiring the last-tapped coach.** [r20] (Yasir: “disable only the cart on which we tap on last”) was written when the 2nd wrong was the **last** rung. Under the new ladder it greyed out one of the three words rung 2 is about to read aloud — measured on `G2`: गुड़ sat at `grayscale(.5) opacity(.45)` while its own clip played. | **moved to rung 3**, where the doc asks for it anyway and asks for all of it. r20’s concern — that the child must still have a choice — is what rungs 1 and 2 now protect: nothing is taken away until the answer is being named outright |
+| **F5** | **“Correct on the 3rd attempt → no praise VO.”** With a third rung a child can now reach a 4th attempt. | unchanged: any item missed twice or more is still won silently |
+| **F6** | **`vo_g5_h2` contains two bare combining marks.** The doc writes “‘उ’ की मात्रा ‘ु’ है और ‘ऊ’ की मात्रा ‘ू’ है” — and a synthesiser has nothing to say for a mark with no consonant under it, so the clip may read as the same sentence twice. | shipped **as written** (this build does not rewrite the SME’s Hindi to dodge a TTS limit) and flagged instead. The **visual** half of that rung shows ु beside उ and ू beside ऊ and carries the distinction on its own. ⚑ wants an ear |
+| **F7** | **The order the three sentences are read in.** The doc lists them in a different order on each of the four screens (correct last on 8 and 11, first on 9 and 10). The options are shuffled per run. | read **left to right as they stand on screen** — the only order the child can follow |
+| **F8** | **The scene glow is a ring, not added light.** The first cut used `mix-blend-mode:screen`; measured, it moved the panel by under 2 grey levels, because all four regions are already bright — a sunrise, a white clock face, a lit cheek, a bed of yellow flowers. | redrawn as a soft amber ring with a wash inside it. Measured after: 11–12 grey levels inside the ring against 1.7–5 over the panel |
+
+---
+
+## Two VO clashes, found by measuring
+
+The house rule is that two clips never sound at once, and nothing in the bundle enforces it —
+every clip exists, is the right length, and plays. Running the overlap instrument over the **hint**
+chains (the shipped one only walks each screen's arrival) found two:
+
+**A demonstration is a chain, and its gaps unlock the screen.** Between the clips of a rung-2
+chain `isPlaying` is false, so `body.vo-lock` comes off and the screen is live again for a few
+hundred milliseconds at a time. A child who acts in one of those gaps starts rung 3 on top of the
+rest of rung 2. Measured on `P2`: `vo_p2_h2_kabootar` and `vo_p2_h3_kabootar` overlapped by
+**3.9 seconds**. **Mine** — the old ladder's rungs were single clips with no gaps to fall into.
+A demonstration now holds the screen for its whole length: `state.revealing` (which `makeDraggable`
+already honours, so a drag cannot even start) plus a `hintBusy` flag on every tap path, cleared
+together when the chain ends and reset by `newVoEpoch()` on every mount.
+
+**The tap carts were live before the question was asked.** On `G1`–`G3` the coaches are tappable
+from the moment they mount, but the prompt is not spoken until the train finishes arriving. Tap in
+that window — while the words are still held at `opacity:0` — and the hint plays to a child who has
+not been asked anything yet, and then the prompt starts on top of it. Measured: **2.5–3.2 s** of
+two voices on all three. **Pre-existing**, nothing to do with this round, but it is in the code
+this round edits. The carts now arm in the same tick the prompt starts.
+
+Re-measured after both: **0 clashes** across all eleven screens' hint chains, and 0 across the
+entry chains (`_verify_vo_overlap.py`, unchanged).
+
+---
+
+## Voice-over
+
+**58 new clips**, Gemini TTS, voice **Leda**, `--ext ogg`. The builder deleted the 13 clips whose
+text this round changed or whose id is gone, so exactly what moved was re-recorded and every
+unchanged take was left alone.
+
+`_verify_assets.py`: **0 FAIL · 1 WARN** (the WARN is the standing `vo_pair_*` em-dash risk from
+round 3, not new). Two clips were re-recorded after the first pass measured them short —
+`vo_p3_h3` (1.01 s → 3.25 s) and `vo_g1_h3` (2.25 s → 4.13 s, against siblings at 3.89 s and
+4.29 s).
+
+⚑ **EAR-CHECK** — eight clips came back on a fallback voice or through a style wrapper, so their
+timbre may not match Leda: `vo_g4_h3_sooraj` (Kore), `vo_p2_h2_tarbooj` (Aoede), and
+`vo_g5_h3_u`, `vo_p2_h2_mukut`, `vo_p2_h2_pul`, `vo_p2_h2_kabootar`, `vo_letter_u`,
+`vo_letter_uu` (wrapped/Despina). The two `vo_letter_*` clips are single letters — “उ” and “ऊ” —
+which the model refused outright on the primary voice; `vo_letter_uu` took three attempts.
+
+---
+
+## How this was checked
+
+Not by reading the diff. Three harnesses, all in the session scratchpad:
+
+- **`drive_ladder.py`** — mounts each of the eleven test screens, gets it wrong three times, and
+  records the clips spoken in order, the `hint_shown` levels emitted, and every hint state that
+  appeared *at any point* (sampled on a 40 ms timer, because a rung-2 state lives exactly as long
+  as the clip it accompanies and is gone before an after-the-fact query can run).
+- **`verify_extras.py`** — the four things a straight run cannot reach: the per-item reset, the
+  post-rung-3 lock (including that refusing is **not** counted as another attempt), the VO gate,
+  and the पा distractor path.
+- **`glowpx.py`** — shoots the scene panel with the glow up and again with it removed and reports
+  the mean absolute difference inside each region against the rest of the panel. This is what
+  caught F8; the ring passed where the blend had not.
+- **`happy.py`** — the path that matters most, and the one a hint round is most likely to break:
+  answer **correctly, first time**, on all eleven screens. Three of the four modules had a lock
+  check added ahead of their judgement this round, so this proves a child who is simply right
+  still finishes. All eleven fire their own first-try signal; the eight drag and sentence screens
+  go on to `slide_completed`, and the three tap screens unlock आगे and wait for it, which is what
+  `finishSlide` has always done.
+
+Three harness faults were found and fixed before any of the above could be trusted, and each one
+had been reading as an engine fault: a synthetic tap that fired the decision **twice** on the
+sentence screens; `idle()` reading `window.state` when `state` is a top-level `let` and so lives
+in the global *lexical* environment, not on `window`; and treating “nothing is playing” as “the
+screen is ready”, which let the harness act while the train was still sliding in — on `P1` the
+drop landed on the **correct** blank and the first “wrong” attempt was a win.
+
+
+---
+
+# r65 — eight notes, 2026-09-28 (afternoon)
+
+| # | ask | what was done | evidence |
+|---|---|---|---|
+| 1 | inverted commas on the letter in the tap-screen headings (pages 6–8) | `छोटी “उ” की मात्रा …` / `बड़ी “ऊ” की मात्रा …` — on screen only; the recordings say the same words, so no clip moved | heading read back from the DOM |
+| 2 | **the matra highlight is misaligned**, in coaches and on option cards alike | Your diagnosis was exact. [r13] cut a mask on a *canvas* (its own font string, its own hinting) and laid it over the page's glyph — two renderers, two shapes. The mask is retired; the overlay is now the page's **own text drawn again in orange**, clipped to the band under the baseline of the cluster carrying the mark, so it cannot be out of register with itself. A second fault sat underneath: the 100 px strut that measured the baseline **wrapped to a second line** inside a 22 px-wide card label, so on every snapped card the orange landed a full line off. Zero-width strut now. | measured: coach word पुल — orange bbox `1007..1026 × 379..391` on navy mark `1008..1025 × 380..391`, **0 navy px left** under the baseline; card label सूरज (snapped, scaled) — exact, see `r65_align_card_zoom.png` |
+| 3 | no `sfx_train_arrive` anywhere | the call in `buildTrain` is gone and so is its helper; the file stays on disk in `COPY_AUDIO` | 0 occurrences in the served page; never in any play log |
+| 4 | page 10's shown matra is red; make it the highlight orange | `.tr-lblmatra` → `var(--matra-hi)` | computed `rgb(255,138,0)` |
+| 5 | page 12: the lent word falls out of the option box | the picture lifts 15 px while the word is lent and the word sits inside the card's foot; both return when the beat ends | word box `623..652` inside card `548..660`, below the picture's foot |
+| 6 | pages 13–16: drag-and-drop only; a tap must not answer | a tap now only **speaks** the word (the SME's "when an option is tapped, play the word VO"); the judgement lives in the drop handler alone | tapping the correct word on P3 and P6: not answered, not locked, only `vo_name_*` played |
+| 7 | the new seeking-and-speaking Swifty on the transition, synced to VO | the GIF (9.7 MB, 1500², bird in 58 % of the frame) is cropped to the bird and re-encoded as **animated WebP, 2.86 MB** — a transparent sprite cannot frame-difference as GIF (the re-encode came out *larger*); source kept in `1_SPEC/game_art_src/gate/`. Frame-timed: she rises, peeks, rises again, and her mouth first moves at **3.82 s**; the gate now holds the VO until then (`CARD.gate.talk_at_ms`). The engine's own slide-up is off for her (the rise is in the art) and the height clamp applies to the bird, not an empty square. Additive: a card without `CARD.gate` gets the stock bird and timing | measured VO start **3 825 ms** after the gate opened; `r65_gate_1_seek / 2_peek / 3_speak.png` |
+| 8 | the new play button | `play_btn.svg` replaces the pill, `play_btn_disabled.svg` while the greeting is still speaking; the earned idle pulse is kept; the pill's 186 px min-width removed so the disc is a true 116 px circle | computed: 116×116, correct SVG in both states, no `::after` glyph |
+
+**Harnesses** (`drive_ladder.py`, `happy.py`, `overlap_hints.py`) now *drag* on screens 13–16, because tapping no longer answers there.

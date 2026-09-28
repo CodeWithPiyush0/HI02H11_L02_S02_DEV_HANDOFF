@@ -8,6 +8,24 @@ the game, or to rebuild it.
 
 ---
 
+## Status — ROUND 3 COMPLETE · HINT LOGIC (Review -1) APPLIED 2026-09-28
+
+The SME's **“Hindi Matra Train Activity (उ / ऊ): Hint Logic”** doc is implemented on all eleven
+test screens: a **three**-rung ladder in place of two, with rung 2 turned from a second sentence
+into a *demonstration* (words read out with their matras lit, coach labels read with their marks
+shown beside them, picture names read with their blanks blinking, each sentence read three times
+over with every option standing in the blank), and rung 3 naming the answer, glowing it, pointing
+at it and locking everything else. 58 new clips.
+
+Then **r65** (same day): the matra highlight re-registered, the new gate Swifty and play button, drag-only sentence screens — logged at the foot of the same file.
+
+**Read [`CHANGES_HINTS.md`](CHANGES_HINTS.md) for that round** — every row with the evidence for
+it, and eight flagged decisions. The verbatim doc is at
+[`1_SPEC/HINT_LOGIC_REVIEW1.md`](1_SPEC/HINT_LOGIC_REVIEW1.md); screenshots of rungs 2 and 3 on
+every screen are in `3_CURRENT_BUILD/_review_shots/hints/`.
+
+---
+
 ## Status — ROUND 3 IS COMPLETE
 
 `3_CURRENT_BUILD/` is round 3, built and fully assetted: every change in the SME's deck of
@@ -23,7 +41,8 @@ the game, or to rebuild it.
 | Asset receipt | **0 FAIL · 1 WARN** (the WARN is a standing risk, not a defect — Q6) |
 
 **The one thing to read first is [`CHANGES.md`](CHANGES.md)** — every ask in the deck as a numbered
-row, with its status and the evidence for it. It is the contract this round was built against and
+row, with its status and the evidence for it. (Then [`CHANGES_HINTS.md`](CHANGES_HINTS.md), which
+is the same document for the Review-1 hint round and takes precedence where the two disagree.) It is the contract this round was built against and
 the scorecard it was checked against; they are the same document on purpose.
 
 **Five things still want the SME**, all in that file's Open questions: the WORD_BUILD distractor

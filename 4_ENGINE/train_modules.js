@@ -34,6 +34,65 @@
 
   const A = (slide, key) => (typeof audioFor === "function" ? audioFor(slide, key) : null);
   const maxTries = () => ((CARD.scaffold_rules && CARD.scaffold_rules.max_attempts) || 3);
+  /* [h2] REVIEW-1 LADDER. `hint_levels` is 3 on this card; with anything less every module falls
+     back to the two-rung behaviour it shipped with, so the engine stays usable by a card that
+     has not been re-authored. */
+  const hintLevels  = () => ((CARD.scaffold_rules && CARD.scaffold_rules.hint_levels) || 2);
+  const handOnHint3 = () => !!(CARD.scaffold_rules && CARD.scaffold_rules.hand_on_hint3);
+
+  /* Run `steps` one after another; each is called with the continuation. Every rung-2
+     demonstration is a chain of clips with something lit while each one sounds, and a chain
+     written by hand three times over is a chain with three different bugs in it. */
+  /* THE SCREEN IS HELD FOR A WHOLE DEMONSTRATION, NOT FOR EACH OF ITS CLIPS.
+     `state.revealing` is the flag makeDraggable already honours, so raising it stops a drag from
+     even starting; `hintBusy` covers the tap paths, which go through their own handlers. Both are
+     cleared together when the chain ends, and `newVoEpoch()` clears hintBusy on every mount so a
+     screen left mid-demonstration cannot arrive stuck. */
+  let hintBusy = false;
+  function hintHold(run, after){
+    hintBusy = true;
+    state.revealing = true;
+    run(function(){
+      hintBusy = false;
+      state.revealing = false;
+      if(after) after();
+    });
+  }
+
+  function hintSeq(steps, done){
+    let i = 0;
+    (function step(){
+      if(i >= steps.length){ if(done) done(); return; }
+      steps[i++](step);
+    })();
+  }
+
+  /* Take a matra highlight back off. matraHL() replaces the element's text and lays overlays on
+     top of it, keeping the original in dataset.mhWord - so undoing it is: drop the overlays,
+     drop the class, put the text back. Rung 2 lights each word only WHILE it is being read
+     ("हर शब्द पढ़ते समय उसकी मात्रा highlight करें"), so it has to come off again. */
+  function matraClear(el){
+    if(!el) return;
+    el.querySelectorAll(".mh-ov").forEach(o => o.remove());
+    el.classList.remove("mh");
+    if(el.dataset.mhWord) el.textContent = el.dataset.mhWord;
+  }
+
+  /* THE HAND, ON RUNG 3, ON EVERY SCREEN.
+     [28f]/[28j]: the hand is allowed in tutorial and guided and never in practice, and the rule
+     is enforced inside pointNudgeAt because ~25 call sites reach it directly - gating the call
+     sites is what produced three rounds of "fixed" that were not. Review-1 asks for a rung-3
+     hand on screens 6-11, all of which are practice.
+     So the rule is not edited: the phase set is widened around this ONE call and restored in a
+     finally. Everything inside pointNudgeAt / travelNudge runs synchronously (the animation is
+     started, not awaited), so nothing else can observe the widened set. Set
+     scaffold_rules.hand_on_hint3 to false and [28f] applies exactly as before. */
+  function withHand3(fn){
+    if(!handOnHint3() || typeof HAND_PHASES === "undefined"){ fn(); return; }
+    const had = HAND_PHASES.has("practice");
+    if(!had) HAND_PHASES.add("practice");
+    try { fn(); } finally { if(!had) HAND_PHASES.delete("practice"); }
+  }
 
   /* Turn a bare clip ID into a playable path. `audioFor()` does this for ids that live in
      slide.audio, but several modules carry ids INSIDE slide.data (a MEET_PAIR example's line, a
@@ -65,6 +124,7 @@
      simply dropped. Nothing else has to know about it. */
   let _voGen = 0;
   function newVoEpoch(){
+    hintBusy = false;                 /* a screen left mid-demonstration must not arrive stuck */
     /* the no-heading opt-out is per SLIDE, so it is cleared on every mount and re-applied only by
        a module whose card asks for it. Round 2 hid the band GLOBALLY and shipped 14 screens with
        a mascot sitting next to nothing; this cannot do that. */
@@ -116,7 +176,6 @@
   const _toneWhistle = ()=> _t([430, 660, 560], "sine", 0.55, 0.075);
   const sfxWhistle      = ()=> sfxFile("sfx_whistle",      _toneWhistle);  // the toot
   const sfxTrainMove    = ()=> sfxFile("sfx_train_move",   null);          // the chug bed
-  const sfxTrainArrive  = ()=> sfxFile("sfx_train_arrive", _toneWhistle);  // settling onto the rail
   const sfxPopSoft = ()=> _t([720], "sine", 0.10, 0.07);
   const sfxSparkle = ()=> _t([1180, 1560], "sine", 0.22, 0.055);
 
@@ -272,11 +331,19 @@
        Dividing by _mhScale converts one to the other. Without it the overlay lands at
        `offset x scale`, which at a real window size (--scale 0.54-0.81) is a whole second matra
        sitting beside the first. */
+    /* [r65] A ZERO-WIDTH STRUT. [r14]'s 100px strut measured the scale as a bonus - and inside a
+       card label that is 22px wide and width-locked by its flex parent, a 100px inline-block
+       WRAPS onto a second line, so its top edge reported the second line's baseline. That is
+       what put the orange a whole line off on every snapped card (measured: सुई's band 33px
+       under its label; आलू's 20px above it, from the label growing to fit). The strut takes no
+       width now, and the scale comes from the element's own two measurements of itself -
+       screen px over CSS px - which needs no room at all. */
     const strut = document.createElement("span");
-    strut.style.cssText = "display:inline-block;width:100px;height:0";
+    strut.style.cssText = "display:inline-block;width:0;height:0";
     el.appendChild(strut);
     const _sr = strut.getBoundingClientRect();
-    const _mhScale = _sr.width > 0 ? _sr.width / 100 : 1;
+    const _cssW = el.offsetWidth || 0;
+    const _mhScale = (_cssW > 0 && rect.width > 0) ? rect.width / _cssW : 1;
     const baseline = (_sr.top - rect.top) / _mhScale;
     strut.remove();
 
@@ -287,7 +354,15 @@
        be rastered with and without the mark and the difference IS the mark - no rectangle, no
        edges to tune, nothing of the consonant caught. One overlay for the whole word, because the
        mask already contains every occurrence of the matra in it. */
-    if(!RIGHT_SPACING_MATRAS.has(matra)){
+    /* [r65] THE INK MASK IS RETIRED. Yasir: "you are making another matra with highlighted
+       colour and placing it on top of the existing and this is where the misalignment is
+       happening". Exactly so: the mask was cut on a canvas with its own font string and its own
+       hinting, and landed a few px off the page's own glyph in every coach and on every card.
+       The geometric path below draws the page's OWN text again, in orange, clipped to the band
+       under the baseline - and a word cannot be out of register with itself. Kept behind a
+       constant rather than deleted, so the measurement that led here is still in the file. */
+    const USE_INK_MASK = false;
+    if(USE_INK_MASK && !RIGHT_SPACING_MATRAS.has(matra)){
       const fs = parseFloat(getComputedStyle(el).fontSize) || 0;
       const dpr = Math.min(3, window.devicePixelRatio || 1);
       const m = fs ? _matraInkMask(word, matra, fs, dpr) : null;
@@ -697,7 +772,9 @@
           else setCell(S.rest);                         /* exact landing, no rounding drift */
         };
         _raf = requestAnimationFrame(tick);
-        setTimeout(()=>{ sfxTrainArrive(); settle(); }, TRAIN_TRAVEL_MS);
+        /* [r65] Yasir: "Don't use sfx_train_arrive.ogg in any pages." The clip stays on disk
+           (COPY_AUDIO still carries it); nothing calls for it. */
+        setTimeout(()=>{ settle(); }, TRAIN_TRAVEL_MS);
       } else {
         setTimeout(settle, 0);
       }
@@ -889,7 +966,8 @@
     return a;
   }
 
-  function makeLadder(slide, train, correctIdx){
+  function makeLadder(slide, train, correctIdx, opts){
+    opts = opts || {};
     let tries = 0;
     return function wrong(coachIdx){
       tries++;
@@ -899,14 +977,28 @@
       if(coachIdx != null) train.shake(coachIdx);
       SwiftPAL.emit("answer_wrong", { slide_id: slide.id, phase: slide.phase, attempts: tries });
       if(tries === 1){
-        /* SME: "No hand nudge. Only hint VO should come." */
+        /* RUNG 1 - refocus. "गलत शब्द वाले डिब्बे पर soft shake। कोई सही उत्तर highlight नहीं
+           होगा।" The shake above is the whole of the UI; nothing is marked and no hand appears. */
         say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
-      } else {
-        /* SME: "Hint VO should play. Show hand nudge on the correct answer." */
+      } else if(tries === 2 && hintLevels() >= 3){
+        /* RUNG 2 - demonstrate. The screen reads the three words out and lights each word's own
+           matra as it does, THEN says the line. Support first, instruction after: the line tells
+           the child what to do with what they have just been shown. Still no hand. */
         state.scaffoldLevel = 2; state.hintUsed = true;
         SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 2 });
-        say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
-            ()=> { if(correctIdx != null) train.nudge(correctIdx, slide); });
+        const line = ()=> say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"), ()=>{});
+        if(opts.demo) opts.demo(line); else line();
+      } else {
+        /* RUNG 3 - guide. The answer glows, the hand goes to it and everything else locks, and
+           only THEN is the line spoken, so the child is looking at the thing being named rather
+           than hearing about something that is not lit yet. */
+        state.scaffoldLevel = 3; state.hintUsed = true;
+        SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 3 });
+        if(opts.lock) opts.lock();
+        if(opts.guide) opts.guide();
+        else if(correctIdx != null) withHand3(()=> train.nudge(correctIdx, slide));
+        say(A(slide, "hint3") || A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
+            ()=>{});
       }
       return tries;
     };
@@ -954,7 +1046,36 @@
       state.ownsAudio = true;
       state.replayAudio = ()=> say(A(slide, "prompt"), ()=>{});
       setNavActive(false);
-      const wrong = makeLadder(slide, train, correctIdx);
+
+      /* RUNG 2, screens 1-3: "तीनों शब्दों को एक-एक करके read out करें ... हर शब्द पढ़ते समय उसकी
+         मात्रा highlight/glow करें"। The word is lit while its clip sounds and goes dark again
+         after it, because the mark is a reading aid for that moment - leaving all three lit
+         would turn the demonstration into a permanent answer key.
+         Each coach carries its OWN matra, not the screen's: on screen 2 the child hears गुड़ and
+         मुकुट with their ु lit against फूल's ू, which is the contrast the screen is asking about.
+         मुकुट has two, and the ink mask marks both - which is what the doc asks for by name. */
+      const tapDemo = (done)=> hintHold((fin)=> hintSeq(train.coaches.map((c, i)=> (next)=>{
+        const w = c.body.querySelector(".tr-word");
+        const src = coachList[i];
+        if(w && src.matra) matraHLSoon(w, src.matra, { glow:true, pulse:true });
+        if(w) c.el.classList.add("is-read");
+        say(clip(src.audio), ()=> setTimeout(()=>{
+          c.el.classList.remove("is-read");
+          matraClear(w);
+          next();
+        }, 260));
+      }), fin), done);
+
+      /* RUNG 3: "'सूरज' और 'दूध' वाले डिब्बे lock हो जाएँगे (टैप नहीं होंगे)।" */
+      const tapLock = ()=> train.coaches.forEach((c, i)=>{
+        if(i === correctIdx) return;
+        c.el.classList.remove("is-press", "is-tappable");
+        c.el.classList.add("is-out");
+        c.el.onclick = null;
+      });
+
+      const wrong = makeLadder(slide, train, correctIdx, { demo: tapDemo, lock: tapLock });
+      let armed = false;                 /* see train.whenParked at the foot of this module */
 
       /* [r19/r20] "if user tap on incorrect cart then that cart will wiggle and if he does
          mistake 2 times then hand nudge appears on the correct option and that particular cart
@@ -964,14 +1085,16 @@
         c.el.classList.add("is-tappable");
         /* the press colour, mirrored onto a class because :active does not survive a finger */
         c.el.addEventListener("pointerdown", ()=>{
-          if(state.locked || isPlaying) return;
+          if(!armed || hintBusy || state.locked || isPlaying) return;
           c.el.classList.add("is-press");
         });
         ["pointerup", "pointercancel", "pointerleave"].forEach(ev =>
           c.el.addEventListener(ev, ()=> c.el.classList.remove("is-press")));
         c.el.onclick = ()=>{
           c.el.classList.remove("is-press");
-          if(state.locked || isPlaying) return;
+          /* `armed` closes the window between the carts mounting and the prompt being spoken -
+             see the note on whenParked below. `hintBusy` closes the gaps INSIDE a rung-2 chain. */
+          if(!armed || hintBusy || state.locked || isPlaying) return;
           if(typeof sfxTap === "function") sfxTap();
           if(i === correctIdx){
             const silent = state.attempts >= maxTries() - 1;
@@ -983,22 +1106,33 @@
             if(w && d.matra) matraHLSoon(w, d.matra, { glow:true, pulse:true });
             finishSlide(slide, train, silent, "train_tap_first_try");
           } else {
-            /* [r20] ONLY THE CART JUST TAPPED. r19 retired every cart tried so far, which on a
-               three-cart screen left the answer as the only thing still alive - it removed the
-               choice instead of narrowing it. Yasir: "do not disable both the cart, disable only
-               the cart on which we tap on last." The first miss stays live; the hand does the
-               pointing. */
-            if(wrong(i) >= 2){
-              c.el.classList.remove("is-press", "is-tappable");
-              c.el.classList.add("is-out");
-              c.el.onclick = null;
-            }
+            /* [r20 / h2] WHICH CART GETS RETIRED, AND WHEN.
+               r19 retired every cart tried so far, which on a three-cart screen left the answer
+               as the only thing still alive - it removed the choice instead of narrowing it.
+               Yasir: "do not disable both the cart, disable only the cart on which we tap on
+               last." That was written when the 2nd wrong was the LAST rung.
+               Review-1 adds a third, and makes the 2nd a demonstration: "तीनों शब्दों को एक-एक
+               करके read out करें ... हर शब्द पढ़ते समय उसकी मात्रा highlight करें"। Retiring a
+               cart there greys out one of the three words the screen is about to read aloud -
+               it argues with the very thing rung 2 exists to do. Measured on G2: गुड़ sat at
+               grayscale(.5) opacity(.45) while its own clip played.
+               So the retirement moves to rung 3, where the doc asks for it anyway and asks for
+               ALL of it ("'सूरज' और 'दूध' वाले डिब्बे lock हो जाएँगे") - see tapLock. r20's
+               concern, that the child must still have a choice to make, is what rungs 1 and 2
+               now protect: nothing is taken away until the answer is being named outright. */
+            wrong(i);
           }
         };
       });
       /* instruction is VOICE only — the SME asks for no on-screen text on every test screen,
-         and it waits for the train to stop so it is never spoken under the arrival. */
-      train.whenParked(()=> say(A(slide, "prompt"), ()=>{}));
+         and it waits for the train to stop so it is never spoken under the arrival.
+         THE CARTS ARM HERE, not at mount. They were tappable for the whole of the train's
+         arrival, while their words were still held at opacity 0 - so a tap in that window fed a
+         hint clip to a child who had not been asked the question yet, AND the prompt then
+         started on top of the hint. Measured: 2.5-3.2s of two voices at once on all three tap
+         screens. `armed` flips in the same tick that say() raises isPlaying, so it leaves no
+         window of its own. */
+      train.whenParked(()=>{ armed = true; say(A(slide, "prompt"), ()=>{}); });
     }
   };
 
@@ -1043,6 +1177,11 @@
         t.className = "tr-card k-" + d.kind;
         t.dataset.bin = c.bin;
         if(c.audio) t.dataset.audio = c.audio;
+        /* Review-1 writes rungs 2 and 3 with the CARD's name in them - «'सूरज' में बड़ी 'ऊ' की
+           मात्रा है» - so both lines travel with the card, not with the screen. */
+        if(c.word) t.dataset.word = c.word;
+        if(c.hint2_audio) t.dataset.h2 = c.hint2_audio;
+        if(c.hint3_audio) t.dataset.h3 = c.hint3_audio;
         /* ROUND 3: the praise line is PER CARD now, not one line for the whole screen. The SME
            writes it out card by card — «शाबाश! 'सुई' शब्द में उ की मात्रा है।» — and asks for NO
            completion VO, so the last card's own line is the last thing the child hears. */
@@ -1070,14 +1209,97 @@
       const perCard = new Map();
       const binIdx = k => d.bins.findIndex(b => b.key === k);
 
+      /* "दोनों डिब्बों के ऊपर लिखी मात्राएँ एक-एक करके read out करें: 'उ', 'ऊ'।" - screen 4 - and
+         on screen 5 the same walk, but "हर अक्षर के साथ उसकी मात्रा कुछ देर के लिए दिखाएँ और glow
+         करें: 'उ' के पास 'ु', 'ऊ' के पास 'ू'।" Screen 4's labels already read «उ (ु)», so the
+         mark is only conjured on the screen whose labels are bare. */
+      function binReadSteps(showMatra){
+        return d.bins.map((b, i)=> (next)=>{
+          const c = train.coaches[i];
+          if(!c || !b.audio) return next();
+          c.label.classList.add("tr-lblread");
+          let tag = null;
+          if(showMatra && b.matra){
+            tag = document.createElement("span");
+            tag.className = "tr-lblmatra ink-glyph";
+            tag.textContent = "\u25CC" + b.matra;      /* dotted circle: the mark, carried */
+            c.label.appendChild(tag);
+            requestAnimationFrame(()=> tag.classList.add("in"));
+          }
+          say(clip(b.audio), ()=> setTimeout(()=>{
+            c.label.classList.remove("tr-lblread");
+            if(tag){ tag.classList.remove("in"); setTimeout(()=> tag.remove(), 320); }
+            next();
+          }, 300));
+        });
+      }
+
+      function sortDemo(tile, done){
+        hintHold(function(fin){
+        const steps = [];
+        if(d.kind === "word"){
+          /* "जो शब्द गलत डाला गया, उसे read out करें ... शब्द में उसकी मात्रा highlight/glow करें" */
+          const lbl = tile.querySelector(".tr-cardlbl");
+          steps.push((next)=>{
+            if(lbl) matraHLSoon(lbl, tile.dataset.bin, { glow:true, pulse:true });
+            say(clip(tile.dataset.audio), ()=> setTimeout(()=>{ matraClear(lbl); next(); }, 260));
+          });
+          steps.push.apply(steps, binReadSteps(false));
+        } else if(d.kind === "picture"){
+          /* "चित्र के नीचे कुछ देर के लिए शब्द दिखाएँ और उसकी मात्रा highlight/glow करें"।
+             This is the one place the picture round shows its word, and it shows it for this
+             beat only - see flag F3. The round-3 note "the word should not be displayed at any
+             point" is superseded here by the later document, and nowhere else: the word is
+             removed again before the rung ends. */
+          steps.push((next)=>{
+            const w = document.createElement("span");
+            w.className = "tr-revealword ink-glyph";
+            w.textContent = tile.dataset.word || "";
+            tile.appendChild(w);
+            /* [r65] the picture lifts to make room and the word sits INSIDE the card - it was
+               hanging off the bottom edge ("the name is getting out of that option box") */
+            tile.classList.add("tr-revealing");
+            requestAnimationFrame(()=> w.classList.add("in"));
+            matraHLSoon(w, tile.dataset.bin, { glow:true, pulse:true });
+            say(clip(tile.dataset.audio), ()=> setTimeout(()=>{
+              w.classList.remove("in");
+              tile.classList.remove("tr-revealing");
+              setTimeout(()=> w.remove(), 340);
+              next();
+            }, 900));
+          });
+        } else {
+          steps.push.apply(steps, binReadSteps(true));
+        }
+        hintSeq(steps, fin);
+        }, done);
+      }
+
+      /* RUNG 3: "दूसरा डिब्बा lock हो जाएगा (शब्द सिर्फ सही डिब्बे में जाएगा)।"
+         Scoped to the CARD, not to the screen - the attempt ladder here is per item, and a
+         screen-wide lock earned by one card would refuse a different card the coach it actually
+         belongs in. The drop handler reads `only` and hands the card back without counting it,
+         so a child who keeps trying the wrong coach is not punished for it either. */
+      const lockToBin = (tile, want)=>{ tile.dataset.only = String(want); };
+
       [...tray.children].forEach(tile => {
-        tile.onclick = ()=>{ if(tile.dataset.audio && !isPlaying)
+        tile.onclick = ()=>{ if(tile.dataset.audio && !isPlaying && !hintBusy)
           say(clip(tile.dataset.audio), ()=>{}); };
         /* SME lists TWO sounds here, not one: "Light tap / pick-up sound when a card is selected"
            and "Soft drop sound when the card is placed". They were both the same tap. */
         makeDraggable(tile, (zone)=>{
+          if(hintBusy) return;                      /* a demonstration is speaking */
           const body = zone.closest(".tr-body"); if(!body) return;
           const ci = parseInt(body.dataset.idx, 10);
+          /* rung 3 has already named this card's coach: every other one simply will not take it,
+             and refusing is NOT a wrong attempt - the child has run out of ladder. */
+          if(tile.dataset.only != null && String(ci) !== tile.dataset.only){
+            tile.style.transform = "";
+            tile.classList.remove("tr-cshake"); void tile.offsetWidth;
+            tile.classList.add("tr-cshake");
+            setTimeout(()=> tile.classList.remove("tr-cshake"), 560);
+            return;
+          }
           if(d.bins[ci].key === tile.dataset.bin){
             /* SME: "Correct Answer on 3rd Attempt … No VO." Counted PER CARD, because on a sort
                screen each card carries its own attempt ladder. */
@@ -1139,14 +1361,30 @@
             if(typeof setSwMood === "function") setSwMood("tryagain");
             train.shake(ci);
             tile.style.transform = "";
+            /* "गलत डिब्बे में डाला गया शब्द soft shake करके अपनी जगह वापस आ जाएगा।" The COACH
+               shook already; the CARD did not - makeDraggable clears its transform before it
+               hands over, so it was simply home a frame later with nothing to see. */
+            tile.classList.remove("tr-cshake"); void tile.offsetWidth;
+            tile.classList.add("tr-cshake");
+            setTimeout(()=> tile.classList.remove("tr-cshake"), 560);
             SwiftPAL.emit("answer_wrong", { slide_id: slide.id, attempts: state.attempts });
+            const want = binIdx(tile.dataset.bin);
             if(n === 1){
               say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
+            } else if(n === 2 && hintLevels() >= 3){
+              state.hintUsed = true;
+              SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 2 });
+              sortDemo(tile, ()=> say(clip(tile.dataset.h2) || A(slide, "hint2")
+                                      || A(slide, "hint") || A(slide, "try_again"), ()=>{}));
             } else {
               state.hintUsed = true;
-              say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
-                  /* [r25] from the card the child is holding to the cart it belongs in */
-                  ()=> train.nudgeTo(binIdx(tile.dataset.bin), tile, slide));
+              SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 3 });
+              lockToBin(tile, want);
+              /* [r25] from the card the child is holding to the cart it belongs in */
+              withHand3(()=> train.nudgeTo(want, tile, slide));
+              if(train.coaches[want]) train.coaches[want].el.classList.add("is-nudge");
+              say(clip(tile.dataset.h3) || A(slide, "hint3") || A(slide, "hint2")
+                  || A(slide, "hint") || A(slide, "try_again"), ()=>{});
             }
           }
         }, { onPick: ()=>{ if(typeof sfxTap === "function") sfxTap(); } });
@@ -1166,7 +1404,7 @@
               ()=> setTimeout(step, 160));
         })();
       }));
-      setTimeout(()=>{ state.revealing = false;
+      setTimeout(()=>{ if(!hintBusy) state.revealing = false;   /* never cut a demonstration short */
         [...tray.children].forEach(t => t.classList.remove("tr-seq-hidden")); }, 20000);
     }
   };
@@ -2237,16 +2475,51 @@
       let done = 0;
       const perCard = new Map();
 
+      /* RUNG 2, screen 6: "तीनों चित्रों के नाम एक-एक करके read out करें ... नाम बोलते समय वह
+         चित्र glow करे और उसके डिब्बे की खाली जगह blink करे।" A coach whose blank is already
+         filled is skipped - its name is no longer a question. */
+      const wbDemo = (after)=> hintHold((fin)=> hintSeq(d.slots.map((sl, i)=> (next)=>{
+        const c = train.coaches[i];
+        const bl = c && c.body.querySelector(".wb-blank");
+        if(!c || !bl || bl.classList.contains("filled")) return next();
+        c.label.classList.add("wb-read");
+        bl.classList.add("wb-blink");
+        say(clip(sl.name_audio), ()=> setTimeout(()=>{
+          c.label.classList.remove("wb-read");
+          bl.classList.remove("wb-blink");
+          next();
+        }, 240));
+      }), fin), after);
+
+      /* Which coach is still waiting. Used for the पा case below - a blank that has been filled
+         has had its whole holder replaced by the finished word, so "still has an empty .wb-blank"
+         is the same question as "is still a question". */
+      const firstEmpty = ()=> d.slots.findIndex((sl, k)=>{
+        const c = train.coaches[k];
+        const b = c && c.body.querySelector(".wb-blank");
+        return !!b && !b.classList.contains("filled");
+      });
+
       [...tray.children].forEach(tile => {
         /* SME: "Optional word support VO when a card is tapped: पु / फू / सु — This will help the
            child connect the picture, sound, and correct word formation." */
-        tile.onclick = ()=>{ if(tile.dataset.audio && !isPlaying && !tile.classList.contains("snapped"))
+        tile.onclick = ()=>{ if(tile.dataset.audio && !isPlaying && !hintBusy
+                              && !tile.classList.contains("snapped"))
           say(clip(tile.dataset.audio), ()=>{}); };
 
         makeDraggable(tile, (zone)=>{
+          if(hintBusy) return;                      /* a demonstration is speaking */
           const blank = zone.closest(".wb-blank"); if(!blank) return;
           if(blank.classList.contains("filled")) return;
           const i = parseInt(blank.dataset.idx, 10);
+          /* rung 3 has already named this letter's coach - see lockToBin's twin in TRAIN_SORT */
+          if(tile.dataset.only != null && String(i) !== tile.dataset.only){
+            tile.style.transform = "";
+            tile.classList.remove("tr-cshake"); void tile.offsetWidth;
+            tile.classList.add("tr-cshake");
+            setTimeout(()=> tile.classList.remove("tr-cshake"), 560);
+            return;
+          }
           const slot = d.slots[i];
           tile.style.transform = "";
           if(tile.dataset.akshar + slot.tail === slot.word){
@@ -2283,28 +2556,49 @@
             if(typeof sfxWrongSoft === "function") sfxWrongSoft();
             if(typeof setSwMood === "function") setSwMood("tryagain");
             train.shake(i);
+            /* "गलत डिब्बे में डाला गया अक्षर soft shake करके अपनी जगह वापस आ जाएगा।" */
+            tile.style.transform = "";
+            tile.classList.remove("tr-cshake"); void tile.offsetWidth;
+            tile.classList.add("tr-cshake");
+            setTimeout(()=> tile.classList.remove("tr-cshake"), 560);
             SwiftPAL.emit("answer_wrong", { slide_id: slide.id, attempts: state.attempts });
             if(n === 1){
-              /* SME: "No hand nudge. Only VO." */
+              /* RUNG 1: "No hand nudge. Only VO." */
               say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
-            } else {
+            } else if(n === 2 && hintLevels() >= 3){
               state.hintUsed = true;
               SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 2 });
-              say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"), ()=>{
-                /* "Show hand nudge on the correct blank space." The correct blank is the one this
-                   tile actually completes. A DISTRACTOR completes nothing, so there is no such
-                   blank — pointing at any of them would teach the wrong thing. In that case the
-                   coach the child dropped on is glowed instead, which sends them back to its
-                   picture, and the hand is withheld. */
-                const want = d.slots.findIndex(s => tile.dataset.akshar + s.tail === s.word);
-                const at = want >= 0 ? want : i;
-                const bl = train.coaches[at].body.querySelector(".wb-blank");
-                /* [r25] the hand carries the letter to the blank it fills. Only when there IS a
-                   blank for it: a distractor completes nothing, so there the cart is glowed and
-                   the hand withheld, exactly as before. */
-                train.nudgeTo(at, (want >= 0 ? tile : null), slide, (want >= 0 ? bl : null));
-                if(bl && want >= 0) bl.classList.add("wb-pulse");
-              });
+              wbDemo(()=> say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
+                              ()=>{}));
+            } else {
+              state.hintUsed = true;
+              SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 3 });
+              /* THE HAND CARRIES A LETTER TO THE BLANK IT FILLS. Normally that is the tile the
+                 child is holding. For पा there is no such blank - it completes nothing - and
+                 Review-1 says what to do instead: "अगर बच्चा 'पा' डालता है, तो Hint 3 में अगले
+                 खाली डिब्बे का सही अक्षर nudge होगा।" So the hand leaves the distractor alone and
+                 travels from the letter that DOES fill the next empty coach, to that coach.
+                 (r63 and earlier withheld the hand here, which left the one child who most needed
+                 rung 3 with nothing but a glow.) */
+              let want = d.slots.findIndex(s => tile.dataset.akshar + s.tail === s.word);
+              let from = tile;
+              if(want < 0){
+                want = firstEmpty();
+                const sl = want >= 0 ? d.slots[want] : null;
+                from = sl ? [...tray.children].find(t => !t.classList.contains("snapped")
+                              && t.dataset.akshar + sl.tail === sl.word) : null;
+              }
+              const at = want >= 0 ? want : i;
+              const bl = train.coaches[at].body.querySelector(".wb-blank");
+              /* the letter now goes to that blank and nowhere else */
+              if(from && want >= 0) from.dataset.only = String(want);
+              withHand3(()=> train.nudgeTo(at, (want >= 0 ? from : null), slide,
+                                           (want >= 0 ? bl : null)));
+              if(bl && want >= 0) bl.classList.add("wb-pulse");
+              if(from && from !== tile) from.classList.add("wb-callout");
+              const sl3 = want >= 0 ? d.slots[want] : null;
+              say(clip(sl3 && sl3.hint3_audio) || A(slide, "hint3") || A(slide, "hint2")
+                  || A(slide, "hint") || A(slide, "try_again"), ()=>{});
             }
           }
         }, { onPick: ()=>{ if(typeof sfxTap === "function") sfxTap(); } });
@@ -4374,6 +4668,8 @@ if(document.fonts && document.fonts.load){
         b.className = "sc-opt";
         b.dataset.word = o.word;
         if(o.audio) b.dataset.audio = o.audio;
+        /* the whole sentence with THIS word standing in the blank - rung 2 plays all three */
+        if(o.sentence_audio) b.dataset.sentence = o.sentence_audio;
         b.innerHTML = imgOrEmoji(o.img, o.emoji, "sc-optimg", "sc-optemoji") +
                       '<span class="ink-box"><span class="sc-optlbl ink-glyph">' + o.word + "</span></span>";
         optsW.appendChild(b);
@@ -4384,6 +4680,60 @@ if(document.fonts && document.fonts.load){
       state.replayAudio = ()=> say(A(slide, "prompt"), ()=>{});
       setNavActive(false);
       let tries = 0;
+
+      /* RUNG 2, screens 8-11: "खाली जगह में तीनों शब्द एक-एक करके रखकर पूरा वाक्य read out करें"
+         plus a soft glow on the part of the picture that answers the question. The two wrong
+         sentences are read as well, on purpose: «सीमा आज बहुत तरबूज है।» is only obviously wrong
+         once you have HEARD it, and hearing it is the whole lesson on these four screens.
+         The words are tried in the order they are on screen, left to right, because that order
+         is shuffled per run and it is the only one the child can follow. */
+      function sceneGlow(on){
+        const holder = wrap.querySelector(".sc-scene");
+        if(!holder) return;
+        holder.querySelectorAll(".sc-glow").forEach(e => e.remove());
+        const regions = d.scene_glow || [];
+        if(!on || !regions.length) return;
+        const img = holder.querySelector(".sc-sceneimg");
+        if(!img || !img.naturalWidth) return;
+        /* the regions are fractions of the ARTWORK and the artwork is drawn object-fit:cover, so
+           part of it is off the panel. Undo the cover here rather than baking the crop into the
+           numbers, and they stay right if the panel is ever resized. */
+        const cw = img.clientWidth, ch = img.clientHeight;
+        const sc = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+        const iw = img.naturalWidth * sc, ih = img.naturalHeight * sc;
+        const ox = (cw - iw) / 2, oy = (ch - ih) / 2;
+        regions.forEach(g => {
+          const e = document.createElement("span");
+          e.className = "sc-glow";
+          e.style.left   = (ox + (g[0] - g[2]) * iw) + "px";
+          e.style.top    = (oy + (g[1] - g[3]) * ih) + "px";
+          e.style.width  = (g[2] * 2 * iw) + "px";
+          e.style.height = (g[3] * 2 * ih) + "px";
+          holder.appendChild(e);
+        });
+      }
+
+      function scDemo(after){
+        hintHold(function(fin){
+        sceneGlow(true);
+        hintSeq(opts.map(b => (next)=>{
+          if(b.classList.contains("sc-gone")) return next();
+          blank.classList.add("sc-try");
+          blank.innerHTML = '<span class="ink-box"><span class="sc-word ink-glyph">'
+                          + b.dataset.word + "</span></span>";
+          b.classList.add("sc-trying");
+          say(clip(b.dataset.sentence) || clip(b.dataset.audio), ()=> setTimeout(()=>{
+            b.classList.remove("sc-trying");
+            next();
+          }, 300));
+        }), ()=>{
+          /* the blank goes back to being a blank - nothing has been answered yet */
+          blank.classList.remove("sc-try");
+          if(!blank.classList.contains("filled")) blank.innerHTML = "";
+          fin();
+        });
+        }, after);
+      }
 
       function sparkAt(el){
         const s = wrap.getBoundingClientRect(), b = el.getBoundingClientRect();
@@ -4533,21 +4883,31 @@ if(document.fonts && document.fonts.load){
         }
         SwiftPAL.emit("answer_wrong", { slide_id: slide.id, phase: slide.phase, attempts: tries });
         if(tries === 1){
-          say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});   // SME: no hand on the 1st miss
-        } else {
+          /* RUNG 1: shake, no highlight, one line */
+          say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
+        } else if(tries === 2 && hintLevels() >= 3){
+          /* RUNG 2: the three sentences, then the line that tells the child what to do with them */
           state.scaffoldLevel = 2; state.hintUsed = true;
           SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 2 });
-          say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"), ()=>{
-            const right = opts.find(x => x.dataset.word === d.answer);
-            if(!right) return;
-            /* "Correct option gives a soft pulse/glow" — ours, not phase-gated, so a practice
-               screen still escalates. "Show hand nudge on the correct option" goes through
-               handOnAnswer(), which is where ruling [28f] is enforced: the hand appears in
-               tutorial and guided and is withheld in practice. Flagged to the SME rather than
-               silently overriding either side. */
+          scDemo(()=> say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
+                          ()=> sceneGlow(false)));
+        } else {
+          /* RUNG 3: "'खुश' वाले शब्द पर soft glow और hand nudge। 'फूल' और 'तरबूज' lock हो जाएँगे।"
+             `disabled` already stops the tap and the drop (chooseFrom and the drop handler both
+             test it); `sc-locked` takes the card out of pointer-events entirely, so it cannot
+             even be picked up - a card that lifts and then silently refuses to land reads as a
+             broken card rather than a locked one. */
+          state.scaffoldLevel = 3; state.hintUsed = true;
+          SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 3 });
+          sceneGlow(false);
+          const right = opts.find(x => x.dataset.word === d.answer);
+          opts.forEach(x => { if(x !== right){ x.disabled = true; x.classList.add("sc-locked"); } });
+          if(right){
             right.classList.add("sc-nudge");
-            if(typeof handOnAnswer === "function") handOnAnswer(right, slide);
-          });
+            withHand3(()=>{ if(typeof handOnAnswer === "function") handOnAnswer(right, slide); });
+          }
+          say(A(slide, "hint3") || A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
+              ()=>{});
         }
       }
 
@@ -4619,17 +4979,21 @@ if(document.fonts && document.fonts.load){
       }
 
       const chooseFrom = (b, fromZone)=>{
-        if(state.locked || b.disabled) return;
+        if(hintBusy || state.locked || b.disabled) return;
         sayOpt(clip(b.dataset.audio), ()=>{
           if(state.locked) return;
           if(b.dataset.word === d.answer) land(b); else miss(b, fromZone);
         });
       };
       opts.forEach(b => {
+        /* [r65] Yasir: "from page 13 to 16 only dragging & dropping should work, currently even
+           if I tap the word goes to the drop zone which should not happen". So a tap reads the
+           word out - the SME's "when an option is tapped, play the word VO" - and that is all it
+           does. The judgement lives in the drop handler alone now. */
         const tap = ()=>{
-          if(state.locked || isPlaying || b.disabled) return;
+          if(hintBusy || state.locked || isPlaying || b.disabled) return;
           if(typeof sfxTap === "function") sfxTap();
-          chooseFrom(b);                       /* the tap READS the word and CHOOSES it */
+          sayOpt(clip(b.dataset.audio), ()=>{});
         };
         b.onclick = tap;
         if(typeof makeDraggable === "function"){
@@ -4637,7 +5001,7 @@ if(document.fonts && document.fonts.load){
             /* dropped on the blank: the same judgement the tap makes. A wrong card is NOT left
                sitting in the blank - miss() shakes it and it springs back, which is the note's
                "option returns to its original position". */
-            if(state.locked || tile.disabled) return;
+            if(hintBusy || state.locked || tile.disabled) return;
             if(typeof sfxTap === "function") sfxTap();
             /* [r33] decided here, not after the clip: the judgement is deterministic, and the
                card has to be pinned in the SAME frame it is released or it snaps home first. */

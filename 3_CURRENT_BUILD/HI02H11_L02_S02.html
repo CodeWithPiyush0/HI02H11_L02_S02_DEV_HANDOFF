@@ -2025,6 +2025,20 @@ body.is-start .phase-gate{
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* == TRAIN STYLES :: BEGIN (engine_local, HI02H11_L02_S02) == */
 
 /* ==========================================================================================
@@ -2832,6 +2846,14 @@ body.is-start .phase-gate{
    CSS rule rather than in the JS escape-hatch window, which is where it goes. */
 body.vo-lock .tr-card:not(.snapped),
 body.vo-lock .sc-opt,                       /* [r31] the sentence screens' cards too */
+/* [h3] AND THE TAP COACHES. Review-1's third common rule is "Options and items are not tappable
+   or draggable while any VO is playing", and the tap screens were the one mechanic held only by
+   the JS check inside their onclick - measured: with body.vo-lock forced on, a tap coach still
+   computed pointer-events:auto while every card and drop zone in the lesson computed none.
+   The JS check does refuse the tap, so nothing was getting through; but [31n] is explicit that
+   the CSS rule is the primary gate and the JS window is the 4s backstop, and a mechanic sitting
+   on the backstop alone is one refactor away from being a hole. Named here, like the rest. */
+body.vo-lock .train-coach.is-tappable,
 body.vo-lock .tt-card{ pointer-events:none !important; }
 .coach-body.dd-zone{ pointer-events:none; }
 .coach-body.dd-zone > .coach-face{ pointer-events:auto; }
@@ -3485,6 +3507,134 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
   height:100% !important; max-height:none !important; border-radius:0 !important;
   box-shadow:none !important; }
 
+/* ============================================================================================
+   [h3] REVIEW-1 HINT LADDER — the three rungs, seen
+   ============================================================================================
+   Rung 1 shakes and says a line. Rung 2 SHOWS: words and labels light up as they are read, a
+   picture-card lends its word for a beat, a blank blinks, each option takes its turn in the
+   sentence. Rung 3 glows, points and locks.
+
+   Every rule here carries its settled appearance on the base selector — an @keyframes is used
+   only to move something that is already visible without it, because the review capture kills
+   animation outright (engine fact 1). */
+
+/* ---- the card coming home from a coach it does not belong in ------------------------------
+   "गलत डिब्बे में डाला गया शब्द soft shake करके अपनी जगह वापस आ जाएगा।" The coach shook already;
+   this is the CARD. makeDraggable has cleared its transform by the time the module is called,
+   so without this the card is simply home a frame later and the refusal has no gesture. */
+.tr-card.tr-cshake{ animation:trCardShake .52s ease; }
+@keyframes trCardShake{
+  0%,100%{ transform:translateX(0) rotate(0) }
+  15%{ transform:translateX(-7px) rotate(-2.5deg) }
+  32%{ transform:translateX(6px)  rotate(2deg) }
+  50%{ transform:translateX(-5px) rotate(-1.5deg) }
+  70%{ transform:translateX(4px)  rotate(1deg) }
+  86%{ transform:translateX(-2px) rotate(0) }
+}
+@media (prefers-reduced-motion:reduce){
+  .tr-card.tr-cshake{ animation:none; outline:4px solid var(--wrong,#E8453C); outline-offset:2px; }
+}
+
+/* ---- rung 2 on the tap screens: the coach whose word is being read ------------------------
+   Deliberately NOT is-nudge's gold. That glow means "this is the answer"; this one means only
+   "this is the word you are hearing", and all three coaches get it in turn. */
+.train-coach.is-read .coach-body{
+  filter:drop-shadow(0 0 0 rgba(56,106,246,.55)) drop-shadow(0 0 13px rgba(56,106,246,.55)); }
+
+/* ---- rung 2 on the sort screens: the coach label being read out ---------------------------- */
+.coach-label.tr-lblread{
+  box-shadow:0 0 0 4px rgba(56,106,246,.30), 0 6px 16px rgba(11,61,140,.18);
+  background:#EAF2FF; }
+/* «'उ' के पास 'ु'» — the mark itself, conjured beside the bare letter for the length of the clip
+   and taken away again. Only screen 5 needs it; screen 4's labels already read «उ (ु)». */
+.coach-label .tr-lblmatra{
+  display:inline-block; margin-left:.28em; font-family:var(--font-hi);
+  font-size:.86em; font-weight:800; color:var(--matra-hi,#FF8A00);   /* [r65] the highlight orange, not the wrong-answer red */
+  opacity:0; transform:translateY(-4px) scale(.7);
+  transition:opacity .22s ease, transform .22s cubic-bezier(.34,1.4,.6,1); }
+.coach-label .tr-lblmatra.in{ opacity:1; transform:none; }
+
+/* ---- rung 2 on the picture round: the word, lent for one beat -----------------------------
+   The round-3 note says the word is never shown here; Review-1's rung 2 shows it, and only here.
+   It is positioned OUTSIDE the card's flow so lending it cannot resize the card mid-drag. */
+.tr-card.k-picture{ position:relative; }
+/* [r65] The card's picture lifts while the word is lent, and the word takes the room it
+   leaves - inside the card, not hanging off its foot. */
+.tr-card.k-picture .tr-pic, .tr-card.k-picture .tr-emoji{ transition:transform .22s cubic-bezier(.34,1.4,.6,1); }
+.tr-card.k-picture.tr-revealing .tr-pic, .tr-card.k-picture.tr-revealing .tr-emoji{ transform:translateY(-15px); }
+.tr-card .tr-revealword{
+  position:absolute; left:50%; bottom:5px; transform:translate(-50%,6px);
+  font-family:var(--font-hi); font-size:19px; font-weight:800; line-height:1.2;
+  color:var(--navy-dk,#0B3D8C); background:#FFF6E0; border:2px solid #F7C948;
+  border-radius:9px; padding:1px 9px; white-space:nowrap; pointer-events:none;
+  box-shadow:0 5px 12px rgba(11,61,140,.16);
+  opacity:0; transition:opacity .22s ease, transform .22s cubic-bezier(.34,1.4,.6,1); z-index:6; }
+.tr-card .tr-revealword.in{ opacity:1; transform:translate(-50%,0); }
+
+/* ---- rung 2 on the word-build screen ------------------------------------------------------
+   "नाम बोलते समय वह चित्र glow करे और उसके डिब्बे की खाली जगह blink करे।" */
+.coach-label.wb-read{
+  box-shadow:0 0 0 4px rgba(56,106,246,.30), 0 6px 16px rgba(11,61,140,.18);
+  background:#EAF2FF; border-radius:12px; }
+.wb-blank.wb-blink{ border-color:#386AF6; background:#EAF2FF;
+  box-shadow:0 0 0 4px rgba(56,106,246,.22);
+  animation:wbBlink 780ms ease-in-out infinite; }
+@keyframes wbBlink{ 0%,100%{ box-shadow:0 0 0 4px rgba(56,106,246,.22) }
+                    50%{ box-shadow:0 0 0 9px rgba(56,106,246,.05) } }
+/* the letter the hand is sent to fetch when the child has been placing the पा distractor —
+   it is not the card they are holding, so it has to say so on its own */
+.tr-card.wb-callout{ border-color:#F7C948; background:#FFFBF0;
+  box-shadow:0 0 0 4px rgba(247,201,72,.45), 0 8px 18px rgba(11,61,140,.16); }
+
+/* ---- rung 2 on the sentence screens -------------------------------------------------------
+   Each option stands in the blank while its whole sentence is read. The blank has to look like
+   it is TRYING the word, not like it has accepted it — .filled is solid and green, so this is
+   dashed and amber and never sets .filled. */
+.sc-blank.sc-try{ border-style:dashed; border-color:#F7C948; background:#FFFBF0; }
+.sc-opt.sc-trying{ border-color:#F7C948; background:#FFFBF0;
+  box-shadow:0 0 0 4px rgba(247,201,72,.40), 0 8px 18px rgba(11,61,140,.16); }
+/* "चित्र में सीमा के मुस्कुराते चेहरे पर soft glow करें" — a soft round wash over the part of the
+   scene that answers the question. Positioned by the module from fractions of the ARTWORK, so
+   it has to be able to sit anywhere inside the panel. */
+.sc-scene{ position:relative; }
+/* IT HAS TO READ ON BRIGHT ARTWORK. The first cut was a warm wash in mix-blend-mode:screen,
+   which is exactly the wrong instrument here: screen can only lighten, and every one of these
+   four regions is ALREADY bright - a sunrise, a white clock face, a lit cheek, a bed of yellow
+   flowers. Measured: the panel changed by under 2 grey levels, i.e. not at all. So the glow is
+   drawn as a soft RING with a wash inside it rather than as light added on top: a ring has an
+   edge, and an edge is visible against anything. */
+.sc-glow{ position:absolute; pointer-events:none; border-radius:50%;
+  background:radial-gradient(closest-side, rgba(255,236,160,.34), rgba(255,222,120,.14) 62%,
+                                            rgba(255,214,90,0) 100%);
+  box-shadow:0 0 0 3px rgba(255,176,32,.92), 0 0 0 7px rgba(255,205,92,.42),
+             0 0 22px 8px rgba(255,190,60,.55);
+  animation:scGlowPulse 1.5s ease-in-out infinite; z-index:3; }
+@keyframes scGlowPulse{ 0%,100%{ opacity:.72; transform:scale(1) }
+                        50%{ opacity:1; transform:scale(1.07) } }
+/* rung 3: "'फूल' और 'तरबूज' lock हो जाएँगे (चुने नहीं जा सकेंगे)।" `disabled` already refuses the
+   tap and the drop; this refuses the PICK-UP, because a card that lifts under the finger and
+   then silently will not land reads as broken rather than as locked. */
+.sc-opt.sc-locked{ pointer-events:none; filter:grayscale(.5) opacity(.45); }
+
+
+/* ============================================================================================
+   [r65] THE PLAY BUTTON IS THE DRAWN ONE NOW. Yasir supplied play_btn.svg and its grey twin for
+   the waiting state. The pill, its text, its ::after triangle, its border and its shadow all go;
+   the SVG carries its own shadow. The two earned states stay: idle-pulse still scales it, and
+   sg-waiting swaps the art for the grey disc instead of recolouring a pill.
+   ============================================================================================ */
+.sg-btn, .sg-btn.sg-waiting{
+  width:116px; min-width:0; height:116px; padding:0; border:none; border-radius:50%; font-size:0; color:transparent;
+  background:url("assets/Images/play_btn.svg") center/contain no-repeat; box-shadow:none; }
+.sg-btn::after{ content:none; }
+.sg-btn.sg-waiting{ background-image:url("assets/Images/play_btn_disabled.svg"); }
+.sg-btn:active{ transform:translateX(-50%) translateY(3px); }
+
+/* [r65] THE GATE BIRD SEEKS, THEN SPEAKS. Its rise is inside the art now, so the engine's own
+   pgPeek slide-up would rise it twice; and the frame is cropped to the bird, so the height clamp
+   applies to the bird itself rather than to a mostly-empty square. */
+.phase-gate #phaseGateImg.pg-card{ animation:none; height:clamp(200px,30vh,290px); }
+
 /* ==== MATRA-RUNNER CSS BEGIN ==== */
 /* GENERATED by 1_SPEC/embed_matra_runner.py - do not hand-edit.
    मात्रा रनर's own stylesheet, every selector confined to .mr-root so a game
@@ -3766,13 +3916,20 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
   "guided": 5,
   "practice": 8
  },
+ "gate": {
+  "img": "assets/UI/swifty_gate.webp",
+  "talk_at_ms": 3820
+ },
  "scaffold_rules": {
   "nudge_timeout_ms": {
    "guided": 6000,
    "practice": 8000
   },
   "max_attempts": 3,
-  "hand_on_attempt": 2,
+  "hint_levels": 3,
+  "hand_on_attempt": 3,
+  "hand_on_hint3": true,
+  "lock_after_hint3": true,
   "reveal_on_attempt": null,
   "silent_on_late_correct": true
  },
@@ -3823,14 +3980,29 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "vo_base_phal": "assets/Audio/vo_base_phal.ogg",
    "vo_cel_prompt": "assets/Audio/vo_cel_prompt.ogg",
    "vo_g1_correct": "assets/Audio/vo_g1_correct.ogg",
+   "vo_g1_h3": "assets/Audio/vo_g1_h3.ogg",
    "vo_g2_correct": "assets/Audio/vo_g2_correct.ogg",
+   "vo_g2_h3": "assets/Audio/vo_g2_h3.ogg",
    "vo_g3_correct": "assets/Audio/vo_g3_correct.ogg",
-   "vo_g4_hint2": "assets/Audio/vo_g4_hint2.ogg",
+   "vo_g3_h3": "assets/Audio/vo_g3_h3.ogg",
+   "vo_g4_h1": "assets/Audio/vo_g4_h1.ogg",
+   "vo_g4_h2_aaloo": "assets/Audio/vo_g4_h2_aaloo.ogg",
+   "vo_g4_h2_gud": "assets/Audio/vo_g4_h2_gud.ogg",
+   "vo_g4_h2_sooraj": "assets/Audio/vo_g4_h2_sooraj.ogg",
+   "vo_g4_h2_sui": "assets/Audio/vo_g4_h2_sui.ogg",
+   "vo_g4_h3_aaloo": "assets/Audio/vo_g4_h3_aaloo.ogg",
+   "vo_g4_h3_gud": "assets/Audio/vo_g4_h3_gud.ogg",
+   "vo_g4_h3_sooraj": "assets/Audio/vo_g4_h3_sooraj.ogg",
+   "vo_g4_h3_sui": "assets/Audio/vo_g4_h3_sui.ogg",
    "vo_g4_prompt": "assets/Audio/vo_g4_prompt.ogg",
-   "vo_g5_hint1": "assets/Audio/vo_g5_hint1.ogg",
-   "vo_g5_hint2": "assets/Audio/vo_g5_hint2.ogg",
+   "vo_g5_h1": "assets/Audio/vo_g5_h1.ogg",
+   "vo_g5_h2": "assets/Audio/vo_g5_h2.ogg",
+   "vo_g5_h3_u": "assets/Audio/vo_g5_h3_u.ogg",
+   "vo_g5_h3_uu": "assets/Audio/vo_g5_h3_uu.ogg",
    "vo_g5_prompt": "assets/Audio/vo_g5_prompt.ogg",
    "vo_landing": "assets/Audio/vo_landing.ogg",
+   "vo_letter_u": "assets/Audio/vo_letter_u.ogg",
+   "vo_letter_uu": "assets/Audio/vo_letter_uu.ogg",
    "vo_matra_u": "assets/Audio/vo_matra_u.ogg",
    "vo_matra_uu": "assets/Audio/vo_matra_uu.ogg",
    "vo_meet_dhanush": "assets/Audio/vo_meet_dhanush.ogg",
@@ -3862,23 +4034,53 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "vo_okp_tarbooj": "assets/Audio/vo_okp_tarbooj.ogg",
    "vo_onset_phool": "assets/Audio/vo_onset_phool.ogg",
    "vo_onset_pul": "assets/Audio/vo_onset_pul.ogg",
-   "vo_p1_hint1": "assets/Audio/vo_p1_hint1.ogg",
-   "vo_p1_hint2": "assets/Audio/vo_p1_hint2.ogg",
+   "vo_p1_h1": "assets/Audio/vo_p1_h1.ogg",
+   "vo_p1_h2": "assets/Audio/vo_p1_h2.ogg",
+   "vo_p1_h3_any": "assets/Audio/vo_p1_h3_any.ogg",
+   "vo_p1_h3_phool": "assets/Audio/vo_p1_h3_phool.ogg",
+   "vo_p1_h3_pul": "assets/Audio/vo_p1_h3_pul.ogg",
+   "vo_p1_h3_sui": "assets/Audio/vo_p1_h3_sui.ogg",
    "vo_p1_prompt": "assets/Audio/vo_p1_prompt.ogg",
-   "vo_p2_hint2": "assets/Audio/vo_p2_hint2.ogg",
+   "vo_p2_h1": "assets/Audio/vo_p2_h1.ogg",
+   "vo_p2_h2_kabootar": "assets/Audio/vo_p2_h2_kabootar.ogg",
+   "vo_p2_h2_mukut": "assets/Audio/vo_p2_h2_mukut.ogg",
+   "vo_p2_h2_pul": "assets/Audio/vo_p2_h2_pul.ogg",
+   "vo_p2_h2_tarbooj": "assets/Audio/vo_p2_h2_tarbooj.ogg",
+   "vo_p2_h3_kabootar": "assets/Audio/vo_p2_h3_kabootar.ogg",
+   "vo_p2_h3_mukut": "assets/Audio/vo_p2_h3_mukut.ogg",
+   "vo_p2_h3_pul": "assets/Audio/vo_p2_h3_pul.ogg",
+   "vo_p2_h3_tarbooj": "assets/Audio/vo_p2_h3_tarbooj.ogg",
    "vo_p2_prompt": "assets/Audio/vo_p2_prompt.ogg",
    "vo_p3_correct": "assets/Audio/vo_p3_correct.ogg",
+   "vo_p3_h1": "assets/Audio/vo_p3_h1.ogg",
+   "vo_p3_h3": "assets/Audio/vo_p3_h3.ogg",
+   "vo_p3_try_khush": "assets/Audio/vo_p3_try_khush.ogg",
+   "vo_p3_try_phool": "assets/Audio/vo_p3_try_phool.ogg",
+   "vo_p3_try_tarbooj": "assets/Audio/vo_p3_try_tarbooj.ogg",
    "vo_p4_correct": "assets/Audio/vo_p4_correct.ogg",
+   "vo_p4_h1": "assets/Audio/vo_p4_h1.ogg",
+   "vo_p4_h3": "assets/Audio/vo_p4_h3.ogg",
+   "vo_p4_try_doodh": "assets/Audio/vo_p4_try_doodh.ogg",
+   "vo_p4_try_mukut": "assets/Audio/vo_p4_try_mukut.ogg",
+   "vo_p4_try_subah": "assets/Audio/vo_p4_try_subah.ogg",
    "vo_p5_correct": "assets/Audio/vo_p5_correct.ogg",
+   "vo_p5_h1": "assets/Audio/vo_p5_h1.ogg",
+   "vo_p5_h3": "assets/Audio/vo_p5_h3.ogg",
+   "vo_p5_try_phool": "assets/Audio/vo_p5_try_phool.ogg",
+   "vo_p5_try_subah": "assets/Audio/vo_p5_try_subah.ogg",
+   "vo_p5_try_tarbooj": "assets/Audio/vo_p5_try_tarbooj.ogg",
    "vo_p6_correct": "assets/Audio/vo_p6_correct.ogg",
+   "vo_p6_h1": "assets/Audio/vo_p6_h1.ogg",
+   "vo_p6_h3": "assets/Audio/vo_p6_h3.ogg",
+   "vo_p6_try_khush": "assets/Audio/vo_p6_try_khush.ogg",
+   "vo_p6_try_phool": "assets/Audio/vo_p6_try_phool.ogg",
+   "vo_p6_try_tarbooj": "assets/Audio/vo_p6_try_tarbooj.ogg",
    "vo_pair_u": "assets/Audio/vo_pair_u.ogg",
    "vo_pair_uu": "assets/Audio/vo_pair_uu.ogg",
    "vo_result_phool": "assets/Audio/vo_result_phool.ogg",
    "vo_result_pul": "assets/Audio/vo_result_pul.ogg",
-   "vo_sc_hint1": "assets/Audio/vo_sc_hint1.ogg",
-   "vo_sc_hint2": "assets/Audio/vo_sc_hint2.ogg",
+   "vo_sc_h2": "assets/Audio/vo_sc_h2.ogg",
    "vo_sc_prompt": "assets/Audio/vo_sc_prompt.ogg",
-   "vo_sort_hint_listen": "assets/Audio/vo_sort_hint_listen.ogg",
    "vo_sounds_phool": "assets/Audio/vo_sounds_phool.ogg",
    "vo_sounds_pul": "assets/Audio/vo_sounds_pul.ogg",
    "vo_t1_prompt": "assets/Audio/vo_t1_prompt.ogg",
@@ -3886,10 +4088,10 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "vo_t3_prompt": "assets/Audio/vo_t3_prompt.ogg",
    "vo_t4_prompt": "assets/Audio/vo_t4_prompt.ogg",
    "vo_t5_prompt": "assets/Audio/vo_t5_prompt.ogg",
-   "vo_tap_hint1_u": "assets/Audio/vo_tap_hint1_u.ogg",
-   "vo_tap_hint1_uu": "assets/Audio/vo_tap_hint1_uu.ogg",
-   "vo_tap_hint2_u": "assets/Audio/vo_tap_hint2_u.ogg",
-   "vo_tap_hint2_uu": "assets/Audio/vo_tap_hint2_uu.ogg",
+   "vo_tap_h1_u": "assets/Audio/vo_tap_h1_u.ogg",
+   "vo_tap_h1_uu": "assets/Audio/vo_tap_h1_uu.ogg",
+   "vo_tap_h2_u": "assets/Audio/vo_tap_h2_u.ogg",
+   "vo_tap_h2_uu": "assets/Audio/vo_tap_h2_uu.ogg",
    "vo_tap_prompt_u": "assets/Audio/vo_tap_prompt_u.ogg",
    "vo_tap_prompt_uu": "assets/Audio/vo_tap_prompt_uu.ogg",
    "vo_try_again": "assets/Audio/vo_try_again.ogg",
@@ -3929,65 +4131,110 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "vo_meet_kabootar": "कबूतर, बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है।",
    "vo_t5_prompt": "आइए, बड़ी ऊ की मात्रा वाले कुछ शब्द देखें।",
    "vo_tap_prompt_u": "जिस डिब्बे में छोटी उ की मात्रा वाला शब्द है, उस डिब्बे पर टैप कीजिए।",
-   "vo_tap_hint1_u": "फिर से सोचिए। छोटी उ की मात्रा वाला शब्द कौन-सा है?",
-   "vo_tap_hint2_u": "ध्यान से देखिए और छोटी उ की मात्रा वाले शब्द पर टैप कीजिए।",
+   "vo_tap_h1_u": "फिर से पढ़िए। जिस शब्द में छोटी उ की मात्रा आ रही है, उस पर टैप कीजिए।",
+   "vo_tap_h2_u": "जिस शब्द में छोटी उ की मात्रा है, उस पर टैप कीजिए।",
+   "vo_g1_h3": "देखिए, पुल में छोटी उ की मात्रा है। पुल पर टैप कीजिए।",
    "vo_g1_correct": "शाबाश! पुल शब्द में छोटी उ की मात्रा है।",
+   "vo_name_pul": "पुल",
+   "vo_name_doodh": "दूध",
+   "vo_name_sooraj": "सूरज",
    "vo_tap_prompt_uu": "जिस डिब्बे में बड़ी ऊ की मात्रा वाला शब्द है, उस डिब्बे पर टैप कीजिए।",
-   "vo_tap_hint1_uu": "फिर से सोचिए। बड़ी ऊ की मात्रा वाला शब्द कौन-सा है?",
-   "vo_tap_hint2_uu": "ध्यान से देखिए और बड़ी ऊ की मात्रा वाले शब्द पर टैप कीजिए।",
+   "vo_tap_h1_uu": "फिर से पढ़िए। जिस शब्द में बड़ी ऊ की मात्रा आ रही है, उस पर टैप कीजिए।",
+   "vo_tap_h2_uu": "जिस शब्द में बड़ी ऊ की मात्रा है, उस पर टैप कीजिए।",
+   "vo_g2_h3": "देखिए, फूल में बड़ी ऊ की मात्रा है। फूल पर टैप कीजिए।",
    "vo_g2_correct": "शाबाश! फूल शब्द में बड़ी ऊ की मात्रा है।",
+   "vo_name_gud": "गुड़",
+   "vo_name_mukut": "मुकुट",
+   "vo_name_phool": "फूल",
+   "vo_g3_h3": "देखिए, सुई में छोटी उ की मात्रा है। सुई पर टैप कीजिए।",
    "vo_g3_correct": "शाबाश! सुई शब्द में छोटी उ की मात्रा है।",
-   "vo_sort_hint_listen": "फिर से सुनिए और सही मात्रा पहचानिए।",
+   "vo_name_tarbooj": "तरबूज",
+   "vo_name_sui": "सुई",
+   "vo_name_kabootar": "कबूतर",
+   "vo_g4_h1": "फिर से पढ़िए। शब्द में कौन-सी मात्रा है, देखिए और उसे उसी मात्रा वाले डिब्बे में डालिए।",
+   "vo_p2_h1": "फिर से सुनिए। चित्र का नाम ध्यान से सुनिए और देखिए उसमें कौन-सी मात्रा है।",
    "vo_ok_aaloo": "शाबाश! आलू शब्द में ऊ की मात्रा है।",
    "vo_name_aaloo": "आलू",
+   "vo_g4_h2_aaloo": "आलू में बड़ी ऊ की मात्रा है। अब यही मात्रा ऊपर डिब्बों पर खोजिए और शब्द वहीं डालिए।",
+   "vo_g4_h3_aaloo": "आलू को बड़ी ऊ की मात्रा वाले डिब्बे में डालिए।",
    "vo_ok_sooraj": "शाबाश! सूरज शब्द में ऊ की मात्रा है।",
-   "vo_name_sooraj": "सूरज",
+   "vo_g4_h2_sooraj": "सूरज में बड़ी ऊ की मात्रा है। अब यही मात्रा ऊपर डिब्बों पर खोजिए और शब्द वहीं डालिए।",
+   "vo_g4_h3_sooraj": "सूरज को बड़ी ऊ की मात्रा वाले डिब्बे में डालिए।",
    "vo_ok_sui": "शाबाश! सुई शब्द में उ की मात्रा है।",
-   "vo_name_sui": "सुई",
+   "vo_g4_h2_sui": "सुई में छोटी उ की मात्रा है। अब यही मात्रा ऊपर डिब्बों पर खोजिए और शब्द वहीं डालिए।",
+   "vo_g4_h3_sui": "सुई को छोटी उ की मात्रा वाले डिब्बे में डालिए।",
    "vo_ok_gud": "शाबाश! गुड़ शब्द में उ की मात्रा है।",
-   "vo_name_gud": "गुड़",
-   "vo_g4_hint2": "ध्यान से देखिए, इस शब्द में कौन-सी मात्रा है?",
+   "vo_g4_h2_gud": "गुड़ में छोटी उ की मात्रा है। अब यही मात्रा ऊपर डिब्बों पर खोजिए और शब्द वहीं डालिए।",
+   "vo_g4_h3_gud": "गुड़ को छोटी उ की मात्रा वाले डिब्बे में डालिए।",
    "vo_g4_prompt": "हर शब्द को उसकी सही मात्रा वाले डिब्बे में डालिए।",
+   "vo_g5_h3_u": "छोटी उ की मात्रा को उ वाले डिब्बे में डालिए.",
    "vo_ok_matra_u": "शाबाश! यह उ की मात्रा है।",
+   "vo_g5_h3_uu": "बड़ी ऊ की मात्रा को ऊ वाले डिब्बे में डालिए.",
    "vo_ok_matra_uu": "शाबाश! यह ऊ की मात्रा है।",
-   "vo_g5_hint1": "फिर से देखिए और सही मात्रा पहचानिए।",
-   "vo_g5_hint2": "ध्यान से देखिए, यह किसकी मात्रा है?",
+   "vo_g5_h1": "फिर से देखिए। मात्रा को ध्यान से देखिए और उसे सही डिब्बे में डालिए।",
+   "vo_g5_h2": "उ की मात्रा ु है और ऊ की मात्रा ू है। अब मात्रा को सही डिब्बे में डालिए।",
    "vo_g5_prompt": "सही मात्रा को उसके सही डिब्बे में डालिए।",
+   "vo_p1_h3_pul": "पु को पुल वाले डिब्बे में डालिए। पु, ल… पुल।",
    "vo_wb_pul": "शाबाश! पुल बन गया।",
    "vo_ak_pul": "पु",
+   "vo_p1_h3_phool": "फू को फूल वाले डिब्बे में डालिए। फू, ल… फूल।",
    "vo_wb_phool": "शाबाश! फूल बन गया।",
    "vo_ak_phool": "फू",
+   "vo_p1_h3_sui": "सु को सुई वाले डिब्बे में डालिए। सु, ई… सुई।",
    "vo_wb_sui": "शाबाश! सुई बन गई।",
    "vo_ak_sui": "सु",
    "vo_ak_pa": "पा",
    "vo_p1_prompt": "चित्र देखकर सही अक्षर से शब्द पूरा कीजिए।",
-   "vo_p1_hint1": "फिर से सोचिए और चित्र को ध्यान से देखिए।",
-   "vo_p1_hint2": "ध्यान से देखिए, कौन-सा अक्षर लगाने से शब्द पूरा होगा?",
+   "vo_p1_h1": "फिर से देखिए। चित्र का नाम सोचिए और देखिए शब्द पूरा करने के लिए कौन-सा अक्षर लगेगा।",
+   "vo_p1_h2": "नाम ध्यान से सुनिए। जिस शब्द की शुरुआत इस अक्षर से होती है, उसी डिब्बे में इसे डालिए।",
+   "vo_p1_h3_any": "जो अक्षर चमक रहा है, उसे उसी डिब्बे में डालिए।",
    "vo_okp_mukut": "शाबाश! मुकुट में उ की मात्रा है।",
-   "vo_name_mukut": "मुकुट",
+   "vo_p2_h2_mukut": "मुकुट में छोटी उ की मात्रा है। अब इसे सही मात्रा वाली बोगी में डालिए।",
+   "vo_p2_h3_mukut": "मुकुट को छोटी उ की मात्रा वाली बोगी में डालिए।",
    "vo_okp_pul": "शाबाश! पुल में उ की मात्रा है।",
-   "vo_name_pul": "पुल",
+   "vo_p2_h2_pul": "पुल में छोटी उ की मात्रा है। अब इसे सही मात्रा वाली बोगी में डालिए।",
+   "vo_p2_h3_pul": "पुल को छोटी उ की मात्रा वाली बोगी में डालिए।",
    "vo_okp_tarbooj": "शाबाश! तरबूज में ऊ की मात्रा है।",
-   "vo_name_tarbooj": "तरबूज",
+   "vo_p2_h2_tarbooj": "तरबूज में बड़ी ऊ की मात्रा है। अब इसे सही मात्रा वाली बोगी में डालिए।",
+   "vo_p2_h3_tarbooj": "तरबूज को बड़ी ऊ की मात्रा वाली बोगी में डालिए।",
    "vo_okp_kabootar": "शाबाश! कबूतर में ऊ की मात्रा है।",
-   "vo_name_kabootar": "कबूतर",
-   "vo_p2_hint2": "शब्द को ध्यान से सुनिए।",
+   "vo_p2_h2_kabootar": "कबूतर में बड़ी ऊ की मात्रा है। अब इसे सही मात्रा वाली बोगी में डालिए।",
+   "vo_p2_h3_kabootar": "कबूतर को बड़ी ऊ की मात्रा वाली बोगी में डालिए।",
    "vo_p2_prompt": "चित्र को सुनिए और उसे सही मात्रा वाली बोगी में डालिए।",
    "vo_name_khush": "खुश",
-   "vo_name_phool": "फूल",
+   "vo_p3_try_khush": "सीमा आज बहुत खुश है।",
+   "vo_p3_try_phool": "सीमा आज बहुत फूल है।",
+   "vo_p3_try_tarbooj": "सीमा आज बहुत तरबूज है।",
    "vo_sc_prompt": "चित्र देखकर सही शब्द चुनकर वाक्य पूरा कीजिए।",
-   "vo_sc_hint1": "फिर से सोचिए। कौन-सा शब्द वाक्य को पूरा करेगा?",
-   "vo_sc_hint2": "चित्र को ध्यान से देखिए और सही शब्द चुनिए।",
+   "vo_p3_h1": "फिर से पढ़िए। चित्र देखिए, सीमा कैसी दिख रही है? सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "vo_sc_h2": "जो वाक्य सही लग रहा है, वही शब्द चुनिए।",
+   "vo_p3_h3": "सीमा आज बहुत खुश है। खुश चुनिए।",
    "vo_p3_correct": "शाबाश! सीमा आज बहुत खुश है।",
    "vo_name_subah": "सुबह",
-   "vo_name_doodh": "दूध",
+   "vo_p4_try_subah": "मैं सुबह जल्दी उठता हूँ।",
+   "vo_p4_try_doodh": "मैं दूध जल्दी उठता हूँ।",
+   "vo_p4_try_mukut": "मैं मुकुट जल्दी उठता हूँ।",
+   "vo_p4_h1": "फिर से पढ़िए। चित्र देखिए, बच्चा कब उठ रहा है? सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "vo_p4_h3": "मैं सुबह जल्दी उठता हूँ। सुबह चुनिए।",
    "vo_p4_correct": "शाबाश! मैंने सही शब्द चुनकर वाक्य पूरा किया।",
+   "vo_p5_try_phool": "बगीचे में सुंदर फूल खिले हैं।",
+   "vo_p5_try_tarbooj": "बगीचे में सुंदर तरबूज खिले हैं।",
+   "vo_p5_try_subah": "बगीचे में सुंदर सुबह खिले हैं।",
+   "vo_p5_h1": "फिर से पढ़िए। चित्र देखिए, बगीचे में क्या खिले हैं? सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "vo_p5_h3": "बगीचे में सुंदर फूल खिले हैं। फूल चुनिए।",
    "vo_p5_correct": "शाबाश! बगीचे में सुंदर फूल खिले हैं।",
+   "vo_p6_try_tarbooj": "मीठा तरबूज खाना अच्छा लगता है।",
+   "vo_p6_try_phool": "मीठा फूल खाना अच्छा लगता है।",
+   "vo_p6_try_khush": "मीठा खुश खाना अच्छा लगता है।",
+   "vo_p6_h1": "फिर से पढ़िए। चित्र देखिए, बच्चा क्या खा रहा है? सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "vo_p6_h3": "मीठा तरबूज खाना अच्छा लगता है। तरबूज चुनिए।",
    "vo_p6_correct": "शाबाश! मीठा तरबूज खाना अच्छा लगता है।",
    "vo_mg_prompt": "अब एक खेल! ऊपर दी गई मात्रा वाले शब्द के द्वार से निकलिए।",
    "vo_cel_prompt": "शाबाश! आज हमने सीखा, छोटी उ और बड़ी ऊ की मात्रा पहचानना, और मात्रा वाले शब्द पढ़ना।",
    "vo_matra_u": "छोटी उ की मात्रा",
    "vo_matra_uu": "बड़ी ऊ की मात्रा",
+   "vo_letter_u": "उ",
+   "vo_letter_uu": "ऊ",
    "vo_landing": "हेलो दोस्त! मैं हूँ स्विफ्टी। आज हम मात्राओं के बारे में जानेंगे।",
    "vo_try_again": "एक बार फिर सुनिए।"
   },
@@ -4199,11 +4446,12 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "phase": "guided",
    "eis": "symbolic",
    "type": "TRAIN_TAP",
-   "prompt_hi": "छोटी उ की मात्रा वाले शब्द पर टैप कीजिए।",
+   "prompt_hi": "छोटी “उ” की मात्रा वाले शब्द पर टैप कीजिए।",
    "audio": {
     "prompt": "vo_tap_prompt_u",
-    "hint1": "vo_tap_hint1_u",
-    "hint2": "vo_tap_hint2_u",
+    "hint1": "vo_tap_h1_u",
+    "hint2": "vo_tap_h2_u",
+    "hint3": "vo_g1_h3",
     "correct": "vo_g1_correct"
    },
    "data": {
@@ -4212,15 +4460,21 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
     "coaches": [
      {
       "word": "पुल",
-      "correct": true
+      "correct": true,
+      "audio": "vo_name_pul",
+      "matra": "ु"
      },
      {
       "word": "दूध",
-      "correct": false
+      "correct": false,
+      "audio": "vo_name_doodh",
+      "matra": "ू"
      },
      {
       "word": "सूरज",
-      "correct": false
+      "correct": false,
+      "audio": "vo_name_sooraj",
+      "matra": "ू"
      }
     ]
    }
@@ -4230,11 +4484,12 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "phase": "guided",
    "eis": "symbolic",
    "type": "TRAIN_TAP",
-   "prompt_hi": "बड़ी ऊ की मात्रा वाले शब्द पर टैप कीजिए।",
+   "prompt_hi": "बड़ी “ऊ” की मात्रा वाले शब्द पर टैप कीजिए।",
    "audio": {
     "prompt": "vo_tap_prompt_uu",
-    "hint1": "vo_tap_hint1_uu",
-    "hint2": "vo_tap_hint2_uu",
+    "hint1": "vo_tap_h1_uu",
+    "hint2": "vo_tap_h2_uu",
+    "hint3": "vo_g2_h3",
     "correct": "vo_g2_correct"
    },
    "data": {
@@ -4243,15 +4498,21 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
     "coaches": [
      {
       "word": "गुड़",
-      "correct": false
+      "correct": false,
+      "audio": "vo_name_gud",
+      "matra": "ु"
      },
      {
       "word": "मुकुट",
-      "correct": false
+      "correct": false,
+      "audio": "vo_name_mukut",
+      "matra": "ु"
      },
      {
       "word": "फूल",
-      "correct": true
+      "correct": true,
+      "audio": "vo_name_phool",
+      "matra": "ू"
      }
     ]
    }
@@ -4261,11 +4522,12 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "phase": "guided",
    "eis": "symbolic",
    "type": "TRAIN_TAP",
-   "prompt_hi": "छोटी उ की मात्रा वाले शब्द पर टैप कीजिए।",
+   "prompt_hi": "छोटी “उ” की मात्रा वाले शब्द पर टैप कीजिए।",
    "audio": {
     "prompt": "vo_tap_prompt_u",
-    "hint1": "vo_tap_hint1_u",
-    "hint2": "vo_tap_hint2_u",
+    "hint1": "vo_tap_h1_u",
+    "hint2": "vo_tap_h2_u",
+    "hint3": "vo_g3_h3",
     "correct": "vo_g3_correct"
    },
    "data": {
@@ -4274,15 +4536,21 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
     "coaches": [
      {
       "word": "तरबूज",
-      "correct": false
+      "correct": false,
+      "audio": "vo_name_tarbooj",
+      "matra": "ू"
      },
      {
       "word": "सुई",
-      "correct": true
+      "correct": true,
+      "audio": "vo_name_sui",
+      "matra": "ु"
      },
      {
       "word": "कबूतर",
-      "correct": false
+      "correct": false,
+      "audio": "vo_name_kabootar",
+      "matra": "ू"
      }
     ]
    }
@@ -4295,19 +4563,22 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "prompt_hi": "हर शब्द को उसकी सही मात्रा वाले डिब्बे में डालिए।",
    "audio": {
     "prompt": "vo_g4_prompt",
-    "hint1": "vo_sort_hint_listen",
-    "hint2": "vo_g4_hint2"
+    "hint1": "vo_g4_h1"
    },
    "data": {
     "kind": "word",
     "bins": [
      {
       "key": "ु",
-      "label": "उ (ु)"
+      "label": "उ (ु)",
+      "audio": "vo_letter_u",
+      "matra": "ु"
      },
      {
       "key": "ू",
-      "label": "ऊ (ू)"
+      "label": "ऊ (ू)",
+      "audio": "vo_letter_uu",
+      "matra": "ू"
      }
     ],
     "cards": [
@@ -4317,7 +4588,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "img": "obj_aaloo",
       "emoji": "🥔",
       "audio": "vo_name_aaloo",
-      "correct_audio": "vo_ok_aaloo"
+      "correct_audio": "vo_ok_aaloo",
+      "hint2_audio": "vo_g4_h2_aaloo",
+      "hint3_audio": "vo_g4_h3_aaloo"
      },
      {
       "bin": "ू",
@@ -4325,7 +4598,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "img": "obj_sooraj",
       "emoji": "☀",
       "audio": "vo_name_sooraj",
-      "correct_audio": "vo_ok_sooraj"
+      "correct_audio": "vo_ok_sooraj",
+      "hint2_audio": "vo_g4_h2_sooraj",
+      "hint3_audio": "vo_g4_h3_sooraj"
      },
      {
       "bin": "ु",
@@ -4333,7 +4608,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "img": "obj_sui",
       "emoji": "🪡",
       "audio": "vo_name_sui",
-      "correct_audio": "vo_ok_sui"
+      "correct_audio": "vo_ok_sui",
+      "hint2_audio": "vo_g4_h2_sui",
+      "hint3_audio": "vo_g4_h3_sui"
      },
      {
       "bin": "ु",
@@ -4341,7 +4618,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "img": "obj_gud",
       "emoji": "🍯",
       "audio": "vo_name_gud",
-      "correct_audio": "vo_ok_gud"
+      "correct_audio": "vo_ok_gud",
+      "hint2_audio": "vo_g4_h2_gud",
+      "hint3_audio": "vo_g4_h3_gud"
      }
     ],
     "single": false
@@ -4355,19 +4634,23 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "prompt_hi": "सही मात्रा को सही डिब्बे में डालिए।",
    "audio": {
     "prompt": "vo_g5_prompt",
-    "hint1": "vo_g5_hint1",
-    "hint2": "vo_g5_hint2"
+    "hint1": "vo_g5_h1",
+    "hint2": "vo_g5_h2"
    },
    "data": {
     "kind": "matra",
     "bins": [
      {
       "key": "ु",
-      "label": "उ"
+      "label": "उ",
+      "audio": "vo_letter_u",
+      "matra": "ु"
      },
      {
       "key": "ू",
-      "label": "ऊ"
+      "label": "ऊ",
+      "audio": "vo_letter_uu",
+      "matra": "ू"
      }
     ],
     "cards": [
@@ -4375,12 +4658,14 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "bin": "ु",
       "word": "◌ु",
       "audio": "vo_matra_u",
+      "hint3_audio": "vo_g5_h3_u",
       "correct_audio": "vo_ok_matra_u"
      },
      {
       "bin": "ू",
       "word": "◌ू",
       "audio": "vo_matra_uu",
+      "hint3_audio": "vo_g5_h3_uu",
       "correct_audio": "vo_ok_matra_uu"
      }
     ],
@@ -4395,8 +4680,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "prompt_hi": "चित्र देखकर सही अक्षर खींचकर शब्द पूरा कीजिए।",
    "audio": {
     "prompt": "vo_p1_prompt",
-    "hint1": "vo_p1_hint1",
-    "hint2": "vo_p1_hint2"
+    "hint1": "vo_p1_h1",
+    "hint2": "vo_p1_h2",
+    "hint3": "vo_p1_h3_any"
    },
    "data": {
     "slots": [
@@ -4407,6 +4693,8 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "matra": "ु",
       "img": "obj_pul",
       "emoji": "🌉",
+      "name_audio": "vo_name_pul",
+      "hint3_audio": "vo_p1_h3_pul",
       "correct_audio": "vo_wb_pul"
      },
      {
@@ -4416,6 +4704,8 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "matra": "ू",
       "img": "obj_phool",
       "emoji": "🌻",
+      "name_audio": "vo_name_phool",
+      "hint3_audio": "vo_p1_h3_phool",
       "correct_audio": "vo_wb_phool"
      },
      {
@@ -4425,6 +4715,8 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "matra": "ु",
       "img": "obj_sui",
       "emoji": "🪡",
+      "name_audio": "vo_name_sui",
+      "hint3_audio": "vo_p1_h3_sui",
       "correct_audio": "vo_wb_sui"
      }
     ],
@@ -4456,19 +4748,22 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "prompt_hi": "चित्र को सुनिए और उसे सही मात्रा वाली बोगी में डालिए।",
    "audio": {
     "prompt": "vo_p2_prompt",
-    "hint1": "vo_sort_hint_listen",
-    "hint2": "vo_p2_hint2"
+    "hint1": "vo_p2_h1"
    },
    "data": {
     "kind": "picture",
     "bins": [
      {
       "key": "ु",
-      "label": "उ"
+      "label": "उ",
+      "audio": "vo_letter_u",
+      "matra": "ु"
      },
      {
       "key": "ू",
-      "label": "ऊ"
+      "label": "ऊ",
+      "audio": "vo_letter_uu",
+      "matra": "ू"
      }
     ],
     "cards": [
@@ -4478,7 +4773,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "img": "obj_mukut",
       "emoji": "👑",
       "audio": "vo_name_mukut",
-      "correct_audio": "vo_okp_mukut"
+      "correct_audio": "vo_okp_mukut",
+      "hint2_audio": "vo_p2_h2_mukut",
+      "hint3_audio": "vo_p2_h3_mukut"
      },
      {
       "bin": "ु",
@@ -4486,7 +4783,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "img": "obj_pul",
       "emoji": "🌉",
       "audio": "vo_name_pul",
-      "correct_audio": "vo_okp_pul"
+      "correct_audio": "vo_okp_pul",
+      "hint2_audio": "vo_p2_h2_pul",
+      "hint3_audio": "vo_p2_h3_pul"
      },
      {
       "bin": "ू",
@@ -4494,7 +4793,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "img": "obj_tarbooj",
       "emoji": "🍉",
       "audio": "vo_name_tarbooj",
-      "correct_audio": "vo_okp_tarbooj"
+      "correct_audio": "vo_okp_tarbooj",
+      "hint2_audio": "vo_p2_h2_tarbooj",
+      "hint3_audio": "vo_p2_h3_tarbooj"
      },
      {
       "bin": "ू",
@@ -4502,7 +4803,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "img": "obj_kabootar",
       "emoji": "🕊",
       "audio": "vo_name_kabootar",
-      "correct_audio": "vo_okp_kabootar"
+      "correct_audio": "vo_okp_kabootar",
+      "hint2_audio": "vo_p2_h2_kabootar",
+      "hint3_audio": "vo_p2_h3_kabootar"
      }
     ],
     "single": false
@@ -4516,8 +4819,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
    "audio": {
     "prompt": "vo_sc_prompt",
-    "hint1": "vo_sc_hint1",
-    "hint2": "vo_sc_hint2",
+    "hint1": "vo_p3_h1",
+    "hint2": "vo_sc_h2",
+    "hint3": "vo_p3_h3",
     "correct": "vo_p3_correct"
    },
    "data": {
@@ -4531,20 +4835,31 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "word": "खुश",
       "img": "obj_khush",
       "emoji": "😊",
-      "audio": "vo_name_khush"
+      "audio": "vo_name_khush",
+      "sentence_audio": "vo_p3_try_khush"
      },
      {
       "word": "फूल",
       "img": "obj_phool",
       "emoji": "🌻",
-      "audio": "vo_name_phool"
+      "audio": "vo_name_phool",
+      "sentence_audio": "vo_p3_try_phool"
      },
      {
       "word": "तरबूज",
       "img": "obj_tarbooj",
       "emoji": "🍉",
-      "audio": "vo_name_tarbooj"
+      "audio": "vo_name_tarbooj",
+      "sentence_audio": "vo_p3_try_tarbooj"
      }
+    ],
+    "scene_glow": [
+     [
+      0.505,
+      0.375,
+      0.115,
+      0.14
+     ]
     ]
    }
   },
@@ -4556,8 +4871,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
    "audio": {
     "prompt": "vo_sc_prompt",
-    "hint1": "vo_sc_hint1",
-    "hint2": "vo_sc_hint2",
+    "hint1": "vo_p4_h1",
+    "hint2": "vo_sc_h2",
+    "hint3": "vo_p4_h3",
     "correct": "vo_p4_correct"
    },
    "data": {
@@ -4571,20 +4887,37 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "word": "सुबह",
       "img": "obj_subah",
       "emoji": "🌅",
-      "audio": "vo_name_subah"
+      "audio": "vo_name_subah",
+      "sentence_audio": "vo_p4_try_subah"
      },
      {
       "word": "दूध",
       "img": "obj_doodh",
       "emoji": "🥛",
-      "audio": "vo_name_doodh"
+      "audio": "vo_name_doodh",
+      "sentence_audio": "vo_p4_try_doodh"
      },
      {
       "word": "मुकुट",
       "img": "obj_mukut",
       "emoji": "👑",
-      "audio": "vo_name_mukut"
+      "audio": "vo_name_mukut",
+      "sentence_audio": "vo_p4_try_mukut"
      }
+    ],
+    "scene_glow": [
+     [
+      0.575,
+      0.165,
+      0.185,
+      0.16
+     ],
+     [
+      0.135,
+      0.675,
+      0.115,
+      0.14
+     ]
     ]
    }
   },
@@ -4596,8 +4929,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
    "audio": {
     "prompt": "vo_sc_prompt",
-    "hint1": "vo_sc_hint1",
-    "hint2": "vo_sc_hint2",
+    "hint1": "vo_p5_h1",
+    "hint2": "vo_sc_h2",
+    "hint3": "vo_p5_h3",
     "correct": "vo_p5_correct"
    },
    "data": {
@@ -4611,20 +4945,31 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "word": "फूल",
       "img": "obj_phool",
       "emoji": "🌻",
-      "audio": "vo_name_phool"
+      "audio": "vo_name_phool",
+      "sentence_audio": "vo_p5_try_phool"
      },
      {
       "word": "तरबूज",
       "img": "obj_tarbooj",
       "emoji": "🍉",
-      "audio": "vo_name_tarbooj"
+      "audio": "vo_name_tarbooj",
+      "sentence_audio": "vo_p5_try_tarbooj"
      },
      {
       "word": "सुबह",
       "img": "obj_subah",
       "emoji": "🌅",
-      "audio": "vo_name_subah"
+      "audio": "vo_name_subah",
+      "sentence_audio": "vo_p5_try_subah"
      }
+    ],
+    "scene_glow": [
+     [
+      0.5,
+      0.835,
+      0.5,
+      0.19
+     ]
     ]
    }
   },
@@ -4636,8 +4981,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
    "audio": {
     "prompt": "vo_sc_prompt",
-    "hint1": "vo_sc_hint1",
-    "hint2": "vo_sc_hint2",
+    "hint1": "vo_p6_h1",
+    "hint2": "vo_sc_h2",
+    "hint3": "vo_p6_h3",
     "correct": "vo_p6_correct"
    },
    "data": {
@@ -4651,20 +4997,31 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
       "word": "तरबूज",
       "img": "obj_tarbooj",
       "emoji": "🍉",
-      "audio": "vo_name_tarbooj"
+      "audio": "vo_name_tarbooj",
+      "sentence_audio": "vo_p6_try_tarbooj"
      },
      {
       "word": "फूल",
       "img": "obj_phool",
       "emoji": "🌻",
-      "audio": "vo_name_phool"
+      "audio": "vo_name_phool",
+      "sentence_audio": "vo_p6_try_phool"
      },
      {
       "word": "खुश",
       "img": "obj_khush",
       "emoji": "😊",
-      "audio": "vo_name_khush"
+      "audio": "vo_name_khush",
+      "sentence_audio": "vo_p6_try_khush"
      }
+    ],
+    "scene_glow": [
+     [
+      0.505,
+      0.485,
+      0.195,
+      0.14
+     ]
     ]
    }
   },
@@ -5107,7 +5464,7 @@ function _chainMs(srcs, gapMs){
    no reason to fetch it again and the reviewer keeps hearing the previous take. __AUDIO_V is
    stamped by the builder from the CONTENT of the audio folder, so it changes exactly when a clip
    changes and not otherwise - a fresh URL on every build would defeat caching for no reason. */
-var __AUDIO_V = "cb3248dadc55";
+var __AUDIO_V = "ea47ced1d4c1";
 function _av(src){
   if(typeof src !== "string" || src.indexOf("assets/Audio/") < 0) return src;
   return src.indexOf("?") >= 0 ? src : src + "?v=" + __AUDIO_V;
@@ -9926,6 +10283,65 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
 
   const A = (slide, key) => (typeof audioFor === "function" ? audioFor(slide, key) : null);
   const maxTries = () => ((CARD.scaffold_rules && CARD.scaffold_rules.max_attempts) || 3);
+  /* [h2] REVIEW-1 LADDER. `hint_levels` is 3 on this card; with anything less every module falls
+     back to the two-rung behaviour it shipped with, so the engine stays usable by a card that
+     has not been re-authored. */
+  const hintLevels  = () => ((CARD.scaffold_rules && CARD.scaffold_rules.hint_levels) || 2);
+  const handOnHint3 = () => !!(CARD.scaffold_rules && CARD.scaffold_rules.hand_on_hint3);
+
+  /* Run `steps` one after another; each is called with the continuation. Every rung-2
+     demonstration is a chain of clips with something lit while each one sounds, and a chain
+     written by hand three times over is a chain with three different bugs in it. */
+  /* THE SCREEN IS HELD FOR A WHOLE DEMONSTRATION, NOT FOR EACH OF ITS CLIPS.
+     `state.revealing` is the flag makeDraggable already honours, so raising it stops a drag from
+     even starting; `hintBusy` covers the tap paths, which go through their own handlers. Both are
+     cleared together when the chain ends, and `newVoEpoch()` clears hintBusy on every mount so a
+     screen left mid-demonstration cannot arrive stuck. */
+  let hintBusy = false;
+  function hintHold(run, after){
+    hintBusy = true;
+    state.revealing = true;
+    run(function(){
+      hintBusy = false;
+      state.revealing = false;
+      if(after) after();
+    });
+  }
+
+  function hintSeq(steps, done){
+    let i = 0;
+    (function step(){
+      if(i >= steps.length){ if(done) done(); return; }
+      steps[i++](step);
+    })();
+  }
+
+  /* Take a matra highlight back off. matraHL() replaces the element's text and lays overlays on
+     top of it, keeping the original in dataset.mhWord - so undoing it is: drop the overlays,
+     drop the class, put the text back. Rung 2 lights each word only WHILE it is being read
+     ("हर शब्द पढ़ते समय उसकी मात्रा highlight करें"), so it has to come off again. */
+  function matraClear(el){
+    if(!el) return;
+    el.querySelectorAll(".mh-ov").forEach(o => o.remove());
+    el.classList.remove("mh");
+    if(el.dataset.mhWord) el.textContent = el.dataset.mhWord;
+  }
+
+  /* THE HAND, ON RUNG 3, ON EVERY SCREEN.
+     [28f]/[28j]: the hand is allowed in tutorial and guided and never in practice, and the rule
+     is enforced inside pointNudgeAt because ~25 call sites reach it directly - gating the call
+     sites is what produced three rounds of "fixed" that were not. Review-1 asks for a rung-3
+     hand on screens 6-11, all of which are practice.
+     So the rule is not edited: the phase set is widened around this ONE call and restored in a
+     finally. Everything inside pointNudgeAt / travelNudge runs synchronously (the animation is
+     started, not awaited), so nothing else can observe the widened set. Set
+     scaffold_rules.hand_on_hint3 to false and [28f] applies exactly as before. */
+  function withHand3(fn){
+    if(!handOnHint3() || typeof HAND_PHASES === "undefined"){ fn(); return; }
+    const had = HAND_PHASES.has("practice");
+    if(!had) HAND_PHASES.add("practice");
+    try { fn(); } finally { if(!had) HAND_PHASES.delete("practice"); }
+  }
 
   /* Turn a bare clip ID into a playable path. `audioFor()` does this for ids that live in
      slide.audio, but several modules carry ids INSIDE slide.data (a MEET_PAIR example's line, a
@@ -9957,6 +10373,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
      simply dropped. Nothing else has to know about it. */
   let _voGen = 0;
   function newVoEpoch(){
+    hintBusy = false;                 /* a screen left mid-demonstration must not arrive stuck */
     /* the no-heading opt-out is per SLIDE, so it is cleared on every mount and re-applied only by
        a module whose card asks for it. Round 2 hid the band GLOBALLY and shipped 14 screens with
        a mascot sitting next to nothing; this cannot do that. */
@@ -10008,7 +10425,6 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
   const _toneWhistle = ()=> _t([430, 660, 560], "sine", 0.55, 0.075);
   const sfxWhistle      = ()=> sfxFile("sfx_whistle",      _toneWhistle);  // the toot
   const sfxTrainMove    = ()=> sfxFile("sfx_train_move",   null);          // the chug bed
-  const sfxTrainArrive  = ()=> sfxFile("sfx_train_arrive", _toneWhistle);  // settling onto the rail
   const sfxPopSoft = ()=> _t([720], "sine", 0.10, 0.07);
   const sfxSparkle = ()=> _t([1180, 1560], "sine", 0.22, 0.055);
 
@@ -10164,11 +10580,19 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
        Dividing by _mhScale converts one to the other. Without it the overlay lands at
        `offset x scale`, which at a real window size (--scale 0.54-0.81) is a whole second matra
        sitting beside the first. */
+    /* [r65] A ZERO-WIDTH STRUT. [r14]'s 100px strut measured the scale as a bonus - and inside a
+       card label that is 22px wide and width-locked by its flex parent, a 100px inline-block
+       WRAPS onto a second line, so its top edge reported the second line's baseline. That is
+       what put the orange a whole line off on every snapped card (measured: सुई's band 33px
+       under its label; आलू's 20px above it, from the label growing to fit). The strut takes no
+       width now, and the scale comes from the element's own two measurements of itself -
+       screen px over CSS px - which needs no room at all. */
     const strut = document.createElement("span");
-    strut.style.cssText = "display:inline-block;width:100px;height:0";
+    strut.style.cssText = "display:inline-block;width:0;height:0";
     el.appendChild(strut);
     const _sr = strut.getBoundingClientRect();
-    const _mhScale = _sr.width > 0 ? _sr.width / 100 : 1;
+    const _cssW = el.offsetWidth || 0;
+    const _mhScale = (_cssW > 0 && rect.width > 0) ? rect.width / _cssW : 1;
     const baseline = (_sr.top - rect.top) / _mhScale;
     strut.remove();
 
@@ -10179,7 +10603,15 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
        be rastered with and without the mark and the difference IS the mark - no rectangle, no
        edges to tune, nothing of the consonant caught. One overlay for the whole word, because the
        mask already contains every occurrence of the matra in it. */
-    if(!RIGHT_SPACING_MATRAS.has(matra)){
+    /* [r65] THE INK MASK IS RETIRED. Yasir: "you are making another matra with highlighted
+       colour and placing it on top of the existing and this is where the misalignment is
+       happening". Exactly so: the mask was cut on a canvas with its own font string and its own
+       hinting, and landed a few px off the page's own glyph in every coach and on every card.
+       The geometric path below draws the page's OWN text again, in orange, clipped to the band
+       under the baseline - and a word cannot be out of register with itself. Kept behind a
+       constant rather than deleted, so the measurement that led here is still in the file. */
+    const USE_INK_MASK = false;
+    if(USE_INK_MASK && !RIGHT_SPACING_MATRAS.has(matra)){
       const fs = parseFloat(getComputedStyle(el).fontSize) || 0;
       const dpr = Math.min(3, window.devicePixelRatio || 1);
       const m = fs ? _matraInkMask(word, matra, fs, dpr) : null;
@@ -10589,7 +11021,9 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
           else setCell(S.rest);                         /* exact landing, no rounding drift */
         };
         _raf = requestAnimationFrame(tick);
-        setTimeout(()=>{ sfxTrainArrive(); settle(); }, TRAIN_TRAVEL_MS);
+        /* [r65] Yasir: "Don't use sfx_train_arrive.ogg in any pages." The clip stays on disk
+           (COPY_AUDIO still carries it); nothing calls for it. */
+        setTimeout(()=>{ settle(); }, TRAIN_TRAVEL_MS);
       } else {
         setTimeout(settle, 0);
       }
@@ -10781,7 +11215,8 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
     return a;
   }
 
-  function makeLadder(slide, train, correctIdx){
+  function makeLadder(slide, train, correctIdx, opts){
+    opts = opts || {};
     let tries = 0;
     return function wrong(coachIdx){
       tries++;
@@ -10791,14 +11226,28 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       if(coachIdx != null) train.shake(coachIdx);
       SwiftPAL.emit("answer_wrong", { slide_id: slide.id, phase: slide.phase, attempts: tries });
       if(tries === 1){
-        /* SME: "No hand nudge. Only hint VO should come." */
+        /* RUNG 1 - refocus. "गलत शब्द वाले डिब्बे पर soft shake। कोई सही उत्तर highlight नहीं
+           होगा।" The shake above is the whole of the UI; nothing is marked and no hand appears. */
         say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
-      } else {
-        /* SME: "Hint VO should play. Show hand nudge on the correct answer." */
+      } else if(tries === 2 && hintLevels() >= 3){
+        /* RUNG 2 - demonstrate. The screen reads the three words out and lights each word's own
+           matra as it does, THEN says the line. Support first, instruction after: the line tells
+           the child what to do with what they have just been shown. Still no hand. */
         state.scaffoldLevel = 2; state.hintUsed = true;
         SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 2 });
-        say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
-            ()=> { if(correctIdx != null) train.nudge(correctIdx, slide); });
+        const line = ()=> say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"), ()=>{});
+        if(opts.demo) opts.demo(line); else line();
+      } else {
+        /* RUNG 3 - guide. The answer glows, the hand goes to it and everything else locks, and
+           only THEN is the line spoken, so the child is looking at the thing being named rather
+           than hearing about something that is not lit yet. */
+        state.scaffoldLevel = 3; state.hintUsed = true;
+        SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 3 });
+        if(opts.lock) opts.lock();
+        if(opts.guide) opts.guide();
+        else if(correctIdx != null) withHand3(()=> train.nudge(correctIdx, slide));
+        say(A(slide, "hint3") || A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
+            ()=>{});
       }
       return tries;
     };
@@ -10846,7 +11295,36 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       state.ownsAudio = true;
       state.replayAudio = ()=> say(A(slide, "prompt"), ()=>{});
       setNavActive(false);
-      const wrong = makeLadder(slide, train, correctIdx);
+
+      /* RUNG 2, screens 1-3: "तीनों शब्दों को एक-एक करके read out करें ... हर शब्द पढ़ते समय उसकी
+         मात्रा highlight/glow करें"। The word is lit while its clip sounds and goes dark again
+         after it, because the mark is a reading aid for that moment - leaving all three lit
+         would turn the demonstration into a permanent answer key.
+         Each coach carries its OWN matra, not the screen's: on screen 2 the child hears गुड़ and
+         मुकुट with their ु lit against फूल's ू, which is the contrast the screen is asking about.
+         मुकुट has two, and the ink mask marks both - which is what the doc asks for by name. */
+      const tapDemo = (done)=> hintHold((fin)=> hintSeq(train.coaches.map((c, i)=> (next)=>{
+        const w = c.body.querySelector(".tr-word");
+        const src = coachList[i];
+        if(w && src.matra) matraHLSoon(w, src.matra, { glow:true, pulse:true });
+        if(w) c.el.classList.add("is-read");
+        say(clip(src.audio), ()=> setTimeout(()=>{
+          c.el.classList.remove("is-read");
+          matraClear(w);
+          next();
+        }, 260));
+      }), fin), done);
+
+      /* RUNG 3: "'सूरज' और 'दूध' वाले डिब्बे lock हो जाएँगे (टैप नहीं होंगे)।" */
+      const tapLock = ()=> train.coaches.forEach((c, i)=>{
+        if(i === correctIdx) return;
+        c.el.classList.remove("is-press", "is-tappable");
+        c.el.classList.add("is-out");
+        c.el.onclick = null;
+      });
+
+      const wrong = makeLadder(slide, train, correctIdx, { demo: tapDemo, lock: tapLock });
+      let armed = false;                 /* see train.whenParked at the foot of this module */
 
       /* [r19/r20] "if user tap on incorrect cart then that cart will wiggle and if he does
          mistake 2 times then hand nudge appears on the correct option and that particular cart
@@ -10856,14 +11334,16 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         c.el.classList.add("is-tappable");
         /* the press colour, mirrored onto a class because :active does not survive a finger */
         c.el.addEventListener("pointerdown", ()=>{
-          if(state.locked || isPlaying) return;
+          if(!armed || hintBusy || state.locked || isPlaying) return;
           c.el.classList.add("is-press");
         });
         ["pointerup", "pointercancel", "pointerleave"].forEach(ev =>
           c.el.addEventListener(ev, ()=> c.el.classList.remove("is-press")));
         c.el.onclick = ()=>{
           c.el.classList.remove("is-press");
-          if(state.locked || isPlaying) return;
+          /* `armed` closes the window between the carts mounting and the prompt being spoken -
+             see the note on whenParked below. `hintBusy` closes the gaps INSIDE a rung-2 chain. */
+          if(!armed || hintBusy || state.locked || isPlaying) return;
           if(typeof sfxTap === "function") sfxTap();
           if(i === correctIdx){
             const silent = state.attempts >= maxTries() - 1;
@@ -10875,22 +11355,33 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
             if(w && d.matra) matraHLSoon(w, d.matra, { glow:true, pulse:true });
             finishSlide(slide, train, silent, "train_tap_first_try");
           } else {
-            /* [r20] ONLY THE CART JUST TAPPED. r19 retired every cart tried so far, which on a
-               three-cart screen left the answer as the only thing still alive - it removed the
-               choice instead of narrowing it. Yasir: "do not disable both the cart, disable only
-               the cart on which we tap on last." The first miss stays live; the hand does the
-               pointing. */
-            if(wrong(i) >= 2){
-              c.el.classList.remove("is-press", "is-tappable");
-              c.el.classList.add("is-out");
-              c.el.onclick = null;
-            }
+            /* [r20 / h2] WHICH CART GETS RETIRED, AND WHEN.
+               r19 retired every cart tried so far, which on a three-cart screen left the answer
+               as the only thing still alive - it removed the choice instead of narrowing it.
+               Yasir: "do not disable both the cart, disable only the cart on which we tap on
+               last." That was written when the 2nd wrong was the LAST rung.
+               Review-1 adds a third, and makes the 2nd a demonstration: "तीनों शब्दों को एक-एक
+               करके read out करें ... हर शब्द पढ़ते समय उसकी मात्रा highlight करें"। Retiring a
+               cart there greys out one of the three words the screen is about to read aloud -
+               it argues with the very thing rung 2 exists to do. Measured on G2: गुड़ sat at
+               grayscale(.5) opacity(.45) while its own clip played.
+               So the retirement moves to rung 3, where the doc asks for it anyway and asks for
+               ALL of it ("'सूरज' और 'दूध' वाले डिब्बे lock हो जाएँगे") - see tapLock. r20's
+               concern, that the child must still have a choice to make, is what rungs 1 and 2
+               now protect: nothing is taken away until the answer is being named outright. */
+            wrong(i);
           }
         };
       });
       /* instruction is VOICE only — the SME asks for no on-screen text on every test screen,
-         and it waits for the train to stop so it is never spoken under the arrival. */
-      train.whenParked(()=> say(A(slide, "prompt"), ()=>{}));
+         and it waits for the train to stop so it is never spoken under the arrival.
+         THE CARTS ARM HERE, not at mount. They were tappable for the whole of the train's
+         arrival, while their words were still held at opacity 0 - so a tap in that window fed a
+         hint clip to a child who had not been asked the question yet, AND the prompt then
+         started on top of the hint. Measured: 2.5-3.2s of two voices at once on all three tap
+         screens. `armed` flips in the same tick that say() raises isPlaying, so it leaves no
+         window of its own. */
+      train.whenParked(()=>{ armed = true; say(A(slide, "prompt"), ()=>{}); });
     }
   };
 
@@ -10935,6 +11426,11 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         t.className = "tr-card k-" + d.kind;
         t.dataset.bin = c.bin;
         if(c.audio) t.dataset.audio = c.audio;
+        /* Review-1 writes rungs 2 and 3 with the CARD's name in them - «'सूरज' में बड़ी 'ऊ' की
+           मात्रा है» - so both lines travel with the card, not with the screen. */
+        if(c.word) t.dataset.word = c.word;
+        if(c.hint2_audio) t.dataset.h2 = c.hint2_audio;
+        if(c.hint3_audio) t.dataset.h3 = c.hint3_audio;
         /* ROUND 3: the praise line is PER CARD now, not one line for the whole screen. The SME
            writes it out card by card — «शाबाश! 'सुई' शब्द में उ की मात्रा है।» — and asks for NO
            completion VO, so the last card's own line is the last thing the child hears. */
@@ -10962,14 +11458,97 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       const perCard = new Map();
       const binIdx = k => d.bins.findIndex(b => b.key === k);
 
+      /* "दोनों डिब्बों के ऊपर लिखी मात्राएँ एक-एक करके read out करें: 'उ', 'ऊ'।" - screen 4 - and
+         on screen 5 the same walk, but "हर अक्षर के साथ उसकी मात्रा कुछ देर के लिए दिखाएँ और glow
+         करें: 'उ' के पास 'ु', 'ऊ' के पास 'ू'।" Screen 4's labels already read «उ (ु)», so the
+         mark is only conjured on the screen whose labels are bare. */
+      function binReadSteps(showMatra){
+        return d.bins.map((b, i)=> (next)=>{
+          const c = train.coaches[i];
+          if(!c || !b.audio) return next();
+          c.label.classList.add("tr-lblread");
+          let tag = null;
+          if(showMatra && b.matra){
+            tag = document.createElement("span");
+            tag.className = "tr-lblmatra ink-glyph";
+            tag.textContent = "\u25CC" + b.matra;      /* dotted circle: the mark, carried */
+            c.label.appendChild(tag);
+            requestAnimationFrame(()=> tag.classList.add("in"));
+          }
+          say(clip(b.audio), ()=> setTimeout(()=>{
+            c.label.classList.remove("tr-lblread");
+            if(tag){ tag.classList.remove("in"); setTimeout(()=> tag.remove(), 320); }
+            next();
+          }, 300));
+        });
+      }
+
+      function sortDemo(tile, done){
+        hintHold(function(fin){
+        const steps = [];
+        if(d.kind === "word"){
+          /* "जो शब्द गलत डाला गया, उसे read out करें ... शब्द में उसकी मात्रा highlight/glow करें" */
+          const lbl = tile.querySelector(".tr-cardlbl");
+          steps.push((next)=>{
+            if(lbl) matraHLSoon(lbl, tile.dataset.bin, { glow:true, pulse:true });
+            say(clip(tile.dataset.audio), ()=> setTimeout(()=>{ matraClear(lbl); next(); }, 260));
+          });
+          steps.push.apply(steps, binReadSteps(false));
+        } else if(d.kind === "picture"){
+          /* "चित्र के नीचे कुछ देर के लिए शब्द दिखाएँ और उसकी मात्रा highlight/glow करें"।
+             This is the one place the picture round shows its word, and it shows it for this
+             beat only - see flag F3. The round-3 note "the word should not be displayed at any
+             point" is superseded here by the later document, and nowhere else: the word is
+             removed again before the rung ends. */
+          steps.push((next)=>{
+            const w = document.createElement("span");
+            w.className = "tr-revealword ink-glyph";
+            w.textContent = tile.dataset.word || "";
+            tile.appendChild(w);
+            /* [r65] the picture lifts to make room and the word sits INSIDE the card - it was
+               hanging off the bottom edge ("the name is getting out of that option box") */
+            tile.classList.add("tr-revealing");
+            requestAnimationFrame(()=> w.classList.add("in"));
+            matraHLSoon(w, tile.dataset.bin, { glow:true, pulse:true });
+            say(clip(tile.dataset.audio), ()=> setTimeout(()=>{
+              w.classList.remove("in");
+              tile.classList.remove("tr-revealing");
+              setTimeout(()=> w.remove(), 340);
+              next();
+            }, 900));
+          });
+        } else {
+          steps.push.apply(steps, binReadSteps(true));
+        }
+        hintSeq(steps, fin);
+        }, done);
+      }
+
+      /* RUNG 3: "दूसरा डिब्बा lock हो जाएगा (शब्द सिर्फ सही डिब्बे में जाएगा)।"
+         Scoped to the CARD, not to the screen - the attempt ladder here is per item, and a
+         screen-wide lock earned by one card would refuse a different card the coach it actually
+         belongs in. The drop handler reads `only` and hands the card back without counting it,
+         so a child who keeps trying the wrong coach is not punished for it either. */
+      const lockToBin = (tile, want)=>{ tile.dataset.only = String(want); };
+
       [...tray.children].forEach(tile => {
-        tile.onclick = ()=>{ if(tile.dataset.audio && !isPlaying)
+        tile.onclick = ()=>{ if(tile.dataset.audio && !isPlaying && !hintBusy)
           say(clip(tile.dataset.audio), ()=>{}); };
         /* SME lists TWO sounds here, not one: "Light tap / pick-up sound when a card is selected"
            and "Soft drop sound when the card is placed". They were both the same tap. */
         makeDraggable(tile, (zone)=>{
+          if(hintBusy) return;                      /* a demonstration is speaking */
           const body = zone.closest(".tr-body"); if(!body) return;
           const ci = parseInt(body.dataset.idx, 10);
+          /* rung 3 has already named this card's coach: every other one simply will not take it,
+             and refusing is NOT a wrong attempt - the child has run out of ladder. */
+          if(tile.dataset.only != null && String(ci) !== tile.dataset.only){
+            tile.style.transform = "";
+            tile.classList.remove("tr-cshake"); void tile.offsetWidth;
+            tile.classList.add("tr-cshake");
+            setTimeout(()=> tile.classList.remove("tr-cshake"), 560);
+            return;
+          }
           if(d.bins[ci].key === tile.dataset.bin){
             /* SME: "Correct Answer on 3rd Attempt … No VO." Counted PER CARD, because on a sort
                screen each card carries its own attempt ladder. */
@@ -11031,14 +11610,30 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
             if(typeof setSwMood === "function") setSwMood("tryagain");
             train.shake(ci);
             tile.style.transform = "";
+            /* "गलत डिब्बे में डाला गया शब्द soft shake करके अपनी जगह वापस आ जाएगा।" The COACH
+               shook already; the CARD did not - makeDraggable clears its transform before it
+               hands over, so it was simply home a frame later with nothing to see. */
+            tile.classList.remove("tr-cshake"); void tile.offsetWidth;
+            tile.classList.add("tr-cshake");
+            setTimeout(()=> tile.classList.remove("tr-cshake"), 560);
             SwiftPAL.emit("answer_wrong", { slide_id: slide.id, attempts: state.attempts });
+            const want = binIdx(tile.dataset.bin);
             if(n === 1){
               say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
+            } else if(n === 2 && hintLevels() >= 3){
+              state.hintUsed = true;
+              SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 2 });
+              sortDemo(tile, ()=> say(clip(tile.dataset.h2) || A(slide, "hint2")
+                                      || A(slide, "hint") || A(slide, "try_again"), ()=>{}));
             } else {
               state.hintUsed = true;
-              say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
-                  /* [r25] from the card the child is holding to the cart it belongs in */
-                  ()=> train.nudgeTo(binIdx(tile.dataset.bin), tile, slide));
+              SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 3 });
+              lockToBin(tile, want);
+              /* [r25] from the card the child is holding to the cart it belongs in */
+              withHand3(()=> train.nudgeTo(want, tile, slide));
+              if(train.coaches[want]) train.coaches[want].el.classList.add("is-nudge");
+              say(clip(tile.dataset.h3) || A(slide, "hint3") || A(slide, "hint2")
+                  || A(slide, "hint") || A(slide, "try_again"), ()=>{});
             }
           }
         }, { onPick: ()=>{ if(typeof sfxTap === "function") sfxTap(); } });
@@ -11058,7 +11653,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
               ()=> setTimeout(step, 160));
         })();
       }));
-      setTimeout(()=>{ state.revealing = false;
+      setTimeout(()=>{ if(!hintBusy) state.revealing = false;   /* never cut a demonstration short */
         [...tray.children].forEach(t => t.classList.remove("tr-seq-hidden")); }, 20000);
     }
   };
@@ -12129,16 +12724,51 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       let done = 0;
       const perCard = new Map();
 
+      /* RUNG 2, screen 6: "तीनों चित्रों के नाम एक-एक करके read out करें ... नाम बोलते समय वह
+         चित्र glow करे और उसके डिब्बे की खाली जगह blink करे।" A coach whose blank is already
+         filled is skipped - its name is no longer a question. */
+      const wbDemo = (after)=> hintHold((fin)=> hintSeq(d.slots.map((sl, i)=> (next)=>{
+        const c = train.coaches[i];
+        const bl = c && c.body.querySelector(".wb-blank");
+        if(!c || !bl || bl.classList.contains("filled")) return next();
+        c.label.classList.add("wb-read");
+        bl.classList.add("wb-blink");
+        say(clip(sl.name_audio), ()=> setTimeout(()=>{
+          c.label.classList.remove("wb-read");
+          bl.classList.remove("wb-blink");
+          next();
+        }, 240));
+      }), fin), after);
+
+      /* Which coach is still waiting. Used for the पा case below - a blank that has been filled
+         has had its whole holder replaced by the finished word, so "still has an empty .wb-blank"
+         is the same question as "is still a question". */
+      const firstEmpty = ()=> d.slots.findIndex((sl, k)=>{
+        const c = train.coaches[k];
+        const b = c && c.body.querySelector(".wb-blank");
+        return !!b && !b.classList.contains("filled");
+      });
+
       [...tray.children].forEach(tile => {
         /* SME: "Optional word support VO when a card is tapped: पु / फू / सु — This will help the
            child connect the picture, sound, and correct word formation." */
-        tile.onclick = ()=>{ if(tile.dataset.audio && !isPlaying && !tile.classList.contains("snapped"))
+        tile.onclick = ()=>{ if(tile.dataset.audio && !isPlaying && !hintBusy
+                              && !tile.classList.contains("snapped"))
           say(clip(tile.dataset.audio), ()=>{}); };
 
         makeDraggable(tile, (zone)=>{
+          if(hintBusy) return;                      /* a demonstration is speaking */
           const blank = zone.closest(".wb-blank"); if(!blank) return;
           if(blank.classList.contains("filled")) return;
           const i = parseInt(blank.dataset.idx, 10);
+          /* rung 3 has already named this letter's coach - see lockToBin's twin in TRAIN_SORT */
+          if(tile.dataset.only != null && String(i) !== tile.dataset.only){
+            tile.style.transform = "";
+            tile.classList.remove("tr-cshake"); void tile.offsetWidth;
+            tile.classList.add("tr-cshake");
+            setTimeout(()=> tile.classList.remove("tr-cshake"), 560);
+            return;
+          }
           const slot = d.slots[i];
           tile.style.transform = "";
           if(tile.dataset.akshar + slot.tail === slot.word){
@@ -12175,28 +12805,49 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
             if(typeof sfxWrongSoft === "function") sfxWrongSoft();
             if(typeof setSwMood === "function") setSwMood("tryagain");
             train.shake(i);
+            /* "गलत डिब्बे में डाला गया अक्षर soft shake करके अपनी जगह वापस आ जाएगा।" */
+            tile.style.transform = "";
+            tile.classList.remove("tr-cshake"); void tile.offsetWidth;
+            tile.classList.add("tr-cshake");
+            setTimeout(()=> tile.classList.remove("tr-cshake"), 560);
             SwiftPAL.emit("answer_wrong", { slide_id: slide.id, attempts: state.attempts });
             if(n === 1){
-              /* SME: "No hand nudge. Only VO." */
+              /* RUNG 1: "No hand nudge. Only VO." */
               say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
-            } else {
+            } else if(n === 2 && hintLevels() >= 3){
               state.hintUsed = true;
               SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 2 });
-              say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"), ()=>{
-                /* "Show hand nudge on the correct blank space." The correct blank is the one this
-                   tile actually completes. A DISTRACTOR completes nothing, so there is no such
-                   blank — pointing at any of them would teach the wrong thing. In that case the
-                   coach the child dropped on is glowed instead, which sends them back to its
-                   picture, and the hand is withheld. */
-                const want = d.slots.findIndex(s => tile.dataset.akshar + s.tail === s.word);
-                const at = want >= 0 ? want : i;
-                const bl = train.coaches[at].body.querySelector(".wb-blank");
-                /* [r25] the hand carries the letter to the blank it fills. Only when there IS a
-                   blank for it: a distractor completes nothing, so there the cart is glowed and
-                   the hand withheld, exactly as before. */
-                train.nudgeTo(at, (want >= 0 ? tile : null), slide, (want >= 0 ? bl : null));
-                if(bl && want >= 0) bl.classList.add("wb-pulse");
-              });
+              wbDemo(()=> say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
+                              ()=>{}));
+            } else {
+              state.hintUsed = true;
+              SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 3 });
+              /* THE HAND CARRIES A LETTER TO THE BLANK IT FILLS. Normally that is the tile the
+                 child is holding. For पा there is no such blank - it completes nothing - and
+                 Review-1 says what to do instead: "अगर बच्चा 'पा' डालता है, तो Hint 3 में अगले
+                 खाली डिब्बे का सही अक्षर nudge होगा।" So the hand leaves the distractor alone and
+                 travels from the letter that DOES fill the next empty coach, to that coach.
+                 (r63 and earlier withheld the hand here, which left the one child who most needed
+                 rung 3 with nothing but a glow.) */
+              let want = d.slots.findIndex(s => tile.dataset.akshar + s.tail === s.word);
+              let from = tile;
+              if(want < 0){
+                want = firstEmpty();
+                const sl = want >= 0 ? d.slots[want] : null;
+                from = sl ? [...tray.children].find(t => !t.classList.contains("snapped")
+                              && t.dataset.akshar + sl.tail === sl.word) : null;
+              }
+              const at = want >= 0 ? want : i;
+              const bl = train.coaches[at].body.querySelector(".wb-blank");
+              /* the letter now goes to that blank and nowhere else */
+              if(from && want >= 0) from.dataset.only = String(want);
+              withHand3(()=> train.nudgeTo(at, (want >= 0 ? from : null), slide,
+                                           (want >= 0 ? bl : null)));
+              if(bl && want >= 0) bl.classList.add("wb-pulse");
+              if(from && from !== tile) from.classList.add("wb-callout");
+              const sl3 = want >= 0 ? d.slots[want] : null;
+              say(clip(sl3 && sl3.hint3_audio) || A(slide, "hint3") || A(slide, "hint2")
+                  || A(slide, "hint") || A(slide, "try_again"), ()=>{});
             }
           }
         }, { onPick: ()=>{ if(typeof sfxTap === "function") sfxTap(); } });
@@ -14266,6 +14917,8 @@ if(document.fonts && document.fonts.load){
         b.className = "sc-opt";
         b.dataset.word = o.word;
         if(o.audio) b.dataset.audio = o.audio;
+        /* the whole sentence with THIS word standing in the blank - rung 2 plays all three */
+        if(o.sentence_audio) b.dataset.sentence = o.sentence_audio;
         b.innerHTML = imgOrEmoji(o.img, o.emoji, "sc-optimg", "sc-optemoji") +
                       '<span class="ink-box"><span class="sc-optlbl ink-glyph">' + o.word + "</span></span>";
         optsW.appendChild(b);
@@ -14276,6 +14929,60 @@ if(document.fonts && document.fonts.load){
       state.replayAudio = ()=> say(A(slide, "prompt"), ()=>{});
       setNavActive(false);
       let tries = 0;
+
+      /* RUNG 2, screens 8-11: "खाली जगह में तीनों शब्द एक-एक करके रखकर पूरा वाक्य read out करें"
+         plus a soft glow on the part of the picture that answers the question. The two wrong
+         sentences are read as well, on purpose: «सीमा आज बहुत तरबूज है।» is only obviously wrong
+         once you have HEARD it, and hearing it is the whole lesson on these four screens.
+         The words are tried in the order they are on screen, left to right, because that order
+         is shuffled per run and it is the only one the child can follow. */
+      function sceneGlow(on){
+        const holder = wrap.querySelector(".sc-scene");
+        if(!holder) return;
+        holder.querySelectorAll(".sc-glow").forEach(e => e.remove());
+        const regions = d.scene_glow || [];
+        if(!on || !regions.length) return;
+        const img = holder.querySelector(".sc-sceneimg");
+        if(!img || !img.naturalWidth) return;
+        /* the regions are fractions of the ARTWORK and the artwork is drawn object-fit:cover, so
+           part of it is off the panel. Undo the cover here rather than baking the crop into the
+           numbers, and they stay right if the panel is ever resized. */
+        const cw = img.clientWidth, ch = img.clientHeight;
+        const sc = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+        const iw = img.naturalWidth * sc, ih = img.naturalHeight * sc;
+        const ox = (cw - iw) / 2, oy = (ch - ih) / 2;
+        regions.forEach(g => {
+          const e = document.createElement("span");
+          e.className = "sc-glow";
+          e.style.left   = (ox + (g[0] - g[2]) * iw) + "px";
+          e.style.top    = (oy + (g[1] - g[3]) * ih) + "px";
+          e.style.width  = (g[2] * 2 * iw) + "px";
+          e.style.height = (g[3] * 2 * ih) + "px";
+          holder.appendChild(e);
+        });
+      }
+
+      function scDemo(after){
+        hintHold(function(fin){
+        sceneGlow(true);
+        hintSeq(opts.map(b => (next)=>{
+          if(b.classList.contains("sc-gone")) return next();
+          blank.classList.add("sc-try");
+          blank.innerHTML = '<span class="ink-box"><span class="sc-word ink-glyph">'
+                          + b.dataset.word + "</span></span>";
+          b.classList.add("sc-trying");
+          say(clip(b.dataset.sentence) || clip(b.dataset.audio), ()=> setTimeout(()=>{
+            b.classList.remove("sc-trying");
+            next();
+          }, 300));
+        }), ()=>{
+          /* the blank goes back to being a blank - nothing has been answered yet */
+          blank.classList.remove("sc-try");
+          if(!blank.classList.contains("filled")) blank.innerHTML = "";
+          fin();
+        });
+        }, after);
+      }
 
       function sparkAt(el){
         const s = wrap.getBoundingClientRect(), b = el.getBoundingClientRect();
@@ -14425,21 +15132,31 @@ if(document.fonts && document.fonts.load){
         }
         SwiftPAL.emit("answer_wrong", { slide_id: slide.id, phase: slide.phase, attempts: tries });
         if(tries === 1){
-          say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});   // SME: no hand on the 1st miss
-        } else {
+          /* RUNG 1: shake, no highlight, one line */
+          say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
+        } else if(tries === 2 && hintLevels() >= 3){
+          /* RUNG 2: the three sentences, then the line that tells the child what to do with them */
           state.scaffoldLevel = 2; state.hintUsed = true;
           SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 2 });
-          say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"), ()=>{
-            const right = opts.find(x => x.dataset.word === d.answer);
-            if(!right) return;
-            /* "Correct option gives a soft pulse/glow" — ours, not phase-gated, so a practice
-               screen still escalates. "Show hand nudge on the correct option" goes through
-               handOnAnswer(), which is where ruling [28f] is enforced: the hand appears in
-               tutorial and guided and is withheld in practice. Flagged to the SME rather than
-               silently overriding either side. */
+          scDemo(()=> say(A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
+                          ()=> sceneGlow(false)));
+        } else {
+          /* RUNG 3: "'खुश' वाले शब्द पर soft glow और hand nudge। 'फूल' और 'तरबूज' lock हो जाएँगे।"
+             `disabled` already stops the tap and the drop (chooseFrom and the drop handler both
+             test it); `sc-locked` takes the card out of pointer-events entirely, so it cannot
+             even be picked up - a card that lifts and then silently refuses to land reads as a
+             broken card rather than a locked one. */
+          state.scaffoldLevel = 3; state.hintUsed = true;
+          SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 3 });
+          sceneGlow(false);
+          const right = opts.find(x => x.dataset.word === d.answer);
+          opts.forEach(x => { if(x !== right){ x.disabled = true; x.classList.add("sc-locked"); } });
+          if(right){
             right.classList.add("sc-nudge");
-            if(typeof handOnAnswer === "function") handOnAnswer(right, slide);
-          });
+            withHand3(()=>{ if(typeof handOnAnswer === "function") handOnAnswer(right, slide); });
+          }
+          say(A(slide, "hint3") || A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
+              ()=>{});
         }
       }
 
@@ -14511,17 +15228,21 @@ if(document.fonts && document.fonts.load){
       }
 
       const chooseFrom = (b, fromZone)=>{
-        if(state.locked || b.disabled) return;
+        if(hintBusy || state.locked || b.disabled) return;
         sayOpt(clip(b.dataset.audio), ()=>{
           if(state.locked) return;
           if(b.dataset.word === d.answer) land(b); else miss(b, fromZone);
         });
       };
       opts.forEach(b => {
+        /* [r65] Yasir: "from page 13 to 16 only dragging & dropping should work, currently even
+           if I tap the word goes to the drop zone which should not happen". So a tap reads the
+           word out - the SME's "when an option is tapped, play the word VO" - and that is all it
+           does. The judgement lives in the drop handler alone now. */
         const tap = ()=>{
-          if(state.locked || isPlaying || b.disabled) return;
+          if(hintBusy || state.locked || isPlaying || b.disabled) return;
           if(typeof sfxTap === "function") sfxTap();
-          chooseFrom(b);                       /* the tap READS the word and CHOOSES it */
+          sayOpt(clip(b.dataset.audio), ()=>{});
         };
         b.onclick = tap;
         if(typeof makeDraggable === "function"){
@@ -14529,7 +15250,7 @@ if(document.fonts && document.fonts.load){
             /* dropped on the blank: the same judgement the tap makes. A wrong card is NOT left
                sitting in the blank - miss() shakes it and it springs back, which is the note's
                "option returns to its original position". */
-            if(state.locked || tile.disabled) return;
+            if(hintBusy || state.locked || tile.disabled) return;
             if(typeof sfxTap === "function") sfxTap();
             /* [r33] decided here, not after the clip: the judgement is deterministic, and the
                card has to be pinned in the SAME frame it is released or it snaps home first. */
@@ -15340,6 +16061,27 @@ if(document.fonts && document.fonts.load){
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /* ---------- 13. CONTROLLER ---------- */
 /* r4: gold star burst for the celebration finale (adopted from Shruti's build) */
 function starBurst(){
@@ -15563,7 +16305,16 @@ function phaseBlurTransition(cb, toPhase){
      URL per gate, so the 1286KB bird downloaded AGAIN at every transition — measured 2026-08-08:
      one session with 2 gates = 3 fetches = 3.9MB for one asset, and on the tab's Wi-Fi that download
      races the gate VO. Clearing src + forcing a reflow restarts the animated WebP from the cached copy. */
-  if(img){ img.removeAttribute("src"); void img.offsetWidth; img.src = "assets/UI/peeking.webp"; }
+  /* [r65] A CARD MAY BRING ITS OWN GATE BIRD, AND SAY WHEN SHE STARTS TALKING.
+     Yasir's swifty_seeking_transition: she rises, peeks, rises again and only THEN speaks - the
+     mouth starts moving 3.8s in. So the VO is held back by `talk_at_ms` and starts on her first
+     word instead of over her climb. Additive: a card without CARD.gate gets the stock peek and
+     the stock timing, byte for byte. */
+  const _G = (CARD && CARD.gate) || {};
+  const _gateSrc = _G.img || "assets/UI/peeking.webp";
+  const _talkAt  = _G.img ? Math.max(0, _G.talk_at_ms || 0) : 0;
+  if(img){ img.classList.toggle("pg-card", !!_G.img);
+           img.removeAttribute("src"); void img.offsetWidth; img.src = _gateSrc; }
   const title = $("phaseGateTitle"); if(title) title.textContent = PHASE_GATE_TITLE[toPhase] || "";
   $("stage").classList.add("blurred", "gating");
   document.body.classList.add("gating");
@@ -15574,6 +16325,7 @@ function phaseBlurTransition(cb, toPhase){
   const voId = PHASE_GATE_VO[toPhase];
   const voSrc = voId ? ("assets/Audio/" + voId + "." + AUDIO_EXT) : null;   // [20a] use AUDIO_EXT path so generated clips resolve (was: assets.audio .mp3 map -> silent)
   const openedAt = Date.now();
+  setTimeout(()=>{ if(tok !== _gateToken){ closeGate(); return; }
   play(voSrc, ()=>{
     if(tok !== _gateToken){ closeGate(); return; }               // a newer gate superseded us
     const hold = Math.max(200, 2000 - (Date.now() - openedAt));  // Swiftie peeks ≥2s even with no/short VO
@@ -15586,6 +16338,7 @@ function phaseBlurTransition(cb, toPhase){
       document.body.classList.remove("gating");
     }, hold);
   });
+  }, _talkAt);                                  /* [r65] she speaks when her mouth moves */
 }
 
 function completeSlide(success){
