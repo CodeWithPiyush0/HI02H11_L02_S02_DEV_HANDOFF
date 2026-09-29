@@ -12965,16 +12965,19 @@ const hasUU = w => w.indexOf(UU) >= 0;
 const ONLY_U  = POOL_U.filter(w=>hasU(w[0])  && !hasUU(w[0]));
 const ONLY_UU = POOL_UU.filter(w=>hasUU(w[0]) && !hasU(w[0]));
 
-/* बोली जाने वाली पंक्तियाँ — assets/audio/<id>.mp3 */
+/* बोली जाने वाली पंक्तियाँ — assets/MatraRunner/voice/<id>.ogg */
+/* [r76] the lesson's आप register, as the recordings now speak it (the SME's round-3 rule: the
+   lesson build fails any clip with a तुम form, and these only escaped because they had never been
+   recorded). This text is what the device's own TTS reads if a recording is ever missing. */
 const LINES = {
-  goal_u   : "छोटी उ की मात्रा वाले शब्द चुनो",
-  goal_uu  : "बड़ी ऊ की मात्रा वाले शब्द चुनो",
-  right    : "शाबाश",
-  wrong    : "फिर से देखो",
+  goal_u   : "छोटी उ की मात्रा वाले शब्द चुनिए!",
+  goal_uu  : "बड़ी ऊ की मात्रा वाले शब्द चुनिए!",
+  right    : "शाबाश!",
+  wrong    : "फिर से देखिए।",
   correct_is:"सही शब्द है",
-  level_up : "बहुत बढ़िया",
-  retry    : "कोई बात नहीं, फिर से कोशिश करो",
-  win      : "शाबाश, सारे द्वार पार हो गए"
+  level_up : "बहुत बढ़िया!",
+  retry    : "कोई बात नहीं, फिर से कोशिश कीजिए।",
+  win      : "शाबाश, सारे द्वार पार हो गए!"
 };
 
 /* ======================= स्तर (levels) ======================= */
@@ -13042,7 +13045,7 @@ function saveBest(){ try{ localStorage.setItem("matraRunnerBest", String(G.best)
 
 /* ======================= आवाज़ (sfx + voiceover) =======================
    मोड: 2 = आवाज़ + शब्द बोलना, 1 = सिर्फ़ आवाज़, 0 = बंद
-   हर शब्द पहले assets/audio/<id>.mp3 से बजता है।
+   हर शब्द पहले assets/MatraRunner/voice/<id>.ogg से बजता है।
    फ़ाइल न मिले तो डिवाइस की हिंदी आवाज़ (Web Speech) से बोला जाता है। */
 let AC=null, MASTER=null, MUSBUS=null, SFXBUS=null, NOISE=null;
 
@@ -13331,7 +13334,11 @@ function watchLessonVO(){
 
 const VOICE = {
   mode: 2,
-  dir: "assets/MatraRunner/audio/",
+  /* [r76] real recordings now - Gemini TTS, voice Leda, the lesson's own narrator. They were
+     never recorded before, so every line fell through to the device's TTS. Their own folder, and
+     the capital-free path matters: the lesson's folder is assets/Audio, and on a case-sensitive
+     server assets/audio is a different, empty, folder. */
+  dir: "assets/MatraRunner/voice/",
   noFile: {},          // जिन id की mp3 नहीं मिली
   queue: [], busy:false, hindi:null,
 
@@ -13351,29 +13358,62 @@ const VOICE = {
     this.pump();
   },
   clear(){
-    this.queue.length = 0; this.busy = false; MUSIC.duck(false);
+    this.queue.length = 0; this.busy = false; this.tok = (this.tok || 0) + 1; MUSIC.duck(false);
     try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
-    if(this.el){ try{ this.el.pause(); }catch(e){} }
+    if(this.src){ try{ this.src.stop(); }catch(e){} this.src = null; }
+  },
+  /* [r76] THE CLIPS ARE DECODED INTO MEMORY AT BOOT and played through the game's own audio
+     engine, like the music and the effects. Two measured failures of the <audio> element route:
+     a clip created on first use had 700 ms to start or it fell back to the device's robotic TTS
+     (five words did, in one run, and were then marked missing for good); and warming 54 <audio>
+     elements does not work either - the browser capped them and fetched 33. A decoded buffer
+     starts in the same frame it is asked for. */
+  bufs: {}, loading: {}, tok: 0,
+  preload(){
+    if(this._pre) return;
+    const ac = audioReady(); if(!ac) return;
+    this._pre = true;
+    if(!this.bus){ this.bus = ac.createGain(); this.bus.gain.value = 1.1; this.bus.connect(MASTER); }
+    const ids = Object.keys(LINES).concat(POOL_U.map(w => w[1]), POOL_UU.map(w => w[1]));
+    ids.forEach(id => {
+      this.loading[id] = fetch(this.dir + id + ".ogg")
+        .then(r => { if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+        .then(ab => new Promise((res, rej) => ac.decodeAudioData(ab, res, rej)))
+        .then(buf => { this.bufs[id] = buf; })
+        .catch(() => { this.noFile[id] = true; });
+    });
   },
   pump(){
+    this.preload();
     if(this.busy || !this.queue.length || this.mode < 2) return;
     const it = this.queue.shift(); this.busy = true;
+    const tok = this.tok;
     MUSIC.duck(true);                       /* the spoken word comes first; the bed steps back */
+    /* `tok` makes a line that was cut short by clear() unable to start the next one: without it a
+       stopped clip's ended event arrives AFTER the new line has begun, and two voices overlap */
     const next = ()=>{
-      this.busy=false;
+      if(tok !== this.tok) return;
+      this.busy = false; this.src = null;
       if(!this.queue.length) MUSIC.duck(false);
       setTimeout(()=>this.pump(), 180);
     };
-    if(this.noFile[it.id]) return this.tts(it.text, next);
-    const a = new Audio(this.dir + it.id + ".mp3");
-    this.el = a;
-    let done=false;
-    const fail = ()=>{ if(done) return; done=true; this.noFile[it.id]=true; this.tts(it.text, next); };
-    a.onended = ()=>{ if(!done){ done=true; next(); } };
-    a.onerror = fail;
-    const pr = a.play();
-    if(pr && pr.catch) pr.catch(fail);
-    setTimeout(()=>{ if(!done && a.paused) fail(); }, 700);
+    let started = false;
+    const go = ()=>{
+      if(started || tok !== this.tok) return; started = true;
+      const buf = this.bufs[it.id];
+      if(buf && AC){
+        const src = AC.createBufferSource(); src.buffer = buf; src.connect(this.bus);
+        src.onended = next; this.src = src; src.start();
+      } else {
+        this.tts(it.text, next);            /* no recording for this line: the device's voice */
+      }
+    };
+    if(this.bufs[it.id] || this.noFile[it.id] || !this.loading[it.id]) go();
+    else {
+      /* still decoding (only possible in the first second after boot): wait for it, briefly */
+      this.loading[it.id].then(go, go);
+      setTimeout(go, 1500);
+    }
   },
   tts(text, cb){
     if(!window.speechSynthesis){ cb(); return; }
@@ -13530,6 +13570,7 @@ function seedDecor(){
 
 /* ======================= level control ======================= */
 function startLevel(i){
+  VOICE.preload();
   const L = LEVELS[i];
   G.level=i; G.speed=L.speed; G.target = L.target || U;
   G.gates=[]; G.coins=[]; G.parts=[]; G.pops=[];

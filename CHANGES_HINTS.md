@@ -394,3 +394,31 @@ with the short rise, sat on it like a blob. On the cover they now start at the r
 climb a little further (0.36 of the activity-screen rise) and lean 14 px back-left - away from the
 title, which begins just right of the chimney. The faintest top puffs reach the empty lower-left
 corner of the title's layout box but stay clear of the letters, and the title is layered above them.
+
+
+## r76 — the runner speaks in the lesson's voice
+
+Yasir: the runner's TTS "does not feel good and appealing" - generate Indian Hindi TTS.
+
+**Why it sounded robotic:** none of the runner's 54 lines (8 game lines + 46 words) had ever been
+recorded. Every one fell through to the device's built-in speech synthesiser.
+
+**Recorded:** all 54 with Gemini TTS in **Leda**, the lesson's own narrator, so the game sounds like
+the rest of the lesson. The first pass put 13 clips on fallback voices (Kore / Despina) and refused
+one (मधु) - a game that changes narrator word to word sounds broken - so those were re-taken in
+Leda only, with small punctuation variants, until each landed (मधु on the 6th try). Then every clip
+had its dead air trimmed (16.6 s in total), was levelled to the lesson's VO loudness (-16 LUFS) and
+encoded mono Vorbis: 54 files, 512 KB, in `assets/MatraRunner/voice/`. No take is truncated
+(fastest 0.060 s/char against the lesson's 0.069 norm). Recording card kept in
+`1_SPEC/game_art_src/runner_voice/runner_voice_card.json` - `gen_tts.py <card> --voice Leda --ext ogg`.
+
+**Register:** the game's lines were तुम-form (चुनो / देखो / कोशिश करो). The SME's round-3 rule is आप
+throughout, and the lesson build fails any clip with a तुम form - these only escaped because they had
+never been recorded. They are recorded, and shown, as चुनिए / देखिए / कीजिए.
+
+**The player, fixed twice over:** it created each clip on first use and gave up after 700 ms,
+falling back to device speech and marking the word missing for good (five words did in one run);
+warming 54 `<audio>` elements instead did not work either (the browser fetched 33). The clips are
+now decoded into memory at boot and played through the game's audio engine, like the music and
+effects. A line cut short can no longer start the next one on top of a new line. Verified in two
+full runs: 54/54 fetched, **0 device-speech fallbacks**, no console errors.
