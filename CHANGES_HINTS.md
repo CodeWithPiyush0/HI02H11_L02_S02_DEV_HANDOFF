@@ -505,3 +505,15 @@ voice clips, music and feedback sounds now carry `?v=` too, stamped by the build
 (`__MR_AUDIO_V_STAMP__`).
 
 **To go live:** commit and push r77-r80, including the new `level_next.ogg`.
+
+## r81 — the runner game speaks with the new recorded VO
+
+The 55 WAVs supplied in `assets/MatraRunner/voice/voiceovers/` (one per clip, same Audio IDs) now
+replace the Gemini TTS takes. As delivered they carried ~0.5 s of silence at each end and ranged
+from -14 to -23.5 LUFS, so `1_SPEC/prepare_runner_voice.py` trims the dead air (30 ms kept before
+the voice, 90 ms after), levels each clip to -16 LUFS behind a -3 dBFS peak limiter (Vorbis
+overshoots sharp consonants), and encodes mono Vorbis 24 kHz. Result: -17.8 to -15.6 LUFS, highest
+peak -1.3 dBFS, 55/55. The runner audio stamp moved (ac8f414d709c -> 4a03b8fa4403), so browsers
+fetch the new takes. Played through: every line and target word plays; words end ~3 s before their
+pair. Sources copied to `1_SPEC/game_art_src/runner_voice/source_wav/`; the previous takes kept in
+`runner_voice/takes_gemini_leda_r79/`; the `voiceovers/` folder is excluded from the deploy.

@@ -20,3 +20,9 @@ README.md
 
 # The game's SOURCE now lives in 1_SPEC (already excluded above) and its code is compiled
 # into the lesson itself, so there is nothing game-shaped left to ignore here.
+
+# VO / asset manifests are production briefs, not part of the lesson
+*.xlsx
+
+# the raw WAVs supplied for the runner voice: the game plays the .ogg files next to them
+3_CURRENT_BUILD/assets/MatraRunner/voice/voiceovers/
