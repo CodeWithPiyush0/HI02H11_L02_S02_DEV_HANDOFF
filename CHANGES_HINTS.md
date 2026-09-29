@@ -422,3 +422,86 @@ warming 54 `<audio>` elements instead did not work either (the browser fetched 3
 now decoded into memory at boot and played through the game's audio engine, like the music and
 effects. A line cut short can no longer start the next one on top of a new line. Verified in two
 full runs: 54/54 fetched, **0 device-speech fallbacks**, no console errors.
+
+## r77 — menu jumps go quiet, no first-draft flash, no panels in the game, one word spoken
+
+**1. Skipping pages with the menu.** Nothing on the jump path stopped sound: the page left behind
+kept talking (up to 3.4 s into the next page), the cover greeting ran on over page 1, and the
+train's chug / whistle carried over. Now arriving on any page stops the engine's voice and every
+train sound still playing (`mountSlide` → `stopAudio()` + `__stopLessonSfx()`; train sounds are
+tracked while they play). A jump also cancels a phase transition in flight, which would otherwise
+mount the page it was heading for on top of the chosen one. The normal flow is unchanged.
+Also: the engine's 7 s "idle" reminder replayed the game page's instruction over the running game
+(the child steers with keys/swipes the engine never sees) — the game page is now excluded, like
+the celebration. Verified with real playback over 3 jump runs: zero clips from a page left behind.
+
+**2. The first-draft game on entry.** On a first visit the runner drew its code-only fallback
+(night sky, flat road, placeholder tiger) for ~0.8 s while its art downloaded. A curtain in the
+valley's colours now covers the game until the first frame's art is in (capped at 3.5 s), then
+fades; and 10 s after the lesson opens, the game's art, music and video are fetched quietly into
+the cache so on a normal run the curtain barely shows. Cold load (cache off): curtain only, then
+the real bridge — no first-draft frame.
+
+**3. No instruction panels.** At the end of a level the screen blurs and dims and only the voice
+plays: «वाह! अब इस लेवल को पार कीजिए।» + the next goal, then the next level starts. The fall
+and the end of the game veil the same way; no card is shown anywhere (the win screen element is
+kept, hidden, because the lesson listens for it to move on). New clip `level_next.ogg`.
+
+**4. The voice.** Goals are now «छोटी उ की मात्रा वाले शब्द पकड़िए।» / «बड़ी ऊ की मात्रा वाले शब्द
+पकड़िए।» (re-recorded in Leda, -16 LUFS). At each pair of portals only the TARGET word — the one to
+catch — is spoken. The first goal waits for the lesson's own instruction to finish instead of
+speaking over it.
+
+## r78 — the game's voice plays, every target word is heard, one portal colour, wider spacing
+
+**Why no VO played.** Two causes. (a) Opened as a file (double-clicked, `file://`), the browser
+refuses `fetch()` of local files, and the game loaded its voice, music and feedback sounds only
+that way: the voice fell to the device's TTS, which has no Hindi voice on Windows (silence), the
+music to the synthesised bed, the feedback to synthesised tones. They now play through `<audio>`
+elements there, as the lesson's own voice always has. The music keeps its 80 % level and its duck
+under voice/effects (its volume follows the music bus). (b) Even on a server, each target word was
+spoken while the previous pair was still ahead, and passing that pair stopped the voice for its
+feedback - cutting the word off. From the second pair on, no word was heard.
+
+**Now:** the word to catch is spoken only for the next pair, after the previous pair's feedback.
+If it has not been heard to the end by the time its pair is two-thirds of the way in, the run
+eases to a fifth of its speed until it has (at most 7 s). Verified, file:// and http, 9 pairs
+each including two wrong answers: every word heard, 4.0-5.4 s before its pair arrived.
+
+**Portals:** both the same (the golden variant is no longer used); only the words differ.
+
+**Spacing:** pairs are 1.05 of the road apart instead of 0.52 - about 6.5 s from one pair to the
+next. A level no longer makes one spare pair at its end. After the veil, the next level's first
+pair starts nearer, so its word follows the goal by about two to three seconds.
+
+## r79 — the level transition's voice gets the stage; the target word plays at the portal
+
+**The transition.** «वाह! अब इस लेवल को पार कीजिए।» started in the same instant as the level-up
+chime, while the last «शाबाश!» was being cut off, and the music rose in the gap between the two
+lines. Now: «शाबाश!» is heard out, then the screen veils and the chime plays, and a second later
+the two lines are spoken with the music held down (0.18) for the whole transition.
+
+**The target word** is spoken as its pair comes near (0.62 of the road - about 3.5 s before it
+arrives, the word ending ~3.3 s before), only after 0.7 s of quiet, and never over the lesson's
+voice. After a wrong answer the feedback ends on the missed pair's right word («सही शब्द है
+सूरज»); the next target used to follow within 0.3 s - two words back to back - and now waits
+1.5 s of quiet (measured 1.7-1.8 s). If its word is late the run slows until it has been heard.
+After the transition, level 2's first pair starts nearer so its word follows the goal sooner.
+Verified in a visible Chrome with real clicks and key presses (normal autoplay rules), opened as a
+file and from a server: every line played, no refused play, 8/8 target words heard 3.0-3.7 s
+before their pair.
+
+## r80 — why the voice worked here and not in manual testing; the game's sounds cache-busted
+
+**Cause.** Manual testing is on the Vercel deployment (hi-02-h11-l02-s02-dev-handoff.vercel.app),
+which deploys from GitHub - and r77-r79 were never committed. Checked on 2026-09-29: the live
+page is the r76 build (speaks both portal words, no level transition line), `level_next.ogg` is
+404, and `goal_u.ogg` is the old take (22 KB against 26 KB here).
+
+**Second trap.** vercel.json serves `/assets/` as `immutable` for a year. The lesson's own clips
+carry `?v=<hash of the audio folder>` (r17) so a re-recording reaches the browser; the game's did
+not, so even after a deploy a browser that had the old goal_u / goal_uu would keep them. The game's
+voice clips, music and feedback sounds now carry `?v=` too, stamped by the build from their content
+(`__MR_AUDIO_V_STAMP__`).
+
+**To go live:** commit and push r77-r80, including the new `level_next.ogg`.

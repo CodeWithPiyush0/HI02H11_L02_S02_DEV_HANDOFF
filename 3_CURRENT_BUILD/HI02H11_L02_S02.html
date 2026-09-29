@@ -6073,12 +6073,15 @@ function armIdleVo(){
   if(_idleVoFired){ stopIdleVo(); return; }      // [27f] one reminder per slide — already spent
   _idleSince = 0;                                // any (re)arm restarts the silence clock
   const slide = CARD.slides[state.idx];
-  if(!slide || slide.type === "CELEBRATION" || !IDLE_VO_PHASES.has(slide.phase)){ stopIdleVo(); return; }
+  /* [r77] NOR THE GAME. It speaks for itself, and the child steers it with keys and swipes this
+     listener never sees - so 7 s into every game the lesson decided the child was idle and read
+     its instruction again over the running game (measured at 11.5 s after entry). */
+  if(!slide || slide.type === "CELEBRATION" || slide.type === "MINI_GAME" || !IDLE_VO_PHASES.has(slide.phase)){ stopIdleVo(); return; }
   if(_idleVoTimer) return;                       // ticker already running for this slide
   const ms = (CARD.scaffold_rules && CARD.scaffold_rules.idle_vo_replay_ms) || 7000;
   _idleVoTimer = setInterval(()=>{
     const s = CARD.slides[state.idx];
-    if(!s || s.type === "CELEBRATION" || !IDLE_VO_PHASES.has(s.phase)){ stopIdleVo(); return; }
+    if(!s || s.type === "CELEBRATION" || s.type === "MINI_GAME" || !IDLE_VO_PHASES.has(s.phase)){ stopIdleVo(); return; }
     // HOLD (not stop) on every transient busy flag. state.locked MUST be a hold: besides "answered
     // correctly" it is also set TRANSIENTLY while reveal_seq narrates the options one by one (see the
     // _enableAll() that clears it). Treating it as terminal killed the ticker 0.6s into every guided
@@ -10430,6 +10433,12 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
      3 first synthesised those with the engine's own _tone(), which gives a two-note beep rather
      than a train. These play the actual files and fall back to the synthesised tone if one is
      ever missing, so a stripped bundle still makes a noise rather than going silent. */
+  /* [r77] every sound started here is remembered until it ends, so arriving on a new page can stop
+     them - they are fire-and-forget <audio> elements, and nothing else ever did */
+  const _sfxLive = new Set();
+  window.__stopLessonSfx = function(){
+    _sfxLive.forEach(a => { try{ a.pause(); a.currentTime = 0; }catch(e){} }); _sfxLive.clear();
+  };
   function sfxFile(name, fallback){
     try{
       /* [r17] versioned like every other clip - see _av() in the engine */
@@ -10437,6 +10446,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         ? _av("assets/Audio/" + name + "." + AUDIO_EXT)
         : "assets/Audio/" + name + "." + AUDIO_EXT);
       a.volume = 0.55;
+      _sfxLive.add(a); a.addEventListener("ended", ()=> _sfxLive.delete(a), { once:true });
       a.play().catch(()=> fallback && fallback());
     }catch(e){ if(fallback) fallback(); }
   }
@@ -12965,13 +12975,21 @@ const hasUU = w => w.indexOf(UU) >= 0;
 const ONLY_U  = POOL_U.filter(w=>hasU(w[0])  && !hasUU(w[0]));
 const ONLY_UU = POOL_UU.filter(w=>hasUU(w[0]) && !hasU(w[0]));
 
+/* [r80] CACHE-BUST THE GAME'S SOUNDS, as the lesson does its own (__AUDIO_V). The deployment
+   serves assets/ as immutable for a year, and a re-recorded clip keeps its filename - so a browser
+   that had heard the old goal_u.ogg would go on playing it after every redeploy. The lesson build
+   stamps this from the CONTENT of the game's voice, music and feedback files, so it moves exactly
+   when one of them changes. Opened on its own the game keeps the placeholder, which is harmless. */
+const MR_AV = "ac8f414d709c";
+const mrv = u => u + "?v=" + MR_AV;
 /* बोली जाने वाली पंक्तियाँ — assets/MatraRunner/voice/<id>.ogg */
 /* [r76] the lesson's आप register, as the recordings now speak it (the SME's round-3 rule: the
    lesson build fails any clip with a तुम form, and these only escaped because they had never been
    recorded). This text is what the device's own TTS reads if a recording is ever missing. */
 const LINES = {
-  goal_u   : "छोटी उ की मात्रा वाले शब्द चुनिए!",
-  goal_uu  : "बड़ी ऊ की मात्रा वाले शब्द चुनिए!",
+  goal_u   : "छोटी उ की मात्रा वाले शब्द पकड़िए।",
+  goal_uu  : "बड़ी ऊ की मात्रा वाले शब्द पकड़िए।",
+  level_next:"वाह! अब इस लेवल को पार कीजिए।",       /* [r77] between levels, with the next goal */
   right    : "शाबाश!",
   wrong    : "फिर से देखिए।",
   correct_is:"सही शब्द है",
@@ -13126,18 +13144,29 @@ function whoosh(o){
 const A4=440, sc = n => A4*Math.pow(2,(n-9)/12);       /* semitones from C */
 /* [r73] Yasir's feedback sounds, decoded once into buffers and played through the effects bus,
    so they duck the music like every other effect. The synthesised cues stay as the fallback. */
-const FB = { correct:null, incorrect:null, asked:false };
+const FB = { correct:null, incorrect:null, asked:false, bad:{}, el:{} };
 function loadFb(){
   if(FB.asked || !AC) return; FB.asked = true;
-  [["correct", "assets/Audio/sfx_fb_correct.ogg"], ["incorrect", "assets/Audio/sfx_fb_incorrect.ogg"]]
+  /* [r78] as a file: one warmed <audio> element each, cloned per play so two can overlap */
+  ["correct", "incorrect"].forEach(k => { FB.el[k] = new Audio(mrv("assets/Audio/sfx_fb_" + k + ".ogg"));
+    FB.el[k].preload = "auto"; });
+  if(LOCAL) return;
+  [["correct", mrv("assets/Audio/sfx_fb_correct.ogg")], ["incorrect", mrv("assets/Audio/sfx_fb_incorrect.ogg")]]
     .forEach(([k, u]) => fetch(u).then(r => { if(!r.ok) throw 0; return r.arrayBuffer(); })
       .then(ab => new Promise((res, rej) => AC.decodeAudioData(ab, res, rej)))
-      .then(b => { FB[k] = b; }).catch(()=>{}));
+      .then(b => { FB[k] = b; }).catch(()=>{ FB.bad[k] = true; }));
 }
 function playFb(k, vol){
   const ac = audioReady(); if(!ac) return false;
   loadFb();
-  const b = FB[k]; if(!b) return false;
+  const b = FB[k];
+  if(!b){
+    if(!(LOCAL || FB.bad[k]) || !FB.el[k]) return false;       /* still loading: the synth cue */
+    try{ const a = FB.el[k].cloneNode(); a.volume = Math.min(1, vol * 0.9);
+      const p = a.play(); if(p && p.catch) p.catch(()=>{}); }catch(e){ return false; }
+    MUSIC.sfxDuck(0.9);
+    return true;
+  }
   const src = ac.createBufferSource(), g = ac.createGain();
   g.gain.value = vol; src.buffer = b; src.connect(g); g.connect(SFXBUS); src.start();
   MUSIC.sfxDuck(b.duration);
@@ -13224,15 +13253,22 @@ const sfxBoing = (at)=>{
    Four bars, C major pentatonic. Scheduled a bar ahead against the audio clock: setTimeout
    drifts with the frame rate and a bed that stutters is worse than no bed at all. */
 /* [r70] the rendered track: see the header of this change in CHANGES_HINTS.md (r70) */
-const BGM = { url:"assets/MatraRunner/bgm_game.ogg", buf:null, loading:false, failed:false,
-              src:null, gain:null };
+/* [r78] OPENED AS A FILE (double-clicked, file://) the browser refuses fetch() of every local file,
+   so the decoded-buffer route this game used for its voice, music and feedback sounds got nothing
+   at all: the voice fell through to the device's TTS - which on Windows has no Hindi voice, i.e.
+   silence - the music to the synthesised bed and the feedback to synthesised tones. The lesson's
+   own player has always fallen back to an <audio> element there; the game now does the same. */
+const LOCAL = location.protocol === "file:";
+const BGM = { url:mrv("assets/MatraRunner/bgm_game.ogg"), buf:null, loading:false, failed:false,
+              src:null, gain:null, el:null, sync:0 };
 function loadBgm(){
+  if(LOCAL){ if(MUSIC.on) MUSIC.playEl(); return; }
   if(BGM.buf || BGM.loading || BGM.failed || !AC) return;
   BGM.loading = true;
   fetch(BGM.url).then(r => { if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
     .then(ab => new Promise((res, rej) => AC.decodeAudioData(ab, res, rej)))
     .then(b => { BGM.buf = b; BGM.loading = false; if(MUSIC.on) MUSIC.playFile(); })
-    .catch(() => { BGM.loading = false; BGM.failed = true; });
+    .catch(() => { BGM.loading = false; BGM.failed = true; if(MUSIC.on) MUSIC.playEl(); });
 }
 const MUSIC = {
   on:false, next:0, bar:0, tmr:0, file:false,
@@ -13269,6 +13305,7 @@ const MUSIC = {
     MUSBUS.gain.cancelScheduledValues(ac.currentTime);
     MUSBUS.gain.setValueAtTime(0.0001, ac.currentTime);
     if(BGM.buf){ this.playFile(); return; }
+    if(LOCAL || BGM.failed){ this.playEl(); return; }
     MUSBUS.gain.exponentialRampToValueAtTime(Math.max(0.001, this.target()), ac.currentTime + 2.2);
     loadBgm();                                    /* the bed covers the wait */
     this.tick();
@@ -13288,8 +13325,27 @@ const MUSIC = {
     src.connect(BGM.gain); src.start(t + 0.02); BGM.src = src;
     this.apply(0.4);                               /* whatever is speaking right now still wins */
   },
+  /* [r78] the track as an <audio> element (see LOCAL). It cannot go through the music bus - an
+     element on a file:// is cross-origin to Web Audio and would play silence - so its volume is
+     set from the bus 25 times a second instead: the same 80 %, the same fade-in, the same duck
+     under every voice and effect. */
+  playEl(){
+    if(this.file || !AC || !MUSBUS) return;
+    this.file = true; this.LEVEL = 0.80; this.DUCK = 0.20; this.SFXDUCK = 0.40;
+    clearInterval(this.tmr); this.tmr = 0;
+    if(!BGM.el){ BGM.el = new Audio(BGM.url); BGM.el.loop = true; BGM.el.preload = "auto"; }
+    const el = BGM.el; el.volume = 0;
+    clearInterval(BGM.sync);
+    BGM.sync = setInterval(()=>{
+      try{ el.volume = Math.max(0, Math.min(1, MUSBUS.gain.value * MASTER.gain.value)); }catch(e){}
+    }, 40);
+    try{ const p = el.play(); if(p && p.catch) p.catch(()=>{}); }catch(e){}
+    this.apply(0.4);
+  },
   stop(){
     this.on = false; clearInterval(this.tmr); this.tmr = 0;
+    if(BGM.el){ const el = BGM.el;
+      setTimeout(()=>{ if(!MUSIC.on){ clearInterval(BGM.sync); try{ el.pause(); }catch(e){} } }, 450); }
     if(AC && MUSBUS){
       MUSBUS.gain.cancelScheduledValues(AC.currentTime);
       MUSBUS.gain.setTargetAtTime(0.0001, AC.currentTime, 0.25);
@@ -13352,15 +13408,22 @@ const VOICE = {
     const v = speechSynthesis.getVoices();
     this.hindi = v.find(x=>x.lang==="hi-IN") || v.find(x=>/^hi/.test(x.lang)) || null;
   },
-  say(id, text){                       // कतार में जोड़ो
-    if(this.mode < 2) return;
-    this.queue.push({id, text:text||LINES[id]||id});
+  /* [r78] `gate`: the portal pair this word belongs to. It is told when its word has been heard
+     to the end (the world waits for that), and if the word is cut off it is asked for again. */
+  say(id, text, gate){                 // कतार में जोड़ो
+    if(this.mode < 2){ if(gate) gate.heard = true; return; }
+    this.queue.push({id, text:text||LINES[id]||id, gate:gate||null});
     this.pump();
   },
   clear(){
-    this.queue.length = 0; this.busy = false; this.tok = (this.tok || 0) + 1; MUSIC.duck(false);
+    const cut = this.queue.concat(this.cur ? [this.cur] : []);
+    cut.forEach(it => { if(it.gate && !it.gate.heard) it.gate.spoken = false; });
+    this.queue.length = 0; this.busy = false; this.tok = (this.tok || 0) + 1; this.cur = null;
+    this.lastEnd = performance.now();
+    MUSIC.duck(false);
     try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
     if(this.src){ try{ this.src.stop(); }catch(e){} this.src = null; }
+    if(this.elA){ try{ this.elA.onended = this.elA.onerror = null; this.elA.pause(); }catch(e){} this.elA = null; }
   },
   /* [r76] THE CLIPS ARE DECODED INTO MEMORY AT BOOT and played through the game's own audio
      engine, like the music and the effects. Two measured failures of the <audio> element route:
@@ -13368,15 +13431,18 @@ const VOICE = {
      (five words did, in one run, and were then marked missing for good); and warming 54 <audio>
      elements does not work either - the browser capped them and fetched 33. A decoded buffer
      starts in the same frame it is asked for. */
-  bufs: {}, loading: {}, tok: 0,
+  bufs: {}, loading: {}, tok: 0, lastEnd: 0,
+  /* [r79] ms since the game last said anything (0 while it is speaking or has lines waiting) */
+  quietFor(){ return (this.busy || this.queue.length) ? 0 : performance.now() - this.lastEnd; },
   preload(){
     if(this._pre) return;
     const ac = audioReady(); if(!ac) return;
     this._pre = true;
     if(!this.bus){ this.bus = ac.createGain(); this.bus.gain.value = 1.1; this.bus.connect(MASTER); }
+    if(LOCAL) return;                     /* [r78] refused as a file: every line plays as an element */
     const ids = Object.keys(LINES).concat(POOL_U.map(w => w[1]), POOL_UU.map(w => w[1]));
     ids.forEach(id => {
-      this.loading[id] = fetch(this.dir + id + ".ogg")
+      this.loading[id] = fetch(mrv(this.dir + id + ".ogg"))
         .then(r => { if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
         .then(ab => new Promise((res, rej) => ac.decodeAudioData(ab, res, rej)))
         .then(buf => { this.bufs[id] = buf; })
@@ -13386,14 +13452,16 @@ const VOICE = {
   pump(){
     this.preload();
     if(this.busy || !this.queue.length || this.mode < 2) return;
-    const it = this.queue.shift(); this.busy = true;
+    const it = this.queue.shift(); this.busy = true; this.cur = it;
     const tok = this.tok;
     MUSIC.duck(true);                       /* the spoken word comes first; the bed steps back */
     /* `tok` makes a line that was cut short by clear() unable to start the next one: without it a
        stopped clip's ended event arrives AFTER the new line has begun, and two voices overlap */
+    let fired = false;
     const next = ()=>{
-      if(tok !== this.tok) return;
-      this.busy = false; this.src = null;
+      if(fired || tok !== this.tok) return; fired = true;
+      if(it.gate) it.gate.heard = true;
+      this.busy = false; this.src = null; this.elA = null; this.cur = null; this.lastEnd = performance.now();
       if(!this.queue.length) MUSIC.duck(false);
       setTimeout(()=>this.pump(), 180);
     };
@@ -13405,7 +13473,7 @@ const VOICE = {
         const src = AC.createBufferSource(); src.buffer = buf; src.connect(this.bus);
         src.onended = next; this.src = src; src.start();
       } else {
-        this.tts(it.text, next);            /* no recording for this line: the device's voice */
+        this.playEl(it, next, tok);         /* [r78] as a file, or the buffer failed: an element */
       }
     };
     if(this.bufs[it.id] || this.noFile[it.id] || !this.loading[it.id]) go();
@@ -13414,6 +13482,26 @@ const VOICE = {
       this.loading[it.id].then(go, go);
       setTimeout(go, 1500);
     }
+  },
+  /* [r78] the recording through an <audio> element; the device's voice only if the file is truly
+     not there (it has no Hindi voice on most Windows machines, so that is silence) */
+  playEl(it, next, tok){
+    const a = new Audio(mrv(this.dir + it.id + ".ogg")); a.volume = 1;
+    this.elA = a;
+    let settled = false;
+    const fail = ()=>{
+      if(settled || tok !== this.tok) return; settled = true;
+      a.onended = a.onerror = null; try{ a.pause(); }catch(e){}
+      this.elA = null; this.tts(it.text, next);
+    };
+    a.onplaying = ()=>{ settled = true; };
+    a.onended = next; a.onerror = fail;
+    try{ const p = a.play(); if(p && p.catch) p.catch(fail); }catch(e){ fail(); }
+    setTimeout(fail, 3000);                 /* never started at all: do not hold the queue */
+    /* and a clip that started but never reports its end still lets the next line through */
+    a.addEventListener("loadedmetadata", ()=>{
+      if(isFinite(a.duration)) setTimeout(()=>{ if(this.elA === a) next(); }, a.duration*1000 + 1500);
+    });
   },
   tts(text, cb){
     if(!window.speechSynthesis){ cb(); return; }
@@ -13569,7 +13657,8 @@ function seedDecor(){
 }
 
 /* ======================= level control ======================= */
-function startLevel(i){
+function startLevel(i, spoken){
+  MUSIC.setDuck("veil", false);
   VOICE.preload();
   const L = LEVELS[i];
   G.level=i; G.speed=L.speed; G.target = L.target || U;
@@ -13581,12 +13670,23 @@ function startLevel(i){
      first version was lowered only by the lesson's voice-over callback, which fires once, so
      every level after the first stayed at a fifth speed for ever. Nothing outside this can
      leave it raised now - MR_begin() can only cut it short. */
-  G.hold = true; G.ramp = 0; G.holdT = (i === 0 ? 7.0 : 2.4);
-  VOICE.clear(); VOICE.say(G.target===U ? "goal_u" : "goal_uu");
+  G.hold = true; G.ramp = 0; G.holdT = (i === 0 ? 7.0 : (spoken ? 0.8 : 2.4));
+  VOICE.clear();
+  const goal = G.target===U ? "goal_u" : "goal_uu";
+  /* [r77] measured: this line started at boot, in the same instant the lesson spoke its own
+     instruction for this page - two voices at once on every entry. The first level's goal now
+     waits until the lesson has finished speaking. */
+  if(!spoken){
+    if(i === 0) whenLessonQuiet(function(){ if(G.level === 0 && G.mode === "play") VOICE.say(goal); }, 12000);
+    else VOICE.say(goal);
+  }
   seedDecor(); seedRails();
   /* further out than they were: the first choice must not arrive while the instruction is
      still being spoken, or the child is answering a question they have not heard yet */
-  spawnGate(1.75); spawnGate(2.30);
+  /* [r78] after the first level its goal has just been spoken over the veil, so its first pair
+     starts nearer: the first word follows the goal by about two seconds, not six */
+  const z0 = (i === 0 ? 1.75 : 1.00);
+  spawnGate(z0); spawnGate(z0 + GATE_GAP);
   document.getElementById("lvlNum").textContent = i+1;
   setGoal();
   hud();
@@ -13600,10 +13700,14 @@ function setGoal(){
   chip.innerHTML = "<em>"+(isU?"उ":"ऊ")+"</em><span>"+(isU?U:UU)+"</span>";
 }
 
+/* [r78] THE SPACE BETWEEN TWO PAIRS OF PORTALS. Yasir: "after we catch one word we need some time
+   to listen and catch the other". It was 0.52 of the road - 3.4 s at level 1's speed, and the
+   feedback line alone takes one of those. Doubled: about 6.5 s from one pair to the next. */
+const GATE_GAP = 1.05;
 function spawnGate(z){
   const L = LEVELS[G.level];
-  /* the colour pair is shuffled every time, so green never means "this one" */
-  const hue = Math.random() < 0.5 ? [0, 1] : [1, 0];
+  /* [r78] Yasir: both portals look the same - only the words differ */
+  const hue = [0, 0];
   if(L.target===null){ G.target = Math.random()<0.5?U:UU; setGoal(); }
   G.gates.push({ z: z, words: makeGateWords(G.target), target:G.target, done:false, reveal:0,
                  okLane:-1, hue: hue });
@@ -13668,13 +13772,18 @@ function resolveGate(g){
     dust(laneX(G.lane,1), groundY()-95*S, 26);
     G.pops.push({text:"सही शब्द: "+rightWord, sub:(g.target===U?"छोटी उ ( ु )":"बड़ी ऊ ( ू )"), col:"#ffb0a0", life:1.7});
     sfxGate(false); sfxWrong(); sfxBonk(); VOICE.clear(); VOICE.say("wrong");
-    VOICE.say("correct_is"); VOICE.say(g.words[g.okLane].id, rightWord);
+    VOICE.say("correct_is"); VOICE.say(g.words[g.okLane].id, rightWord); G.afterWrong = true;
     if(G.hearts<=0){ gameOver(); return; }
   }
   hud();
   const L = LEVELS[G.level];
-  if(G.cleared >= L.gates){ setTimeout(levelDone, 1100); }
-  else spawnGate(Math.max(1.0, (G.gates.length?Math.max.apply(null,G.gates.map(x=>x.z)):0) + 0.52));
+  /* [r79] the level's last "शाबाश!" is heard out before the transition begins - it used to be
+     cut off by it, in the same instant the level-up chime and "वाह! ..." started */
+  if(G.cleared >= L.gates){ whenVoiceDone(levelDone, 1100, 3000); }
+  /* [r78] never more pairs than the level has: the spare one used to arrive at the end of every
+     level, and its word could slip in between the last "शाबाश" and "वाह! ..." */
+  else if(G.cleared + G.gates.filter(x => !x.done).length < L.gates)
+    spawnGate(Math.max(1.0, (G.gates.length?Math.max.apply(null,G.gates.map(x=>x.z)):0) + GATE_GAP));
 }
 
 /* gold, rising, slow to fade - the reward for getting through */
@@ -13723,14 +13832,34 @@ function update(dt){
      failed to load. Released, the speed eases in over about a second instead of snapping on. */
   if(G.hold && (G.holdT -= dt) <= 0) G.hold = false;
   if(!G.hold) G.ramp = Math.min(1, G.ramp + dt*0.95);
-  const v = G.speed * (G.hold ? 0.20 : 0.20 + 0.80*G.ramp) * dt;
+  /* [r78] AND IT IS HEARD BEFORE THE PAIR ARRIVES. After a wrong answer the feedback ("सही शब्द
+     है ...") is three to four seconds long, and the next word queues behind it. If that word has
+     not been heard to the end by the time its pair is two-thirds of the way in, the world eases
+     to a fifth of its speed - as it does under the level's intro - until it has (at most 7 s). */
+  const fg = G.gates.find(x => !x.done);
+  let waitWord = false;
+  if(fg && !fg.heard && fg.z < 0.55){ fg.waitT = (fg.waitT || 0) + dt; waitWord = fg.waitT < 8; }
+  G.waitF = (G.waitF == null ? 1 : G.waitF);
+  G.waitF += ((waitWord ? 0.2 : 1) - G.waitF) * (1 - Math.exp(-dt*5));
+  const v = G.speed * (G.hold ? 0.20 : 0.20 + 0.80*G.ramp) * dt * G.waitF;
   // gates
   for(const g of G.gates){
     if(g.pin) g.fx += dt; else g.z -= v;
-    if(!g.spoken && g.z<=0.78){                 // द्वार पढ़ने लायक दूरी पर शब्द बोलो
-      g.spoken = true;
-      VOICE.say(g.words[0].id, g.words[0].t);
-      VOICE.say(g.words[1].id, g.words[1].t);
+    /* [r78] THE WORD TO CATCH IS SPOKEN FOR THE NEXT PAIR ONLY. It used to be spoken at a fixed
+       distance - which, with the pairs this close, was while the pair before was still ahead -
+       and passing that pair stopped the voice for its "शाबाश" and cut the new word off. So from
+       the second pair on, no target word was ever heard. Now it is asked for once the pair in
+       front has been passed, and queues behind that pair's feedback. */
+    /* [r79] Yasir: "when we reach near the portal it should play the VO of the word". And it
+       waits for 0.7 s of quiet: after a wrong answer the feedback ends on the PREVIOUS pair's
+       right word ("सही शब्द है पूजा"), and the new target followed it within 0.3 s - two words
+       back to back, which is exactly what "it plays both words" sounds like. */
+    if(!g.spoken && !g.done && g.z<=0.62 && G.gates.find(x => !x.done) === g &&
+       VOICE.quietFor() >= (G.afterWrong ? 1500 : 700) && !document.body.classList.contains("vo-lock")){
+      g.spoken = true; G.afterWrong = false;  /* after "सही शब्द है ..." a longer beat: a new word */
+      /* [r77] Yasir: only the TARGET word is spoken - the one to catch - not both portals' */
+      const tw = g.words.find(w => w.ok) || g.words[0];
+      VOICE.say(tw.id, tw.t, g);
     }
     if(!g.done && g.z<=0.035) resolveGate(g);
   }
@@ -14286,6 +14415,7 @@ function roundRect(x,y,w,h,r){
       if(im.naturalWidth > 0) root.style.setProperty(prop, 'url("' + DIR + UI[prop] + '")');
       /* the wooden look goes on only when EVERY piece of it is there - half a wooden HUD
          beside half a dark one looks like a bug, and a slow file would show it happening */
+      if(uiLeft === 1) window.MR_skinReady = true;   /* [r77] every HUD piece has answered: the curtain may lift */
       if(--uiLeft === 0 && root.style.getPropertyValue("--mr-ui-panel")){
         var WOOD = {
           "--mr-wood-line":   "transparent",      /* the dark ring around each pill */
@@ -14988,7 +15118,35 @@ function drawFX(){
   }
 }
 
+/* [r77] THE FIRST FRAME WAITS FOR ITS ART. Measured on a cold load: for ~0.8 s the game drew its
+   code-only fallback - the night backdrop, a flat road, the placeholder tiger, a plain HUD - and
+   then the art popped in piece by piece. A curtain in the valley's own colours covers the game
+   until the pieces the first frame is made of have arrived (capped, so a slow file cannot hold it),
+   then lifts. Inline styles: the embed scopes every stylesheet rule under .mr-root. */
+let _curtain = null, _curtainUp = true, _curtainT0 = performance.now();
+function firstFrameReady(){
+  const A = window.MR_ART;
+  if(!A) return false;
+  return ["valley", "deck", "wall", "run", "ring"].every(k => A.has(k)) && !!window.MR_skinReady;
+}
+function curtain(){
+  if(!_curtainUp) return;
+  if(!_curtain){
+    const host = document.querySelector(".mr-root") || document.body;
+    _curtain = document.createElement("div");
+    _curtain.style.cssText = "position:absolute;inset:0;z-index:50;pointer-events:none;" +
+      "background:linear-gradient(180deg,#7c5bb4 0%,#f08a6a 42%,#f6c27a 62%,#4f86b8 100%);" +
+      "transition:opacity .45s ease;opacity:1";
+    host.appendChild(_curtain);
+  }
+  if(firstFrameReady() || performance.now() - _curtainT0 > 3500){
+    _curtainUp = false;
+    MR_RAF(() => { _curtain.style.opacity = "0";
+      setTimeout(() => { if(_curtain){ _curtain.remove(); _curtain = null; } }, 600); });
+  }
+}
 function render(){
+  curtain();
   ctx.setTransform(DPR,0,0,DPR,0,0);
   /* [r51] NOT turning smoothing off here, although the obvious reasoning says to: bilinear
      filtering looks like the expensive part of a sprite, and leaves at close to their own size
@@ -15067,8 +15225,38 @@ function render(){
 
 /* ======================= screens / hud ======================= */
 const $ = id => document.getElementById(id);
+/* [r77] NO PANELS IN THE GAME. Between levels, at the fall and at the end the screen is VEILED -
+   the world and the HUD blur and dim - and only the voice plays. The .screen elements stay (the
+   lesson listens for #scWin to know the game is over) but their cards are never shown. */
+function veil(on){
+  const f = on ? "blur(7px) brightness(.86) saturate(.9)" : "";
+  [cvs, document.querySelector(".hud")].forEach(el => { if(!el) return;
+    el.style.transition = "filter .35s ease"; el.style.filter = f; });
+}
+/* run `cb` once the game's voice has nothing left to say - no sooner than minMs, no later than capMs */
+function whenVoiceDone(cb, minMs, capMs){
+  const t0 = Date.now();
+  (function poll(){
+    const idle = !VOICE.busy && !VOICE.queue.length;
+    const el = Date.now() - t0;
+    if((idle && el >= minMs) || el >= capMs){ cb(); return; }
+    setTimeout(poll, 100);
+  })();
+}
+/* ...and the lesson's: its instruction for this page is spoken by the engine outside the game */
+function whenLessonQuiet(cb, capMs){
+  const t0 = Date.now(); let quietSince = 0;
+  (function poll(){
+    const busy = !!(document.body && document.body.classList.contains("vo-lock"));
+    const now = Date.now();
+    if(busy) quietSince = 0; else if(!quietSince) quietSince = now;
+    if((quietSince && now - quietSince >= 350) || now - t0 >= capMs){ cb(); return; }
+    setTimeout(poll, 100);
+  })();
+}
 function hideScreens(){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on")); }
-function show(id){ hideScreens(); $(id).classList.add("on"); }
+function show(id){ hideScreens(); $(id).classList.add("on");
+  const c = $(id).querySelector(".card"); if(c) c.style.display = "none"; }
 function hud(){
   $("score").textContent = G.score;
   const _hOn  = window.MR_ART && MR_ART.src("heart");
@@ -15096,35 +15284,34 @@ function hud(){
 
 }
 function levelDone(){
-  G.mode="done"; sfxLevel(); VOICE.clear(); VOICE.say("level_up");
-  const L=LEVELS[G.level];
-  const stars = G.wrong===0 ? 3 : (G.wrong<=1 ? 2 : 1);
-  $("lvlTitle").textContent = "स्तर "+(G.level+1)+" पूरा!";
-  const _sOn  = window.MR_ART && MR_ART.src("star");
-  const _sOff = window.MR_ART && MR_ART.src("starOff");
-  $("lvlStars").innerHTML = [0,1,2].map(function(i){
-    const got = i<stars;
-    return (_sOn && _sOff) ? '<img alt="" src="'+(got?_sOn:_sOff)+'">'
-                           : (got ? "★" : '<span class="off">★</span>');
-  }).join("");
-  /* the card carries the NEXT level's instruction, because it is the only moment between the
-     two where the child is not also watching the road */
-/* ONE LINE. Stars, three counters, a list of missed words and an instruction was four
-     things to read in four seconds, and only the last one told the child what to do next. */
-  const N = LEVELS[G.level+1];
-  $("lvlNext").textContent = N ? "अब " + N.name + " वाले शब्द चुनो।" : "सारे स्तर पूरे!";
-  show("scLevel");
+  /* [r77] Yasir: "We don't need instruction panel in the game, when the level ends the screen get
+     blurred and only VO plays: वाह! अब इस लेवल को पार कीजिए। + the next target".
+     [r79] ...and the voice has the stage to itself: the screen veils and the level-up chime plays
+     FIRST, then after a clear beat the two lines are spoken, and the music stays down for the
+     whole transition instead of rising in the gap between them. */
+  G.mode = "done"; VOICE.clear();
+  veil(true); MUSIC.setDuck("veil", true);
+  sfxLevel();
   clearTimeout(G.nextT);
+  const N = LEVELS[G.level + 1];
   G.nextT = setTimeout(function(){
-    if(G.level+1 < LEVELS.length){
-      G.hearts = Math.min(3, G.hearts+1);
-      startLevel(G.level+1);
+    if(N){
+      VOICE.say("level_next");
+      VOICE.say(N.target === U ? "goal_u" : "goal_uu");
+      whenVoiceDone(function(){
+        veil(false); MUSIC.setDuck("veil", false);
+        G.hearts = Math.min(3, G.hearts + 1);
+        startLevel(G.level + 1, true);         /* its goal has just been spoken */
+      }, 1600, 10000);
     }else{
-      G.mode = "win";
-      if(G.score > G.best){ G.best = G.score; saveBest(); }
-      show("scWin");
+      VOICE.say("win");
+      whenVoiceDone(function(){
+        G.mode = "win";
+        if(G.score > G.best){ G.best = G.score; saveBest(); }
+        show("scWin");                         /* no card - the lesson listens for this to move on */
+      }, 1600, 7000);
     }
-  }, 4200);
+  }, 1000);
 }
 function gameOver(){
   G.mode="over"; G.deadT = G.t; hud();     /* the heart she just lost has to leave the row */
@@ -15138,11 +15325,11 @@ function gameOver(){
   const t = G.target===U ? "छोटी उ — नीचे छोटी रेखा ( ु )"
                          : "बड़ी ऊ — नीचे लंबी रेखा ( ू )";
   $("overTip").textContent = t;
-  /* THE CARD WAITS FOR THE FALL. Shown at once it covered the one moment the animation
-     exists for - she has not even hit the ground by the time a dialog is over the top of it. */
+  /* [r77] no card: once she has landed the screen veils while "try again" is spoken, then the
+     level restarts */
   clearTimeout(G.nextT);
-  G.nextT = setTimeout(function(){ show("scOver"); }, 2300);
-  setTimeout(function(){ G.hearts = 3; hud(); startLevel(G.level); }, 6200);
+  G.nextT = setTimeout(function(){ veil(true); }, 2100);
+  setTimeout(function(){ veil(false); G.hearts = 3; hud(); startLevel(G.level); }, 6200);
 }
 function fullReset(){ G.score=0; G.hearts=3; clearTimeout(G.nextT); hud(); }
 
@@ -15194,7 +15381,12 @@ window.MR_DEBUG = function(){
                          gain: +MUSBUS.gain.value.toFixed(3) } : null,
            screen: sc ? sc.id : "",
            gates: G.gates.map(function(g){
-             return { z: +g.z.toFixed(3), ok: g.okLane, done: !!g.done, pin: !!g.pin }; }) };
+             return { z: +g.z.toFixed(3), ok: g.okLane, done: !!g.done, pin: !!g.pin,
+                      word: (g.words[g.okLane] || {}).id, spoken: !!g.spoken, heard: !!g.heard,
+                      hue: g.hue }; }),
+           waitF: G.waitF == null ? 1 : +G.waitF.toFixed(3), local: LOCAL,
+           bgmEl: BGM.el ? { paused: BGM.el.paused, vol: +BGM.el.volume.toFixed(3),
+                             t: +BGM.el.currentTime.toFixed(2) } : null };
 };
 /* one frame, on demand, so the cost of EVERYTHING can be timed - not just the floor, which is
    the part that is easy to reach and the part least likely to be the problem */
@@ -15840,6 +16032,26 @@ if(document.fonts && document.fonts.load){
   }
   /* boot() runs after this script and the landing can be re-entered, so poll briefly rather than
      racing a single frame — the same belt-and-braces matraHLSoon uses. */
+  /* [r77] THE GAME'S ART ARRIVES BEFORE THE GAME DOES. On a first visit the runner used to start
+     fetching everything the moment its page mounted, and drew its code-only first draft until the
+     files landed. Ten seconds after this page has loaded, the files the game's first frame is made
+     of - plus its music and voice - are fetched quietly, one after another, into the browser cache. */
+  (function warmRunner(){
+    const D = "assets/MatraRunner/";
+    const imgs = ["bg_valley.webp", "bridge_deck.webp", "bridge_wall.webp", "portal_ring.webp",
+                  "swifty_run.webp", "swifty_fall.webp", "ui_banner.webp", "ui_badge.webp", "ui_btn.webp",
+                  "heart_full.webp", "heart_empty.webp", "coin.webp"];
+    const files = ["bg_valley.mp4", "bgm_game.ogg"];
+    const start = ()=>{
+      imgs.forEach(f => { const im = new Image(); im.decoding = "async"; im.src = D + f; });
+      let i = 0;
+      (function next(){ if(i >= files.length) return;
+        fetch(D + files[i++]).then(r => r.blob()).catch(()=>{}).then(()=> setTimeout(next, 200)); })();
+    };
+    const arm = ()=> setTimeout(start, 10000);
+    if(document.readyState === "complete") arm(); else window.addEventListener("load", arm);
+  })();
+
   (function watchLanding(){
     let n = 0;
     const tick = ()=>{ if(dressLandingTrain()) return; if(++n > 60) return; setTimeout(tick, 120); };
@@ -16626,6 +16838,14 @@ function clearHost(){
 }
 
 function mountSlide(idx){
+  /* [r77] ARRIVING SILENCES THE PAGE THAT WAS LEFT. Yasir: skipping pages with the menu played the
+     previous page's VO or clashed with it. Measured: nothing on the jump path stopped audio - the
+     old page's clip ran on until the new page's first sound (3.4 s later on a train screen, after
+     its arrival), the cover's greeting ran on over page 1, and the train's chug and whistle kept
+     sounding into the next page. The natural flow is unaffected: it already advances only when a
+     clip has ended. */
+  try{ stopAudio(); }catch(e){}
+  try{ if(typeof window.__stopLessonSfx === "function") window.__stopLessonSfx(); }catch(e){}
   state.idx = idx;
   state.slideStart = Date.now();
   state.attempts = 0; state.selectedKey = null; state.locked = false;
@@ -17278,7 +17498,11 @@ function buildDevNav(){
   const leaveStart = ()=>{ const sg = $("startGate"); if(sg) sg.classList.add("hidden"); document.body.classList.remove("is-start"); document.body.classList.add("loaded"); const bl = $("bootLoader"); if(bl) bl.remove(); };
   const sync = ()=>{ const i = cur(); const s = CARD.slides[i]; if(document.activeElement !== sel) sel.value = i;
     lbl.textContent = (i+1) + "/" + CARD.slides.length + (s ? " · " + s.id : ""); };
-  const go = (i)=>{ i = Math.max(0, Math.min(i, CARD.slides.length - 1)); leaveStart(); mountSlide(i); sync(); };
+  /* [r77] a jump also cancels a phase transition in flight: its timers would otherwise mount the
+     page IT was heading for on top of the one just chosen */
+  const cancelGate = ()=>{ try{ _gateToken++; const g = $("phaseGate"); if(g) g.classList.remove("show");
+    $("stage").classList.remove("blurred", "gating"); document.body.classList.remove("gating"); }catch(e){} };
+  const go = (i)=>{ i = Math.max(0, Math.min(i, CARD.slides.length - 1)); cancelGate(); leaveStart(); mountSlide(i); sync(); };
   land.onclick = ()=>{ const sg = $("startGate"); if(sg){ sg.classList.remove("hidden"); document.body.classList.add("is-start"); } };
   first.onclick = ()=> go(0); prev.onclick = ()=> go(cur() - 1); next.onclick = ()=> go(cur() + 1); last.onclick = ()=> go(CARD.slides.length - 1);
   sel.onchange = ()=> go(parseInt(sel.value, 10));

@@ -54,7 +54,8 @@
    "vo_mr_correct_is": "assets/Audio/vo_mr_correct_is.ogg",
    "vo_mr_level_up": "assets/Audio/vo_mr_level_up.ogg",
    "vo_mr_retry": "assets/Audio/vo_mr_retry.ogg",
-   "vo_mr_win": "assets/Audio/vo_mr_win.ogg"
+   "vo_mr_win": "assets/Audio/vo_mr_win.ogg",
+   "vo_mr_level_next": "assets/Audio/vo_mr_level_next.ogg"
   },
   "audio_text": {
    "vo_mr_pul": "पुल",
@@ -103,14 +104,15 @@
    "vo_mr_taraaju": "तराजू",
    "vo_mr_lattoo": "लट्टू",
    "vo_mr_bandook": "बंदूक",
-   "vo_mr_goal_u": "छोटी उ की मात्रा वाले शब्द चुनिए!",
-   "vo_mr_goal_uu": "बड़ी ऊ की मात्रा वाले शब्द चुनिए!",
+   "vo_mr_goal_u": "छोटी उ की मात्रा वाले शब्द पकड़िए।",
+   "vo_mr_goal_uu": "बड़ी ऊ की मात्रा वाले शब्द पकड़िए।",
    "vo_mr_right": "शाबाश!",
    "vo_mr_wrong": "फिर से देखिए।",
    "vo_mr_correct_is": "सही शब्द है",
    "vo_mr_level_up": "बहुत बढ़िया!",
    "vo_mr_retry": "कोई बात नहीं, फिर से कोशिश कीजिए।",
-   "vo_mr_win": "शाबाश, सारे द्वार पार हो गए!"
+   "vo_mr_win": "शाबाश, सारे द्वार पार हो गए!",
+   "vo_mr_level_next": "वाह! अब इस लेवल को पार कीजिए।"
   }
  }
 }

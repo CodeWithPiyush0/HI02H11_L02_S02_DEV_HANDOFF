@@ -1416,6 +1416,20 @@ def main():
             _h.update(_f.encode("utf-8"))
             _h.update(open(os.path.join(AUD_DIR, _f), "rb").read())
     html = html.replace("__AUDIO_V_STAMP__", _h.hexdigest()[:12])
+    # [r80] the same for the runner game's own sounds: its voice clips, its music and the two
+    # feedback sounds it plays. Hashed by content, so the stamp moves only when one changes.
+    _mr = os.path.join(BUNDLE, "assets", "MatraRunner")
+    _mh = hashlib.sha1()
+    _mfiles = [os.path.join(_mr, "voice", f) for f in sorted(os.listdir(os.path.join(_mr, "voice")))
+               if f.endswith(".ogg")]
+    _mfiles += [os.path.join(_mr, "bgm_game.ogg"),
+                os.path.join(AUD_DIR, "sfx_fb_correct.ogg"), os.path.join(AUD_DIR, "sfx_fb_incorrect.ogg")]
+    for _f in _mfiles:
+        if os.path.exists(_f):
+            _mh.update(os.path.basename(_f).encode("utf-8")); _mh.update(open(_f, "rb").read())
+    _n_mr = html.count("__MR_AUDIO_V_STAMP__")
+    html = html.replace("__MR_AUDIO_V_STAMP__", _mh.hexdigest()[:12])
+    print("  OK  runner audio stamp %s (%d)" % (_mh.hexdigest()[:12], _n_mr))
     open(os.path.join(BUNDLE, CODE + ".html"), "w", encoding="utf-8").write(html)
     open(os.path.join(BUNDLE, "card.json"), "w", encoding="utf-8").write(payload + "\n")
 
