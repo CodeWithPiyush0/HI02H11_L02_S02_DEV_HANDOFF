@@ -517,3 +517,47 @@ peak -1.3 dBFS, 55/55. The runner audio stamp moved (ac8f414d709c -> 4a03b8fa440
 fetch the new takes. Played through: every line and target word plays; words end ~3 s before their
 pair. Sources copied to `1_SPEC/game_art_src/runner_voice/source_wav/`; the previous takes kept in
 `runner_voice/takes_gemini_leda_r79/`; the `voiceovers/` folder is excluded from the deploy.
+
+## r82 — the celebration button of HI02H11_L01_S01; the transition Swifty trimmed
+
+**Celebration button.** Matched to github.com/khugshalharshvardhan/HI02H11_L01_S01 (r5n there):
+`#endBtn` is the arrow alone, with «आगे बढ़ें» kept as its `aria-label`. Everything else about it
+(yellow pill, white 4.5 px border, shadows, 52 px arrow, position) was already identical. Measured
+side by side at 1382x850: both **133.6 x 88 px at (620, 485)**, text empty, `::after` "→" 52 px.
+
+**Transition Swifty.** She used to rise, peek, blink and glance around for 1.4 s, rise again and pause
+half a second before her first word at 3.82 s. The blink-and-look-around (frames 20-35) is cut - frame
+19 and frame 35 are the same picture, so the seek runs straight into the rise with no jump - and the
+pause before she speaks is 150 ms instead of 490. 84 -> 68 frames, 9.7 -> 7.9 s, 1.3 MB.
+`assets/UI/swifty_gate_seek.webp` (a new name: the deployment caches assets/ as immutable, so the
+old name would keep serving the long version), `CARD.gate.talk_at_ms` 3820 -> **1960**. Measured: the
+transition VO starts **1 962 ms** after the gate opens (was 3 825), on her speaking frames.
+`assets/UI/swifty_gate.webp` is no longer used.
+
+## r83 — matra highlight reaches the whole ू; a watch-only sort page; fresh shuffles; the third gate moved
+
+**1. The ू highlight (कबूतर, दूध).** The orange band below the baseline reached a fixed 18 % past
+the consonant; ू under ब and द curls further, so its right-hand end stayed navy (330 px of navy
+measured on दूध). Each cluster's mark is now drawn off-screen with and without the matra in the
+element's own font at 4x, and the band reaches the mark's real left/right edges (+1.5 px). Only the
+extent comes from the canvas - the orange is still the page's own text. The widened part starts
+4 % of the font size lower, so the neighbours' one-pixel dip under the baseline (त's bowl) is not
+caught. Measured: दूध, कबूतर, पुल, गुड़, फूल and the demo's पुल/फूल - 0 navy px left, 0 stray orange.
+
+**2. Page 9 is new: a watch-only copy of the sort screen** (old page 9 is now page 10). Same
+coaches, two cards - पुल and फूल (not two of page 9's own words, which would hand the child half
+its answers). The cards are read out, then a hand lands on each card (its name again), carries it
+into its coach and lets go; the drop is the real one, then «पुल में छोटी उ की मात्रा है, इसलिए पुल उ
+वाले डिब्बे में गया।» / the फूल line, and «अब आप भी ऐसे ही करके देखिए।». The cards cannot be
+touched; the page finishes and moves on by itself (≈29 s). `TRAIN_SORT data.demo`; new clips
+`vo_g4d_prompt / _pul / _phool / _end` (Gemini Leda, -16 LUFS).
+
+**3. Options shuffle on every visit - and never repeat the last visit's order.** They already
+shuffled, but a fair shuffle repeats by chance (every other visit on a two-card screen). Each
+screen now remembers its last deal for the session. 6 visits x 12 option pages: 0 back-to-back
+repeats.
+
+**4. «अब आपकी बारी!» plays after page 17, just before the runner game**, not before page 12
+(the first practice page). `CARD.gate.at = {"round3": "MG1"}` pins a round's gate to a slide - the
+practice pages keep their phase, so their hint and hand rules are unchanged. Checked: page 5 -> 6
+«चलिए, साथ में करें!», page 11 -> 12 no transition, page 17 -> 18 «अब आपकी बारी!».

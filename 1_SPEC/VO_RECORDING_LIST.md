@@ -1,6 +1,6 @@
 # HI02H11_L02_S02 (भाग 1 — उ / ऊ) · «मात्राओं की रेल» — VO recording list (ROUND 3)
 
-126 clips. Shown text == spoken text; record exactly this.
+130 clips. Shown text == spoken text; record exactly this.
 
 **Register is आप** — the SME asked for it twice, in as many words. Round 2 was तुम, so most of this list is a re-record, not a new line. `guard_register` in the builder fails the build if a तुम form survives anywhere.
 
@@ -42,6 +42,10 @@ The TTS model truncates a clip when an **em-dash precedes a short final word** (
 | `vo_g4_h3_sooraj` | सूरज को बड़ी ऊ की मात्रा वाले डिब्बे में डालिए। |
 | `vo_g4_h3_sui` | सुई को छोटी उ की मात्रा वाले डिब्बे में डालिए। |
 | `vo_g4_prompt` | हर शब्द को उसकी सही मात्रा वाले डिब्बे में डालिए। |
+| `vo_g4d_end` | अब आप भी ऐसे ही करके देखिए। |
+| `vo_g4d_phool` | फूल में बड़ी ऊ की मात्रा है, इसलिए फूल ऊ वाले डिब्बे में गया। |
+| `vo_g4d_prompt` | देखिए, शब्द को उसकी मात्रा वाले डिब्बे में कैसे डालते हैं। |
+| `vo_g4d_pul` | पुल में छोटी उ की मात्रा है, इसलिए पुल उ वाले डिब्बे में गया। |
 | `vo_g5_h1` | फिर से देखिए। मात्रा को ध्यान से देखिए और उसे सही डिब्बे में डालिए। |
 | `vo_g5_h2` | उ की मात्रा ु है और ऊ की मात्रा ू है। अब मात्रा को सही डिब्बे में डालिए। |
 | `vo_g5_h3_u` | छोटी उ की मात्रा को उ वाले डिब्बे में डालिए. |

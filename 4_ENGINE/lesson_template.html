@@ -3845,10 +3845,9 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
     <img class="end-mascot" src="assets/UI/sw_lg_celebrating_anim.webp" alt="Swiftee"
          onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'end-mascot',textContent:'🎉'}))">
     <!-- [r5] the arrow is drawn by .end-btn::after now, exactly as .nav-btn draws its own.
-         It used to be TYPED INTO THE LABEL, so adding the pseudo-element gave this button
-         two arrows. The word stays: "आगे बढ़ें" is a different action from आगे and
-         dropping it to an icon would be a content change nobody asked for. -->
-    <button class="end-btn" id="endBtn">आगे बढ़ें</button>
+         [r82] Yasir: the same button as HI02H11_L01_S01's celebration - the arrow alone, the
+         words kept as the button's accessible name. Same pill, same place; 221px wide -> 134. -->
+    <button class="end-btn" id="endBtn" aria-label="आगे बढ़ें"></button>
   </div>
 
   <!-- DEV VALIDATOR BANNER -->
@@ -9395,6 +9394,44 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
     return res;
   }
 
+  /* [r83] HOW FAR A BELOW-BASE MARK REALLY REACHES, measured, not guessed.
+     Yasir (कबूतर, दूध): the right-hand end of the ू's curl was left navy. The band below the
+     baseline reached a fixed 18 % past the consonant - enough for most letters, but ू under
+     ब or द curls further than that. So the cluster is drawn twice off-screen, with and without
+     the mark, in the element's OWN computed font at 4x, and the columns where only the mark has
+     ink give its true left and right edges relative to the cluster's start. Only the EXTENT is
+     taken from the canvas - the orange is still the page's own text, so it cannot be out of
+     register - and it is still confined to the band under the baseline. */
+  const _MR_CACHE = new Map();
+  function _markReach(cl, matra, el){
+    const base = cl.split(matra).join("");
+    if(!base || base === cl) return null;
+    const cs = getComputedStyle(el);
+    const fs = parseFloat(cs.fontSize) || 0;
+    if(!fs) return null;
+    const K = 4, S = fs * K;
+    const font = (cs.fontStyle || "normal") + " " + (cs.fontWeight || "400") + " " + S + "px " + cs.fontFamily;
+    const key = cl + "|" + matra + "|" + font;
+    if(_MR_CACHE.has(key)) return _MR_CACHE.get(key);
+    const cv = document.createElement("canvas");
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.font = font;
+    const pad = Math.ceil(S * 0.6);
+    const w = Math.ceil(cx.measureText(cl).width) + pad * 2, asc = Math.ceil(S * 1.1), h = asc + Math.ceil(S * 0.8);
+    cv.width = w; cv.height = h;
+    const raster = (t)=>{ cx.clearRect(0, 0, w, h); cx.font = font; cx.textBaseline = "alphabetic";
+      cx.fillStyle = "#000"; cx.fillText(t, pad, asc); return cx.getImageData(0, 0, w, h).data; };
+    const A = raster(cl), B = raster(base);
+    let minX = w, maxX = -1;
+    for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+      const i = (y * w + x) * 4 + 3;
+      if(A[i] > 26 && B[i] <= 40){ if(x < minX) minX = x; if(x > maxX) maxX = x; }
+    }
+    const res = maxX < 0 ? null : { left: (minX - pad) / K, right: (maxX + 1 - pad) / K };
+    _MR_CACHE.set(key, res);
+    return res;
+  }
+
   function matraHL(el, matra, opts){
     if(!el || !matra) return false;
     const word = (el.dataset.mhWord || el.textContent || "").trim();
@@ -9485,7 +9522,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
            cluster BEYOND the base's width, and it runs the full height rather than below the
            baseline. Detected by measuring, not by a hard-coded list of matras. */
         const base = cl.split(matra).join("");
-        let below = true;
+        let below = true, xin0 = null, xin1 = null, ystep = null;
         if(base){
           const grow = (_advance(cl, el) - _advance(base, el)) / _mhScale;
           if(grow > 3){ x0 = x0 + (x1 - x0) - grow; y0 = 0; below = false; }
@@ -9503,6 +9540,18 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
              highlight look like a band rather than a mark. Nothing else is down there. */
           const _fs = parseFloat(getComputedStyle(el).fontSize) || 0;
           y1 = rect.height + _fs * 0.34;
+          /* [r83] ...and reach as far as the mark's own ink does, on both sides (+1.5 px of
+             anti-aliased edge), measured per cluster - see _markReach */
+          const _mr = _markReach(cl, matra, el);
+          if(_mr){
+            const cx0 = (cb.left - rect.left) / _mhScale;
+            xin0 = x0; xin1 = x1;              /* the band as it was: full height from the baseline */
+            x1 = Math.max(x1, Math.min(rect.width / _mhScale + _fs * 0.4, cx0 + _mr.right + 1.5));
+            x0 = Math.min(x0, Math.max(-_fs * 0.4, cx0 + _mr.left - 1.5));
+            /* the widened part starts a hair lower: the letters either side dip a pixel under the
+               baseline (त's bowl in कबूतर), and the curl's end hangs well below it anyway */
+            ystep = y0 + _fs * 0.04;
+          }
         }
 
         const ov = document.createElement("span");
@@ -9515,8 +9564,12 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
            engine would compute a double-width ink box and shrink the real word to fit it.
            A pseudo-element is invisible to textContent, so the two systems stop fighting. */
         ov.setAttribute("data-w", word);
-        ov.style.clipPath = "polygon(" + x0 + "px " + y0 + "px," + x1 + "px " + y0 + "px," +
-                            x1 + "px " + y1 + "px," + x0 + "px " + y1 + "px)";
+        const P2 = (x, y)=> x + "px " + y + "px";
+        ov.style.clipPath = (xin0 !== null && ystep !== null)
+          ? "polygon(" + [P2(xin0, y0), P2(xin1, y0), P2(xin1, ystep), P2(x1, ystep), P2(x1, y1),
+                          P2(x0, y1), P2(x0, ystep), P2(xin0, ystep)].join(",") + ")"
+          : "polygon(" + x0 + "px " + y0 + "px," + x1 + "px " + y0 + "px," +
+                         x1 + "px " + y1 + "px," + x0 + "px " + y1 + "px)";
         el.appendChild(ov);
         made++;
       }
@@ -10048,6 +10101,21 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
     }
     return a;
   }
+  /* [r83] Yasir: "options will be shuffle each time we visit the page". They were - but a fair
+     shuffle deals the SAME order again by chance, and on a two-card screen that is every other
+     visit, which looks exactly like no shuffle at all. So each screen remembers the order it
+     dealt last time (for this session) and deals again if it would repeat it. */
+  const _lastDeal = new Map();
+  function shuffledFresh(list, key){
+    const src = list || [];
+    const sig = arr => arr.map(x => src.indexOf(x)).join(",");
+    let a = shuffled(src);
+    if(key && src.length > 1){
+      for(let n = 0; n < 16 && sig(a) === _lastDeal.get(key); n++) a = shuffled(src);
+      _lastDeal.set(key, sig(a));
+    }
+    return a;
+  }
 
   function makeLadder(slide, train, correctIdx, opts){
     opts = opts || {};
@@ -10112,7 +10180,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       const d = slide.data;
       newVoEpoch();          /* any chain still running from a previous mount is now stale */
       /* [r29] the carts are dealt in a fresh order every time; `correct` travels with the cart */
-      const coachList = shuffled(d.coaches);
+      const coachList = shuffledFresh(d.coaches, slide.id + ":coaches");
       const correctIdx = coachList.findIndex(c => c.correct);
       /* SME, on all three tap screens: "Train comes through animation from right to left. Train
          stops at the centre of the screen. **After the train stops**, the three coaches पुल, दूध,
@@ -10228,7 +10296,11 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
   SlideModules.TRAIN_SORT = {
     mount(host, slide){
       const d = slide.data;
-      newVoEpoch();          /* any chain still running from a previous mount is now stale */
+      const myGen = newVoEpoch();  /* any chain still running from a previous mount is now stale */
+      /* [r83] data.demo: the watch-first copy of the sort screen - nothing to touch; a hand
+         carries each card to its coach while the lesson explains why */
+      const demo = !!d.demo;
+      const alive = ()=> myGen === _voGen && CARD.slides[state.idx] === slide;
       /* SME, word and picture rounds: "More than one word can be placed inside each coach."
          `multi` is what lets the painted coach's cream panel hold two cards side by side instead
          of stacking the second on top of the first. The matra round is `single` — "Only one matra
@@ -10254,7 +10326,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
          comparator is inconsistent, so the result is not a uniform permutation and V8's sort
          leaves short lists near their original order far more often than chance. On a four-card
          tray that is exactly the case that matters. */
-      const cards = shuffled(d.cards);
+      const cards = shuffledFresh(d.cards, slide.id + ":cards");
       cards.forEach(c => {
         const t = document.createElement("div");
         t.className = "tr-card k-" + d.kind;
@@ -10365,7 +10437,54 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
          so a child who keeps trying the wrong coach is not punished for it either. */
       const lockToBin = (tile, want)=>{ tile.dataset.only = String(want); };
 
+      /* [r83] a card that has gone into its RIGHT coach - shared by the child's drop and the
+         demonstration's, so the watch-first page shows exactly what a real drop does */
+      const settleInto = (tile, body, ci)=>{
+        /* [r27] LEAVE A SHADOW WHERE THE CARD WAS - AND MEASURE IT FIRST. Moving the tile
+           into the cart takes it out of the tray's flex row, so the cards after it slid left:
+           the row reshuffled under the child's finger on every drop and nothing showed which
+           had already gone. An empty box of the card's own footprint holds the gap open.
+           It has to be measured BEFORE `snapped` is added - that class resizes the card to
+           its in-cart size (112x124 -> 86x103), so measuring after leaves a shadow smaller
+           than the card that cast it and the row still moves.
+           offsetWidth/offsetHeight, not a client rect: the stage carries a --scale transform,
+           so a rect would be screen px and the box would be wrong on any non-1:1 display. */
+        if(!tile._ghost && tile.parentNode){
+          const g = document.createElement("div");
+          g.className = "tr-ghost";
+          g.style.width  = tile.offsetWidth + "px";
+          g.style.height = tile.offsetHeight + "px";
+          tile.parentNode.insertBefore(g, tile);
+          tile._ghost = g;
+        }
+        tile.classList.add("snapped");
+        /* the card belongs on the coach's painted CREAM PANEL, not loose in the coach body.
+           `body` is the drop target (it is what carries .dd-zone); `.coach-face` is the panel
+           the artwork actually draws, and it is what centres and clips the cards. Appending
+           to the body instead put them at its top-left and let them spill out of the coach. */
+        (body.querySelector(".coach-face") || body).appendChild(tile);
+        /* SME, matra round: "Only one matra card can be placed inside each coach."
+           `filled` is the flag makeDraggable already hit-tests, so a second drop on a full
+           coach springs back instead of counting as a wrong attempt. */
+        if(d.single) body.classList.add("filled");
+        /* [r23] THE CART IS CARRYING SOMETHING NOW, so the empty-tray chrome comes off it -
+           see .coach-body.dropzone.tr-has-card in the stylesheet. */
+        body.classList.add("tr-has-card");
+        /* On the WORD round the card still shows its word once it is in the coach, so mark
+           the matra the child just sorted on. Not on the picture round — the SME is
+           explicit there that "the word should not be displayed at any point". */
+        if(d.kind === "word"){
+          const lbl = tile.querySelector(".tr-cardlbl");
+          if(lbl) matraHLSoon(lbl, tile.dataset.bin, { glow:true });
+        }
+        placed++;
+        train.correct(ci);
+        sfxPopSoft();                      /* the DROP, distinct from the pick-up tap */
+        SwiftPAL.emit("matra_sort_item", { slide_id: slide.id, bin: tile.dataset.bin });
+      };
+
       [...tray.children].forEach(tile => {
+        if(demo){ tile.style.pointerEvents = "none"; return; }   /* [r83] watch only */
         tile.onclick = ()=>{ if(tile.dataset.audio && !isPlaying && !hintBusy)
           say(clip(tile.dataset.audio), ()=>{}); };
         /* SME lists TWO sounds here, not one: "Light tap / pick-up sound when a card is selected"
@@ -10387,47 +10506,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
             /* SME: "Correct Answer on 3rd Attempt … No VO." Counted PER CARD, because on a sort
                screen each card carries its own attempt ladder. */
             const quiet = (perCard.get(tile) || 0) >= maxTries() - 1;
-            /* [r27] LEAVE A SHADOW WHERE THE CARD WAS - AND MEASURE IT FIRST. Moving the tile
-               into the cart takes it out of the tray's flex row, so the cards after it slid left:
-               the row reshuffled under the child's finger on every drop and nothing showed which
-               had already gone. An empty box of the card's own footprint holds the gap open.
-               It has to be measured BEFORE `snapped` is added - that class resizes the card to
-               its in-cart size (112x124 -> 86x103), so measuring after leaves a shadow smaller
-               than the card that cast it and the row still moves.
-               offsetWidth/offsetHeight, not a client rect: the stage carries a --scale transform,
-               so a rect would be screen px and the box would be wrong on any non-1:1 display. */
-            if(!tile._ghost && tile.parentNode){
-              const g = document.createElement("div");
-              g.className = "tr-ghost";
-              g.style.width  = tile.offsetWidth + "px";
-              g.style.height = tile.offsetHeight + "px";
-              tile.parentNode.insertBefore(g, tile);
-              tile._ghost = g;
-            }
-            tile.classList.add("snapped");
-            /* the card belongs on the coach's painted CREAM PANEL, not loose in the coach body.
-               `body` is the drop target (it is what carries .dd-zone); `.coach-face` is the panel
-               the artwork actually draws, and it is what centres and clips the cards. Appending
-               to the body instead put them at its top-left and let them spill out of the coach. */
-            (body.querySelector(".coach-face") || body).appendChild(tile);
-            /* SME, matra round: "Only one matra card can be placed inside each coach."
-               `filled` is the flag makeDraggable already hit-tests, so a second drop on a full
-               coach springs back instead of counting as a wrong attempt. */
-            if(d.single) body.classList.add("filled");
-            /* [r23] THE CART IS CARRYING SOMETHING NOW, so the empty-tray chrome comes off it -
-               see .coach-body.dropzone.tr-has-card in the stylesheet. */
-            body.classList.add("tr-has-card");
-            /* On the WORD round the card still shows its word once it is in the coach, so mark
-               the matra the child just sorted on. Not on the picture round — the SME is
-               explicit there that "the word should not be displayed at any point". */
-            if(d.kind === "word"){
-              const lbl = tile.querySelector(".tr-cardlbl");
-              if(lbl) matraHLSoon(lbl, tile.dataset.bin, { glow:true });
-            }
-            placed++;
-            train.correct(ci);
-            sfxPopSoft();                      /* the DROP, distinct from the pick-up tap */
-            SwiftPAL.emit("matra_sort_item", { slide_id: slide.id, bin: tile.dataset.bin });
+            settleInto(tile, body, ci);
             const okvo = quiet ? null : (tile.dataset.okaudio || tile.dataset.audio);
             if(placed >= need){
               /* SME: "No extra completion VO required." finishSlide's silent branch skips
@@ -10481,12 +10560,82 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         const tiles = [...tray.children];
         let i = 0;
         (function step(){
-          if(i >= tiles.length){ state.revealing = false; return; }
+          if(i >= tiles.length){ state.revealing = false; if(demo) runDemo(); return; }
           const t = tiles[i++]; t.classList.remove("tr-seq-hidden");
           say(clip(t.dataset.audio),
               ()=> setTimeout(step, 160));
         })();
       }));
+      /* [r83] THE DEMONSTRATION. Yasir: "a copy of page 9 where we'll teach the kid how to drag
+         and drop ... user won't have to do anything, we'll show him". After the cards have been
+         read out, the hand goes to each in turn: it lands on the card (its name is said again),
+         picks it up, carries it across to the coach it belongs in - the card travels under the
+         finger exactly as a dragged card does - and lets go; then the drop is the real one
+         (settleInto), and the line says why it went there. The last line hands over, and the page
+         finishes like any sort page. */
+      function runDemo(){
+        if(!alive()) return;
+        state.demoRunning = true; setNavActive(false);
+        const nh = document.getElementById("nudgeHand");
+        const tiles = [...tray.querySelectorAll(".tr-card")];
+        let k = 0;
+        const next = ()=>{
+          if(!alive()) return;
+          if(k >= tiles.length){
+            if(nh){ nh.classList.remove("show", "hint-glow"); nh.style.animation = ""; }
+            return sayOpt(A(slide, "outro"), ()=>{ state.demoRunning = false;
+              finishSlide(slide, train, true, "sort_demo_done"); });
+          }
+          const tile = tiles[k++];
+          carry(tile, binIdx(tile.dataset.bin), ()=> sayOpt(clip(tile.dataset.okaudio),
+                                                          ()=> setTimeout(next, 450)));
+        };
+        const carry = (tile, ci, done)=>{
+          const c = train.coaches[ci];
+          const stageEl = document.querySelector(".slide-stage");
+          if(!c || !nh || !stageEl){ done(); return; }
+          const body = c.body, face = body.querySelector(".coach-face") || body;
+          const sc = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--scale")) || 1;
+          const sw = stageEl.getBoundingClientRect();
+          const tr = tile.getBoundingClientRect(), fr = face.getBoundingClientRect();
+          const tx = tr.left + tr.width / 2, ty = tr.top + tr.height / 2;
+          const fx = fr.left + fr.width / 2, fy = fr.top + fr.height / 2;
+          /* the hand's fingertip is at the top-middle of its 96px box */
+          const at = (x, y)=> ({ l: (x - sw.left) / sc - 48, t: (y - sw.top) / sc - 8 });
+          const A0 = at(tx, ty), B0 = at(fx, fy);
+          nh.style.animation = "none";
+          nh.style.left = A0.l + "px"; nh.style.top = A0.t + "px";
+          nh.classList.add("show");
+          say(clip(tile.dataset.audio), ()=> setTimeout(()=>{
+            if(!alive()) return;
+            tile.classList.add("dragging");
+            tile.style.transform = "scale(1.08)";
+            if(typeof sfxTap === "function") sfxTap();
+            const DX = (fx - tx) / sc, DY = (fy - ty) / sc, T = 1400;
+            let t0 = 0;
+            const step = (now)=>{
+              if(!alive()) return;
+              if(!t0) t0 = now;
+              const p = Math.min(1, (now - t0) / T);
+              const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+              tile.style.transform = "translate(" + (DX * e) + "px," + (DY * e) + "px) scale(1.08)";
+              nh.style.left = (A0.l + (B0.l - A0.l) * e) + "px";
+              nh.style.top  = (A0.t + (B0.t - A0.t) * e) + "px";
+              body.classList.toggle("hover", p > 0.7);
+              if(p < 1){ requestAnimationFrame(step); return; }
+              body.classList.remove("hover");
+              tile.classList.remove("dragging");
+              tile.style.transform = "";
+              settleInto(tile, body, ci);
+              setTimeout(()=>{ nh.classList.remove("show"); }, 350);
+              setTimeout(done, 300);
+            };
+            requestAnimationFrame(step);
+          }, 350));
+        };
+        setTimeout(next, 500);
+      }
+
       setTimeout(()=>{ if(!hintBusy) state.revealing = false;   /* never cut a demonstration short */
         [...tray.children].forEach(t => t.classList.remove("tr-seq-hidden")); }, 20000);
     }
@@ -10514,7 +10663,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       });
       const tray = document.createElement("div");
       tray.className = "tr-tray";
-      shuffled(d.options).forEach(m => {     /* [r29] */
+      shuffledFresh(d.options, slide.id + ":options").forEach(m => {     /* [r29] */
         const t = document.createElement("div");
         t.className = "tr-card k-matra";
         t.dataset.matra = m;
@@ -11542,7 +11691,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       tray.className = "tr-tray wb-tray";
       /* SME: "Below the train, show draggable options: पु · फू · सु" plus 1–2 distractors.
          Shuffled, so the answer is never the n-th card two runs running. */
-      shuffled(d.options).forEach(o => {      /* [r29] see the note on the sort tray */
+      shuffledFresh(d.options, slide.id + ":options").forEach(o => {      /* [r29] see the note on the sort tray */
         const t = document.createElement("div");
         t.className = "tr-card k-akshar";
         t.dataset.akshar = o.akshar;
@@ -14344,7 +14493,7 @@ if(document.fonts && document.fonts.load){
       /* SME: "Keep the options visually supported with pictures so the child can independently
          understand the word." Picture AND word on every card, exactly as the mockup draws them. */
       /* [r29] the answer was authored first on all four sentence screens */
-      shuffled(d.options).forEach(o => {
+      shuffledFresh(d.options, slide.id + ":options").forEach(o => {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "sc-opt";
@@ -15885,11 +16034,23 @@ function completeSlide(success){
      of by phase string collapses that pair, and a phase with no round (mastery) still gets no gate,
      which is the ruling: three rounds, no round 4. */
   const nextRound = PHASE_ROUND[next && next.phase], curRound = PHASE_ROUND[slide.phase];
-  if(next && nextRound && nextRound !== curRound
+  /* [r83] A ROUND'S GATE CAN BE PINNED TO A SLIDE. CARD.gate.at = { <round>: <slide id> } opens
+     that round's gate in front of the named slide instead of where its phase first begins.
+     Yasir: the third transition, «अब आपकी बारी!», goes after page 17 - just before the runner
+     game - not before the first practice page. Pinning moves the gate without relabelling the
+     practice pages as guided, which would have changed their hint and hand rules. Additive: a
+     card with no `at` gets exactly the gate it always got. */
+  const _pin = (CARD.gate && CARD.gate.at) || {};
+  let gRound = (next && nextRound && nextRound !== curRound && !_pin[nextRound]) ? nextRound : null;
+  for(const r in _pin) if(next && _pin[r] === next.id) gRound = r;
+  const gPhase = !gRound ? null
+    : (PHASE_ROUND[next.phase] === gRound ? next.phase
+       : Object.keys(PHASE_ROUND).find(p => PHASE_ROUND[p] === gRound && PHASE_GATE_TITLE[p]));
+  if(next && gRound && gPhase
      && next.type !== "CELEBRATION" && next.type !== "PHASE_TRANSITION"
-     && PHASE_GATE_TITLE[next.phase] && !_gatedPhases.has(nextRound)){
-    _gatedPhases.add(nextRound);
-    afterConfetti(()=>{ if(state.idx === fromIdx) phaseBlurTransition(()=> mountSlide(nextIdx), next.phase); });
+     && PHASE_GATE_TITLE[gPhase] && !_gatedPhases.has(gRound)){
+    _gatedPhases.add(gRound);
+    afterConfetti(()=>{ if(state.idx === fromIdx) phaseBlurTransition(()=> mountSlide(nextIdx), gPhase); });
     return;
   }
   afterConfetti(()=>{ if(state.idx === fromIdx) mountSlide(nextIdx); });

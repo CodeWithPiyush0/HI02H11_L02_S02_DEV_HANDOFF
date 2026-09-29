@@ -692,9 +692,26 @@ def build_slides():
                            "डिब्बे में डालिए।")
     p2_h1 = vo("vo_p2_h1", "फिर से सुनिए। चित्र का नाम ध्यान से सुनिए और देखिए उसमें कौन-सी "
                            "मात्रा है।")
+    g4_bins = [{"key": m, "label": "%s (%s)" % (LETTER[m], m), "audio": LETTER_VO[m], "matra": m}
+               for m in (U, UU)]
+    # [r83] Yasir: "Make a copy of page 9 where we'll teach the kid how to drag and drop element in
+    # the coach, here user won't have to do anything ... there will only be two options". The same
+    # screen, in front of it, with its own two words (the lesson's anchor words पुल / फूल - reusing
+    # two of page 9's own would hand the child half of its answers a moment before it is asked):
+    # the cards are read out, then a hand carries each one to its coach and a line says why.
+    # `demo` makes TRAIN_SORT watch-only - see runDemo in train_modules.js.
+    S.append({"id": "G4D", "phase": "guided", "eis": "iconic", "type": "TRAIN_SORT",
+              "prompt_hi": "देखिए, शब्द को सही डिब्बे में कैसे डालते हैं।",
+              "audio": {"prompt": vo("vo_g4d_prompt",
+                                     "देखिए, शब्द को उसकी मात्रा वाले डिब्बे में कैसे डालते हैं।"),
+                        "outro": vo("vo_g4d_end", "अब आप भी ऐसे ही करके देखिए।")},
+              "data": {"kind": "word", "bins": g4_bins, "single": False, "demo": True,
+                       "cards": [sort_card(w, vo("vo_g4d_" + slug(key_of(w)),
+                                                 "%s में %s की मात्रा है, इसलिए %s %s वाले डिब्बे में गया।"
+                                                 % (w, MATRA_NAME[matra_of(w)], w, LETTER[matra_of(w)])))
+                                 for w in ["पुल", "फूल"]]}})
     S.append(s_sort("G4", "guided", "word",                                    # deck slide 10
-                    [{"key": m, "label": "%s (%s)" % (LETTER[m], m), "audio": LETTER_VO[m],
-                      "matra": m} for m in (U, UU)],
+                    g4_bins,
                     [sort_hints(sort_card(w, vo("vo_ok_%s" % slug(key_of(w)),
                                      "शाबाश! %s शब्द में %s की मात्रा है।" % (w, LETTER[matra_of(w)]))),
                                 "g4",
@@ -843,7 +860,13 @@ def build_card(slides):
         # [r65] the gate bird is Yasir's seeking/speaking Swifty. Cropped to the bird and encoded
         # as animated WebP (the source GIF is 9.7 MB at 1500^2; it lives in 1_SPEC/game_art_src/
         # gate/). She starts talking 3.82 s in - measured frame by frame - so the gate VO waits.
-        "gate": {"img": "assets/UI/swifty_gate.webp", "talk_at_ms": 3820},
+        # [r82] trimmed: the seek, straight into the rise and her first word - the blink-and-look-
+        # around (1.4 s) and most of the pause before she speaks are cut. New name, because the
+        # deployment caches assets/ as immutable and would keep serving the long version.
+        "gate": {"img": "assets/UI/swifty_gate_seek.webp", "talk_at_ms": 1960,
+                 # [r83] Yasir: the third transition «अब आपकी बारी!» after page 17, i.e. just before
+                 # the runner game - not in front of the first practice page (engine: CARD.gate.at)
+                 "at": {"round3": "MG1"}},
         # REVIEW-1 LADDER — three rungs on every test screen:
         #   wrong 1 = rung-1 VO, nothing else moves and nothing is highlighted
         #   wrong 2 = rung-2 VO plus a DEMONSTRATION (words read out, matras glowed, sentences
@@ -934,7 +957,9 @@ def guard_engine(src):
 def guard_flow(slides):
     """The flow must match the deck screen for screen, plus the mini-game: landing + 18."""
     want = ["MATRA_PAIRS", "MATRA_BUILD", "MEET_PAIR", "MATRA_BUILD", "MEET_PAIR",
-            "TRAIN_TAP", "TRAIN_TAP", "TRAIN_TAP", "TRAIN_SORT", "TRAIN_SORT",
+            "TRAIN_TAP", "TRAIN_TAP", "TRAIN_TAP",
+            "TRAIN_SORT",         # [r83] the watch-only copy of the sort screen (G4D) - Yasir
+            "TRAIN_SORT", "TRAIN_SORT",
             "WORD_BUILD", "TRAIN_SORT",
             "SENTENCE_COMPLETE", "SENTENCE_COMPLETE", "SENTENCE_COMPLETE", "SENTENCE_COMPLETE",
             "MINI_GAME",          # [r36] added after the deck was written - see screen 17
@@ -1148,7 +1173,8 @@ def guard_audio(slides, card):
                           "hint2_audio", "hint3_audio", "name_audio", "sentence_audio"):
                     if it.get(k) and it[k] not in declared:
                         miss.append("%s %s.%s -> %s" % (s["id"], group, k, it[k]))
-        if s["type"] in GESTURE:
+        # [r83] a watch-only demonstration asks the child nothing, so it has no ladder to check
+        if s["type"] in GESTURE and not d.get("demo"):
             per_item = bool(items) and all(c.get("correct_audio") for c in items)
             # REVIEW-1: rungs 2 and 3 may be satisfied PER ITEM as well. On the word and picture
             # rounds both lines name the card («'सूरज' में बड़ी 'ऊ' की मात्रा है»), so a

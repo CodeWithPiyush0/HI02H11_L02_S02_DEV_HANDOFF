@@ -38,12 +38,15 @@
  },
  "phase_distribution": {
   "tutorial": 5,
-  "guided": 5,
+  "guided": 6,
   "practice": 8
  },
  "gate": {
-  "img": "assets/UI/swifty_gate.webp",
-  "talk_at_ms": 3820
+  "img": "assets/UI/swifty_gate_seek.webp",
+  "talk_at_ms": 1960,
+  "at": {
+   "round3": "MG1"
+  }
  },
  "scaffold_rules": {
   "nudge_timeout_ms": {
@@ -120,6 +123,10 @@
    "vo_g4_h3_sooraj": "assets/Audio/vo_g4_h3_sooraj.ogg",
    "vo_g4_h3_sui": "assets/Audio/vo_g4_h3_sui.ogg",
    "vo_g4_prompt": "assets/Audio/vo_g4_prompt.ogg",
+   "vo_g4d_end": "assets/Audio/vo_g4d_end.ogg",
+   "vo_g4d_phool": "assets/Audio/vo_g4d_phool.ogg",
+   "vo_g4d_prompt": "assets/Audio/vo_g4d_prompt.ogg",
+   "vo_g4d_pul": "assets/Audio/vo_g4d_pul.ogg",
    "vo_g5_h1": "assets/Audio/vo_g5_h1.ogg",
    "vo_g5_h2": "assets/Audio/vo_g5_h2.ogg",
    "vo_g5_h3_u": "assets/Audio/vo_g5_h3_u.ogg",
@@ -280,6 +287,10 @@
    "vo_name_kabootar": "कबूतर",
    "vo_g4_h1": "फिर से पढ़िए। शब्द में कौन-सी मात्रा है, देखिए और उसे उसी मात्रा वाले डिब्बे में डालिए।",
    "vo_p2_h1": "फिर से सुनिए। चित्र का नाम ध्यान से सुनिए और देखिए उसमें कौन-सी मात्रा है।",
+   "vo_g4d_prompt": "देखिए, शब्द को उसकी मात्रा वाले डिब्बे में कैसे डालते हैं।",
+   "vo_g4d_end": "अब आप भी ऐसे ही करके देखिए।",
+   "vo_g4d_pul": "पुल में छोटी उ की मात्रा है, इसलिए पुल उ वाले डिब्बे में गया।",
+   "vo_g4d_phool": "फूल में बड़ी ऊ की मात्रा है, इसलिए फूल ऊ वाले डिब्बे में गया।",
    "vo_ok_aaloo": "शाबाश! आलू शब्द में ऊ की मात्रा है।",
    "vo_name_aaloo": "आलू",
    "vo_g4_h2_aaloo": "आलू में बड़ी ऊ की मात्रा है। अब यही मात्रा ऊपर डिब्बों पर खोजिए और शब्द वहीं डालिए।",
@@ -678,6 +689,54 @@
       "correct": false,
       "audio": "vo_name_kabootar",
       "matra": "ू"
+     }
+    ]
+   }
+  },
+  {
+   "id": "G4D",
+   "phase": "guided",
+   "eis": "iconic",
+   "type": "TRAIN_SORT",
+   "prompt_hi": "देखिए, शब्द को सही डिब्बे में कैसे डालते हैं।",
+   "audio": {
+    "prompt": "vo_g4d_prompt",
+    "outro": "vo_g4d_end"
+   },
+   "data": {
+    "kind": "word",
+    "bins": [
+     {
+      "key": "ु",
+      "label": "उ (ु)",
+      "audio": "vo_letter_u",
+      "matra": "ु"
+     },
+     {
+      "key": "ू",
+      "label": "ऊ (ू)",
+      "audio": "vo_letter_uu",
+      "matra": "ू"
+     }
+    ],
+    "single": false,
+    "demo": true,
+    "cards": [
+     {
+      "bin": "ु",
+      "word": "पुल",
+      "img": "obj_pul",
+      "emoji": "🌉",
+      "audio": "vo_name_pul",
+      "correct_audio": "vo_g4d_pul"
+     },
+     {
+      "bin": "ू",
+      "word": "फूल",
+      "img": "obj_phool",
+      "emoji": "🌻",
+      "audio": "vo_name_phool",
+      "correct_audio": "vo_g4d_phool"
      }
     ]
    }
