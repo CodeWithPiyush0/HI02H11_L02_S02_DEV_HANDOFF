@@ -112,6 +112,7 @@ STOCK_MODULES = ["CELEBRATION"]
 COPY_AUDIO = ["vo_pt_tutorial", "vo_pt_guided", "vo_pt_practice",
               "sfx_celebrate", "sfx_correct", "sfx_wrong", "sfx_tap", "sfx_pop",
               "sfx_fb_correct", "sfx_fb_incorrect",   # [r73] Yasir's feedback sounds
+              "sfx_play_button", "sfx_next_button",   # [r84] Yasir's play / next button sounds
               "sfx_train_arrive", "sfx_train_move", "sfx_whistle"]
 
 U, UU = "ु", "ू"
@@ -863,6 +864,8 @@ def build_card(slides):
         # [r82] trimmed: the seek, straight into the rise and her first word - the blink-and-look-
         # around (1.4 s) and most of the pause before she speaks are cut. New name, because the
         # deployment caches assets/ as immutable and would keep serving the long version.
+        # [r84] Yasir's sounds for the landing play button and the next arrow (engine: CARD.ui_sfx)
+        "ui_sfx": {"play": "sfx_play_button", "next": "sfx_next_button"},
         "gate": {"img": "assets/UI/swifty_gate_seek.webp", "talk_at_ms": 1960,
                  # [r83] Yasir: the third transition «अब आपकी बारी!» after page 17, i.e. just before
                  # the runner game - not in front of the first practice page (engine: CARD.gate.at)

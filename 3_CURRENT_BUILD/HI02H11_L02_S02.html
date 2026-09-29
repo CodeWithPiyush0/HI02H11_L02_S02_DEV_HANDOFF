@@ -3931,6 +3931,10 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
   "guided": 6,
   "practice": 8
  },
+ "ui_sfx": {
+  "play": "sfx_play_button",
+  "next": "sfx_next_button"
+ },
  "gate": {
   "img": "assets/UI/swifty_gate_seek.webp",
   "talk_at_ms": 1960,
@@ -4130,6 +4134,8 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    "sfx_pop": "assets/Audio/sfx_pop.ogg",
    "sfx_fb_correct": "assets/Audio/sfx_fb_correct.ogg",
    "sfx_fb_incorrect": "assets/Audio/sfx_fb_incorrect.ogg",
+   "sfx_play_button": "assets/Audio/sfx_play_button.ogg",
+   "sfx_next_button": "assets/Audio/sfx_next_button.ogg",
    "sfx_train_arrive": "assets/Audio/sfx_train_arrive.ogg",
    "sfx_train_move": "assets/Audio/sfx_train_move.ogg",
    "sfx_whistle": "assets/Audio/sfx_whistle.ogg"
@@ -5540,7 +5546,7 @@ function _chainMs(srcs, gapMs){
    no reason to fetch it again and the reviewer keeps hearing the previous take. __AUDIO_V is
    stamped by the builder from the CONTENT of the audio folder, so it changes exactly when a clip
    changes and not otherwise - a fresh URL on every build would defeat caching for no reason. */
-var __AUDIO_V = "20716bea47d6";
+var __AUDIO_V = "bd9e3aeee880";
 function _av(src){
   if(typeof src !== "string" || src.indexOf("assets/Audio/") < 0) return src;
   return src.indexOf("?") >= 0 ? src : src + "?v=" + __AUDIO_V;
@@ -17661,6 +17667,19 @@ function boot(){
     playLanding(); }, { once:true });
 
   let _starting=false;
+  /* [r84] THE NEXT ARROW'S SOUND, ON THE BUTTON ITSELF. Every mechanic re-assigns navBtn.onclick,
+     so the sound is a listener on the element that no assignment can overwrite - on the in-lesson
+     arrow and on the celebration's arrow alike. It answers a real press only: a disabled button
+     fires no click, and the lesson's own auto-advance calls onclick() directly, which is not a
+     click, so a page that moves on by itself stays silent. Warmed now, so the first press is not
+     late. Additive: a card without ui_sfx is untouched. */
+  (function uiSfx(){
+    const U = CARD.ui_sfx || {};
+    [U.play, U.next].forEach(id => { if(id) _loadVoiceBuffer("assets/Audio/" + id + "." + AUDIO_EXT).catch(()=>{}); });
+    if(!U.next) return;
+    ["navBtn", "endBtn"].forEach(id => { const b = $(id); if(!b) return;
+      b.addEventListener("click", ()=>{ if(!b.disabled) playSfx(U.next); }, true); });
+  })();
   $("sgBtn").onclick = async()=>{
     /* ADDITIVE: activity_launched — the child tapping शुरू करें. The only verb of the seven
        with no existing signal in this engine. One-shot inside _xapi, so a mashed start
@@ -17670,6 +17689,9 @@ function boot(){
     stopAudio();          // silence the landing greeting BEFORE slide 0 speaks (no VO overlap)
     _resumeVoiceAudio();  // [31x] unlock/resume INSIDE the Android user gesture
     _ac();
+    /* [r84] the play button's own sound, once per start (after the double-tap guard above).
+       playSfx is its own buffer source, so the stopAudio() above cannot cut it. */
+    if(CARD.ui_sfx && CARD.ui_sfx.play) playSfx(CARD.ui_sfx.play);
     /* [31x] hold the start until slide 1's clips are decoded, so a fast tap cannot beat the warm.
        Capped: a stalled network must never strand the child on the landing. */
     await Promise.race([_initialAudioWarmPromise,new Promise(resolve=>setTimeout(resolve,3000))]);

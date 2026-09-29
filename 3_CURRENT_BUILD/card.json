@@ -41,6 +41,10 @@
   "guided": 6,
   "practice": 8
  },
+ "ui_sfx": {
+  "play": "sfx_play_button",
+  "next": "sfx_next_button"
+ },
  "gate": {
   "img": "assets/UI/swifty_gate_seek.webp",
   "talk_at_ms": 1960,
@@ -240,6 +244,8 @@
    "sfx_pop": "assets/Audio/sfx_pop.ogg",
    "sfx_fb_correct": "assets/Audio/sfx_fb_correct.ogg",
    "sfx_fb_incorrect": "assets/Audio/sfx_fb_incorrect.ogg",
+   "sfx_play_button": "assets/Audio/sfx_play_button.ogg",
+   "sfx_next_button": "assets/Audio/sfx_next_button.ogg",
    "sfx_train_arrive": "assets/Audio/sfx_train_arrive.ogg",
    "sfx_train_move": "assets/Audio/sfx_train_move.ogg",
    "sfx_whistle": "assets/Audio/sfx_whistle.ogg"

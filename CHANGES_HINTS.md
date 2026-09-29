@@ -561,3 +561,17 @@ repeats.
 (the first practice page). `CARD.gate.at = {"round3": "MG1"}` pins a round's gate to a slide - the
 practice pages keep their phase, so their hint and hand rules are unchanged. Checked: page 5 -> 6
 «चलिए, साथ में करें!», page 11 -> 12 no transition, page 17 -> 18 «अब आपकी बारी!».
+
+## r84 — sounds for the play button and the next arrow
+
+Yasir's `swiftpal_sfx_3_play_button.wav` / `swiftpal_sfx_4_next_button.wav` are now
+`assets/Audio/sfx_play_button.ogg` / `sfx_next_button.ogg` (Vorbis, levels as supplied: -24 / -28.6
+LUFS, the same level as the existing tap sound). The WAVs moved to `1_SPEC/game_art_src/sfx/`.
+`CARD.ui_sfx` names them; declared in COPY_AUDIO.
+- **Play** (landing `#sgBtn`): once per start, after the double-tap guard.
+- **Next** (`#navBtn` and the celebration's `#endBtn`): a listener on the button itself, since
+  every mechanic re-assigns `navBtn.onclick`. It answers a real press only - a disabled arrow is
+  silent, and pages that advance by themselves (auto-advance calls onclick() directly) are silent.
+Verified with real clicks, as a file and over http: play double-clicked -> 1 sound; next arrow ->
+sound and the page moves on; disabled arrow -> nothing; page 9 moving itself on -> nothing;
+celebration arrow -> sound.
