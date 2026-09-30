@@ -1380,6 +1380,130 @@ LETTER_GLOW_CSS = """
 """
 
 
+# ---------------------------------------------------------------- [r85] celebration Swiftie
+# The lip-synced celebration from celebration_kit/ (see its README): she jumps on «शाबाश!», talks
+# with her beak opening on each syllable of THIS lesson's celebration line, then idles mouth shut.
+#   · the kit's three sheets are copied UNCHANGED into assets/UI/celebration/ on every build
+#   · the lip-sync track is measured from the celebration VO on every build, so a re-recorded clip
+#     re-syncs by itself - make_lipsync.py is the kit's own measurer, run as it ships
+#   · meta + track ride on the card as CARD.end_anim; the kit's player and the README's wrapper of
+#     SlideModules.CELEBRATION.mount are injected after the engine script - the engine is not edited
+KIT = os.path.join(HANDOFF, "celebration_kit")
+CEL_DIR = os.path.join(BUNDLE, "assets", "UI", "celebration")
+
+
+def celebration_anim(slides):
+    import shutil, filecmp, tempfile, subprocess
+    cel = [x for x in slides if x["type"] == "CELEBRATION"]
+    vo_id = cel and (cel[0].get("audio") or {}).get("prompt")
+    vo_path = vo_id and os.path.join(AUD_DIR, vo_id + ".ogg")
+    if not (os.path.isdir(KIT) and vo_path and os.path.isfile(vo_path)):
+        print("  !!  celebration Swiftie skipped (kit or %s missing) - the stock mascot stays" % vo_id)
+        return None
+    meta = json.load(open(os.path.join(KIT, "sheets", "cel_meta.json"), encoding="utf-8"))
+    os.makedirs(CEL_DIR, exist_ok=True)
+    for sheet in (meta["shabaash"]["src"], meta["talk"]["src"], meta["idle"]["src"]):
+        a, b = os.path.join(KIT, "sheets", sheet), os.path.join(CEL_DIR, sheet)
+        if not (os.path.isfile(b) and filecmp.cmp(a, b, shallow=False)):
+            shutil.copy2(a, b)
+    out = os.path.join(tempfile.gettempdir(), "cel_track_%s.json" % CODE)
+    subprocess.run([sys.executable, os.path.join(KIT, "make_lipsync.py"), vo_path, "--json", out],
+                   check=True, capture_output=True)
+    track = json.load(open(out, encoding="utf-8"))
+    if "1" not in track["bits"]:
+        sys.exit("X  the celebration VO measured silent - no lip-sync track")
+    print("  OK  celebration Swiftie: 3 kit sheets in assets/UI/celebration/, lip-sync track from %s "
+          "(%d ms, %d steps)" % (vo_id, track["ms"], len(track["bits"])))
+    return {"base": "assets/UI/celebration/", "vo": vo_id, "meta": meta, "track": track}
+
+
+CEL_WRAP = r"""
+/* [r85] THE CELEBRATION SWIFTIE - the kit's README wrapper, verbatim in intent. The engine's
+   CELEBRATION module is wrapped, not edited: it still does everything it did (sfx, sunburst, stars,
+   the arrow), then the stock .end-mascot is hidden and a 300x358 host takes its place - the mascot's
+   own 358 px layout height, so the arrow below it keeps its exact size and position.
+   The clock is the clip's own - see THE CLOCK below. */
+(function(){
+  if(typeof SlideModules === "undefined" || !SlideModules.CELEBRATION || typeof CARD === "undefined"
+     || !CARD.end_anim || typeof SwiftieCelebration === "undefined") return;
+  const EA = CARD.end_anim;
+  /* the three sheets (~2 MB) are fetched quietly 12 s after the lesson loads, so on a first visit
+     they are in the cache long before the last page: the kit only starts loading them when the
+     celebration mounts, and on a slow connection the jump (350 ms in) would play before its sheet
+     had arrived. Kept referenced so the cached copies are not dropped. */
+  const _warm = [];
+  const warm = ()=> [EA.meta.shabaash, EA.meta.talk, EA.meta.idle].forEach(s => {
+    const i = new Image(); i.decoding = "async"; i.src = EA.base + s.src; _warm.push(i); });
+  const arm = ()=> setTimeout(warm, 12000);
+  if(document.readyState === "complete") arm(); else window.addEventListener("load", arm);
+  /* THE CLOCK. The kit takes `audio` - anything with paused / ended / currentTime - and anchors
+     itself as  t0 = now - currentTime  the first time it sees the clip sounding. Measured here: the
+     celebration mounts in a burst of work (sunburst, stars, sound), the page's main thread stalls
+     150-330 ms right as the clip starts, and a yes/no "sounding" signal is only noticed on the first
+     frame AFTER the stall - which put the whole lip-sync 170-1470 ms late when opened as a file.
+     So the clock below reports how long the clip has really been audible, from the moment it
+     became so, however late the next frame runs:
+       · Web Audio (served): when the engine started the source, + the context's output latency
+       · <audio> (opened as a file): the element's own "playing" event timestamp */
+  const _st = AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start = function(when){
+    try{ const c = this.context;
+      this.__swcAt = performance.now() + ((when && when > c.currentTime) ? (when - c.currentTime) * 1000 : 0)
+                     + ((c.baseLatency || 0) + (c.outputLatency || 0)) * 1000; }catch(e){}
+    return _st.apply(this, arguments);
+  };
+  const heardAt = ()=>{
+    const a = currentAudio;
+    if(a){
+      if(!a.__swc){ a.__swc = true;
+        a.addEventListener("playing", (e)=>{ a.__swcAt = e.timeStamp - a.currentTime * 1000; }); }
+      return a.paused ? null : (a.__swcAt != null ? a.__swcAt
+                               : (a.currentTime > 0 ? performance.now() - a.currentTime * 1000 : null));
+    }
+    return currentVoiceSource && currentVoiceSource.__swcAt != null ? currentVoiceSource.__swcAt : null;
+  };
+  const clock = {
+    get paused(){ return !isPlaying || heardAt() == null; },
+    get ended(){ return !isPlaying; },
+    get currentTime(){ const t = heardAt(); return t == null ? 0 : Math.max(0, performance.now() - t) / 1000; }
+  };
+  const _cel = SlideModules.CELEBRATION.mount;
+  SlideModules.CELEBRATION.mount = function(host, slide){
+    const r = _cel.apply(this, arguments);
+    const img = document.querySelector("#endScreen .end-mascot");
+    let box = document.getElementById("celBox");
+    if(!box && img){ box = document.createElement("div"); box.id = "celBox";
+      /* the stock mascot's OWN layout height, measured before it is hidden: 330 px wide at its
+         516x476 art is 357.72 px, not the kit's 358 - and 0.28 px is a whole screen pixel of arrow
+         movement at 1920x1080. Falls back to the kit's 358 if the stock art never loaded. */
+      const h = (img.naturalWidth && img.offsetWidth) ? img.offsetWidth * img.naturalHeight / img.naturalWidth : 358;
+      box.style.cssText = "width:300px;height:" + h + "px;position:relative;z-index:2";
+      img.parentNode.insertBefore(box, img); }
+    if(!box) return r;
+    if(img) img.style.display = "none";
+    box.innerHTML = "";
+    SwiftieCelebration.play({ host: box, meta: EA.meta, base: EA.base,
+                              bits: EA.track.bits, step_ms: EA.track.step_ms, audio: clock });
+    return r;
+  };
+})();
+"""
+
+
+def inject_celebration(html, card):
+    if not card.get("end_anim") or 'id="swcKit"' in html:
+        return html
+    css = open(os.path.join(KIT, "swiftie_celebration.css"), encoding="utf-8").read()
+    js = open(os.path.join(KIT, "swiftie_celebration.js"), encoding="utf-8").read()
+    html, n1 = re.subn(r"</head>", lambda m: '<style id="swcKitCss">\n' + css + "</style>\n</head>", html, count=1)
+    i = html.rfind("</body>")
+    if n1 != 1 or i < 0:
+        sys.exit("X  could not inject the celebration Swiftie")
+    html = html[:i] + '<script id="swcKit">\n' + js + "\n" + CEL_WRAP + "</script>\n" + html[i:]
+    print("  OK  celebration Swiftie injected (kit player + CELEBRATION.mount wrapper)")
+    return html
+
+
 def main():
     argparse.ArgumentParser().parse_args()
     if not os.path.isfile(ENGINE):
@@ -1412,6 +1536,9 @@ def main():
     if img_orphan:
         print("  !!  images no longer used by the card (delete before packaging): %s" % img_orphan)
 
+    card["end_anim"] = celebration_anim(slides)          # [r85]
+    if not card["end_anim"]:
+        del card["end_anim"]
     payload = json.dumps(card, ensure_ascii=False, indent=1)
     if not CARD_TAG.search(src):
         sys.exit("X  cardData tag not found")
@@ -1433,6 +1560,7 @@ def main():
         if n != 1:
             sys.exit("X  could not inject the letter glow")
         print("  OK  letter-strip glow injected")
+    html = inject_celebration(html, card)                # [r85]
 
 
     # [r17] AUDIO CACHE VERSION. Hash every clip's bytes, so the stamp moves when a recording

@@ -575,3 +575,28 @@ LUFS, the same level as the existing tap sound). The WAVs moved to `1_SPEC/game_
 Verified with real clicks, as a file and over http: play double-clicked -> 1 sound; next arrow ->
 sound and the page moves on; disabled arrow -> nothing; page 9 moving itself on -> nothing;
 celebration arrow -> sound.
+
+## r85 — the lip-synced Swiftie on the celebration screen (celebration_kit/)
+
+Followed `celebration_kit/README.md`. The line already starts with «शाबाश!» (`vo_cel_prompt`:
+«शाबाश! आज हमने सीखा, …»), so no wording changed.
+- **Sheets** `cel_shabaash / cel_talk / cel_idle.webp` and `cel_meta.json` used unchanged; the build
+  copies the sheets into `assets/UI/celebration/` (byte-identical check) on every build.
+- **Track** measured by the kit's `make_lipsync.py` from `vo_cel_prompt.ogg` on every build (7 971 ms,
+  318 steps), so a re-recorded VO re-syncs. Meta + track ride on the card as `CARD.end_anim`.
+- **Player** `swiftie_celebration.js/.css` injected after the engine with the README's wrapper of
+  `SlideModules.CELEBRATION.mount` - the engine file is not edited. The stock `.end-mascot` is hidden
+  and a 300-wide host takes its place at the stock mascot's own height (357.72 px, not the kit's 358 -
+  0.28 px was a screen pixel of arrow at 1920x1080). Arrow: identical to 0.01 px at 4 window sizes.
+- **Clock.** Passed as the kit's `audio` (paused / ended / currentTime): how long the clip has really
+  been audible - the Web Audio source's start + the context's output latency when served, the
+  element's `playing` event timestamp when opened as a file. The celebration mounts in a burst of
+  work and the page stalls 150-330 ms as the clip starts (the stock screen does too); an
+  `isSounding` flag is only seen after the stall and put the lip-sync 170-1 470 ms late as a file.
+- **Warm-up.** The three sheets (~2 MB) are fetched 12 s after the lesson loads, so on a first visit
+  they are cached before the last page (throttled 4 Mbit/s test: ready well before the jump).
+
+Measured with the real audio, logging `.swc-sprite` data-sheet / data-f / data-t: talk-phase mouth =
+track at t+16 ms in 98.3-100 % of samples per run (final build: 100 / 100 / 100 % served, 100 / 99.7 %
+as a file); every miss is a sample whose t+16 lands exactly on a 25 ms step boundary (data-t is
+rounded to whole ms), none away from a syllable edge; 0 open-mouth frames after the VO in every run.

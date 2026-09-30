@@ -26,3 +26,6 @@ README.md
 
 # the raw WAVs supplied for the runner voice: the game plays the .ogg files next to them
 3_CURRENT_BUILD/assets/MatraRunner/voice/voiceovers/
+
+# the celebration kit is read by the BUILD (sheets, player, make_lipsync.py); the lesson ships its own copies
+celebration_kit/
