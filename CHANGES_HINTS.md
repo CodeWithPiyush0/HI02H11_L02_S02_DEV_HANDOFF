@@ -662,3 +662,52 @@ train should be inside the main rectangular box".
   inner border. Swifty and the speaker (which overlap the corner on purpose) are not clipped.
 Measured: no slow frames while the cloud forms and the title is written (3 runs); the only long
 task is the one that starts the animation, before anything moves.
+
+## r92 — the cloud collects from the moving train; the title on an arch
+
+Yasir: "as the train moves ahead the smoke will start collecting, and on it the title will appear;
+also make the title text a little curved" (match the mockup).
+- **Collected on the move.** The cloud starts with the train's run. The train comes in from the
+  right and its chimney passes under the cloud, so each puff leaves the chimney as the chimney
+  passes under the puff's place (the arrival curve, cubic-bezier(.40,.20,.45,1) over 3.4 s, is
+  evaluated to know where the chimney is at every moment), rises out of the stack trailing a little
+  behind the train, and settles: the cloud fills in right to left behind the train and is complete
+  as it parks. Three puffs then join the parked chimney to the cloud's underside, as on the mockup.
+  Then the matras pop, the title is written, Swifty greets. The train sets off 0.6 s after the
+  loading screen clears, once the cover is fully showing.
+- **The arch.** The three words are three inline blocks: the middle one highest, the outer ones
+  lower and tilted outwards (±5.5°). Each word stays one piece of text - bending letters one by one
+  would break the Hindi joins and the headline.
+- Measured: the remaining long frames during the train's run (130-350 ms in total on this machine,
+  CPU 73 % busy with other programs) are the train's own wheel drawing - page 6's identical train
+  shows the same - not the cloud or the title. A trial of holding the lesson's background warm-ups
+  until after the cover showed no gain and was taken back out of the engine.
+
+## r93 — the cloud arched like the title; the title bent along a true arc
+
+Yasir: "can't we make the cloud curve too - it does not feel curved from the bottom; also make the
+text curve as in the reference image".
+- **The cloud.** Every piece of it - the bumps along the top, the soft inside (now five overlapping
+  ovals and three white cores along the curve, since one straight bar cannot bend) and the
+  underside - is laid on one arch: the ends sit 40 px lower than the middle. The column from the
+  chimney joins the arched underside.
+- **The title.** On the mockup the headline is one smooth curve. The words are now cut into
+  grapheme clusters - whole aksharas: «मा» «त्रा» «ओं» «की» «रे» «ल» - and each is lifted and tilted
+  to a true arc (ends 20 px lower, each piece at the curve's slope), so no conjunct or matra is split
+  and the headline runs as one arch. If a browser's segmenter would split a conjunct (an older ICU:
+  a piece ending in a virama) it falls back to whole words. Laid out again once the font is in and
+  just before the words are written.
+- The sequence is unchanged: the cloud collects behind the moving train, the matras pop, the title
+  is written, Swifty greets. No console errors.
+
+## r94 — the title a little lower on its cloud
+
+Yasir: "move the title text slightly down - part of the text is getting out of the cloud". The words
+are 10 px lower (`#sgTitle` top -36 -> -26 px) and the cloud 10 px higher inside the title's box
+(`--tcl-top` -46 -> -56 px), so the cloud, the train and everything else stay exactly where they were
+and only the words move. Measured at 1382x850: words 158..238 px, cloud 100..285 px.
+
+## r95 — the title another 8 px lower
+
+Yasir: "move the text a little more down". Words top -26 -> -18 px, cloud `--tcl-top` -56 -> -64 px,
+so again only the words move. Measured at 1382x850: words 165..245 px, cloud 100..285 px.

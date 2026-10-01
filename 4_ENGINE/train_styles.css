@@ -1604,8 +1604,12 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    The chimney's puffs already pass BEHIND this layer (r73), so they rise into the cloud's
    underside and vanish in it: the cloud reads as the train's own smoke. */
 #sgTitle.lt-title-front{
-  --tcl-top: -46px;                        /* the cloud's top, from the title's (moved) box */
-  font-size:84px; line-height:66px; height:66px; top:-36px; white-space:nowrap;
+  --tcl-top: -64px;                        /* the cloud's top, from the title's (moved) box */
+  /* [r94] Yasir: "move the title text slightly down - part of it is getting out of the cloud":
+     the words 10 px lower (top -36 -> -26) and the cloud 10 px higher inside the box (-46 -> -56),
+     so the cloud stays exactly where it was and only the words move */
+  /* [r95] "a little more down": another 8 px (top -26 -> -18, cloud -56 -> -64) */
+  font-size:84px; line-height:66px; height:66px; top:-18px; white-space:nowrap;
   /* solid, not a gradient: a text-clipped background is the element's own background layer, and
      the cloud (a child) would paint over it. The mockup's bold rounded blue with a darker edge under
      it and a soft shadow; the cloud gets the same soft shadow through the filter. */
@@ -1687,6 +1691,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
   transform:translate3d(calc(-1 * var(--tw,600px)),0,0);
   will-change:transform;
 }
+/* [r92] each word of the arch is its own inline block, tilted and lifted by formTitleCloud's builder */
+/* [r93] the title's pieces (whole aksharas) tilt about their own baseline */
+#sgTitle.lt-title-front .lt-tw{ display:inline-block; transform-origin:50% 78%; }
 #sgTitle.lt-title-front .lt-tword{
   display:inline-block;
   transform:translate3d(var(--tw,600px),0,0);

@@ -3646,8 +3646,12 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    The chimney's puffs already pass BEHIND this layer (r73), so they rise into the cloud's
    underside and vanish in it: the cloud reads as the train's own smoke. */
 #sgTitle.lt-title-front{
-  --tcl-top: -46px;                        /* the cloud's top, from the title's (moved) box */
-  font-size:84px; line-height:66px; height:66px; top:-36px; white-space:nowrap;
+  --tcl-top: -64px;                        /* the cloud's top, from the title's (moved) box */
+  /* [r94] Yasir: "move the title text slightly down - part of it is getting out of the cloud":
+     the words 10 px lower (top -36 -> -26) and the cloud 10 px higher inside the box (-46 -> -56),
+     so the cloud stays exactly where it was and only the words move */
+  /* [r95] "a little more down": another 8 px (top -26 -> -18, cloud -56 -> -64) */
+  font-size:84px; line-height:66px; height:66px; top:-18px; white-space:nowrap;
   /* solid, not a gradient: a text-clipped background is the element's own background layer, and
      the cloud (a child) would paint over it. The mockup's bold rounded blue with a darker edge under
      it and a soft shadow; the cloud gets the same soft shadow through the filter. */
@@ -3729,6 +3733,9 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
   transform:translate3d(calc(-1 * var(--tw,600px)),0,0);
   will-change:transform;
 }
+/* [r92] each word of the arch is its own inline block, tilted and lifted by formTitleCloud's builder */
+/* [r93] the title's pieces (whole aksharas) tilt about their own baseline */
+#sgTitle.lt-title-front .lt-tw{ display:inline-block; transform-origin:50% 78%; }
 #sgTitle.lt-title-front .lt-tword{
   display:inline-block;
   transform:translate3d(var(--tw,600px),0,0);
@@ -15016,29 +15023,67 @@ if(document.fonts && document.fonts.load){
     if(ttl && !ttl.querySelector(".lt-tcloud")){
       const words = ttl.textContent;
       const tcl = document.createElement("div"); tcl.className = "lt-tcloud"; tcl.setAttribute("aria-hidden", "true");
-      const body = document.createElement("i"); body.className = "lt-tbody";
-      body.style.cssText = "left:40px;top:66px;width:560px;height:86px";
-      body.dataset.cx = 320; body.dataset.cy = 109;
-      tcl.appendChild(body);
+      /* [r93] THE CLOUD ON AN ARCH, like the title on it and like Yasir's mockup: everything - the
+         bumps along the top, the soft inside and the underside - follows one curve, highest in the
+         middle and lower towards the ends. ARC(x) is that curve in the cloud's own px. */
+      const SAG = 40;                                      /* how much lower the ends sit than the middle */
+      const ARC = (x)=> SAG * Math.pow((x - 320) / 320, 2) - SAG * 0.38;
+      const put = (cls, x, y, w, h)=>{
+        const e = document.createElement("i"); if(cls) e.className = cls;
+        const yy = y + ARC(x);
+        e.style.cssText = "left:" + (x - w / 2) + "px;top:" + (yy - h / 2) + "px;width:" + w + "px;height:" + h + "px";
+        e.dataset.cx = x; e.dataset.cy = yy;
+        tcl.appendChild(e);
+      };
+      /* the soft inside: overlapping ovals along the arch (one straight bar cannot bend) */
+      [[100, 108], [220, 106], [340, 105], [460, 106], [560, 108]].forEach(([x, y]) => put("lt-tbody", x, y, 210, 86));
       [[34,118,52],[78,104,84],[140,84,104],[222,70,124],[318,64,128],[414,68,124],[500,80,108],
-       [574,98,88],[618,116,54],[170,126,62],[270,130,64],[380,130,64],[480,126,60]].forEach(([x, y, dd])=>{
-        const p = document.createElement("i");
-        p.style.cssText = "left:" + (x - dd / 2) + "px;top:" + (y - dd / 2) + "px;width:" + dd + "px;height:" + dd + "px";
-        p.dataset.cx = x; p.dataset.cy = y;
-        tcl.appendChild(p);
-      });
-      const core = document.createElement("i"); core.className = "lt-tcore";
-      core.style.cssText = "left:52px;top:44px;width:536px;height:118px";
-      core.dataset.cx = 320; core.dataset.cy = 103;
-      tcl.appendChild(core);                              /* last: it sits over the puffs' overlaps */
+       [574,98,88],[618,116,54],[170,126,62],[270,130,64],[380,130,64],[480,126,60]].forEach(([x, y, dd]) => put("", x, y, dd, dd));
+      /* the white core behind the words, on the arch too - last, over the puffs' overlaps */
+      [[170, 103], [320, 101], [470, 103]].forEach(([x, y]) => put("lt-tcore", x, y, 250, 118));
+      tcl.dataset.sag = SAG;
       /* [r89] the words sit in a sliding window - see .lt-twin in the stylesheet */
       const win = document.createElement("span"); win.className = "lt-twin";
-      const tw = document.createElement("span"); tw.className = "lt-tword"; tw.textContent = words;
+      const tw = document.createElement("span"); tw.className = "lt-tword";
+      /* [r93] THE WORDS BENT ALONG A TRUE ARC, as on the mockup, where the headline is one smooth
+         curve. The text is cut into GRAPHEME CLUSTERS - whole aksharas, «मा» «त्रा» «ओं» - so no
+         conjunct or matra is ever split, and each is lifted and tilted to the curve by ltArcTitle().
+         If this browser's segmenter would split a conjunct (an older ICU without the Indic rule: a
+         piece ending in a virama), it falls back to whole words. */
+      const ws = words.trim().split(/\s+/);
+      let pieces = null;
+      try{
+        if(typeof Intl !== "undefined" && Intl.Segmenter){
+          const seg = new Intl.Segmenter("hi", { granularity:"grapheme" });
+          pieces = ws.map(w => [...seg.segment(w)].map(x => x.segment));
+          if(pieces.some(ps => ps.some(x => x.endsWith("\u094D")))) pieces = null;
+        }
+      }catch(e){ pieces = null; }
+      if(!pieces) pieces = ws.map(w => [w]);
+      pieces.forEach((ps, i)=>{
+        ps.forEach(x => { const sp = document.createElement("span"); sp.className = "lt-tw"; sp.textContent = x; tw.appendChild(sp); });
+        if(i < pieces.length - 1) tw.appendChild(document.createTextNode(" "));
+      });
       win.appendChild(tw);
       ttl.textContent = ""; ttl.appendChild(tcl); ttl.appendChild(win);
     }
   }
 
+  /* [r93] lay the title's pieces on the arc: each piece's centre is lifted by the curve and the piece
+     is tilted to the curve's slope there, so the headline runs as one smooth arch. Measured from
+     the pieces' own layout boxes (transforms do not move those), so it can be run again safely. */
+  function ltArcTitle(){
+    const tw = document.querySelector("#sgTitle .lt-tword"); if(!tw) return;
+    const parts = [...tw.querySelectorAll(".lt-tw")]; if(!parts.length) return;
+    const W = tw.offsetWidth, half = W / 2; if(!W) return;
+    const SAG = 20;                                       /* the ends sit 20 px lower than the middle */
+    parts.forEach(sp => {
+      const x = sp.offsetLeft + sp.offsetWidth / 2 - half;
+      const y = SAG * Math.pow(x / half, 2) - SAG * 0.45;
+      const ang = Math.atan(2 * SAG * x / (half * half)) * 180 / Math.PI;
+      sp.style.transform = "translateY(" + y.toFixed(1) + "px) rotate(" + ang.toFixed(2) + "deg)";
+    });
+  }
   function dressLandingTrain(){
     const hero = (typeof CARD !== "undefined" && CARD.landing_hero) || null;
     if(!hero || hero.kind !== "matra_train") return false;
@@ -15072,6 +15117,8 @@ if(document.fonts && document.fonts.load){
     }
     const ltReady = window.__ltReadyFn, ltStep = window.__ltStepFn;
     ltPrepTitle();                                        /* [r90] the title, at once */
+    ltArcTitle();                                         /* [r93] and on its arc - again once the font is in */
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(ltArcTitle);
 
     /* [r90] THE TRAIN SETS OFF WHEN THE COVER CAN BE SEEN. This used to run as soon as the page's
        HTML was ready - under the white loading screen, which only clears once everything has
@@ -15099,7 +15146,13 @@ if(document.fonts && document.fonts.load){
       window.__ltKick = ()=>{
         if(window.__ltGo || !isLoaded()) return;
         if(!window.__ltCapT) window.__ltCapT = setTimeout(()=>{ window.__ltCap = true; window.__ltKick(); }, 2000);
-        if(window.__ltArtOk || window.__ltCap){ window.__ltGo = true; clearTimeout(window.__ltCapT); dressLandingTrain(); }
+        if(window.__ltArtOk || window.__ltCap){
+          window.__ltGo = true; clearTimeout(window.__ltCapT);
+          /* [r92] a beat after the cover appears: the loading screen's fade and removal and the
+             cover's own pop-in are a burst of painting (measured: 130-160 ms frames in the first
+             quarter-second) - the train sets off once that has passed, not under it */
+          setTimeout(dressLandingTrain, 600);
+        }
       };
       if(!window.__ltObs){
         window.__ltObs = new MutationObserver(()=> window.__ltKick());
@@ -15133,11 +15186,7 @@ if(document.fonts && document.fonts.load){
       on_enter: ()=>{
         if(window.__ltUnclip) window.__ltUnclip();          /* [r91] parked: the clip comes off */
         const last = ms.length - 1;
-        /* [r88/r90] the train has parked: once the matras have popped onto the coaches, its smoke
-           grows into the title cloud. Measured on r89: the second matra's pop (a 60 ms task) landed
-           in the middle of the cloud's growth; now the two never overlap. */
-        setTimeout(()=>{ if(window.__ltFormCloud) window.__ltFormCloud(ltStep); else ltStep(); },
-                   220 + last * 520 + 200);
+        /* [r92] the cloud is already collecting - it started with the train (see below) */
         [...el.querySelectorAll(".lt-matra")].forEach((sp, i)=> setTimeout(()=>{
           sp.classList.remove("lt-pending"); sp.classList.add("lt-pop");
           sfxSparkle();                       // SME: "a light sparkle/pop SFX when each matra appears"
@@ -15160,6 +15209,7 @@ if(document.fonts && document.fonts.load){
        arrives along and it reads as railway; on the cover it cut the card in half under a train
        that is really a title illustration. Marked here rather than hidden globally, because the
        activity screens still want it. */
+    window.__ltTrainT0 = performance.now();             /* [r92] the run starts now */
     (tc.shell || el).classList.add("lt-cover");
     /* [r91] THE TRAIN ARRIVES INSIDE THE CARD. Yasir: "the train should be inside the main
        rectangular box, not outside of it". It slides in from 86% of its own width to the right -
@@ -15202,6 +15252,17 @@ if(document.fonts && document.fonts.load){
     var tcl = ttl ? ttl.querySelector(".lt-tcloud") : null;
     /* the train has parked: the cloud's puffs leave the chimney - nearest first - and swell into
        place, then the words are written on it, then `done` (the greeting may start) */
+    /* [r92] the train's arrival curve - trainIn, cubic-bezier(.40,.20,.45,1) over TRAIN_TRAVEL_MS from
+       translateX(86%) - so the cloud knows where the chimney is at every moment of the run */
+    function _bez(x1, y1, x2, y2){
+      const A = (a1, a2)=> 1 - 3 * a2 + 3 * a1, B = (a1, a2)=> 3 * a2 - 6 * a1, C = (a1)=> 3 * a1;
+      const at = (t, a1, a2)=> ((A(a1, a2) * t + B(a1, a2)) * t + C(a1)) * t;
+      return (x)=>{ let lo = 0, hi = 1, t = x;
+        for(let i = 0; i < 30; i++){ const v = at(t, x1, x2); if(Math.abs(v - x) < 1e-5) break;
+          if(v < x) lo = t; else hi = t; t = (lo + hi) / 2; }
+        return at(t, y1, y2); };
+    }
+    const _trainEaseCurve = _bez(.40, .20, .45, 1);
     function formTitleCloud(done){
       if(!tcl || tcl.classList.contains("lt-form")){ if(done) done(); return; }
       tcl.classList.add("lt-form");
@@ -15211,39 +15272,61 @@ if(document.fonts && document.fonts.load){
       const finishWords = ()=>{
         if(_fin) return; _fin = true;
         ttl.classList.add("lt-written", "lt-written-done");      /* a marker only - no style change */
-        /* the greeting a beat later, so its start-up cannot catch the last frames of the writing */
-        if(done) setTimeout(done, 300);
+        if(done) setTimeout(done, 300);   /* the greeting a beat later, clear of the writing */
       };
+      const sc = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--scale")) || 1;
+      const stm = el.querySelector(".train-steam"), rail = el.querySelector(".train-rail");
+      const cr = tcl.getBoundingClientRect(), sr = stm ? stm.getBoundingClientRect() : null;
+      /* where the chimney is NOW, how far the train still has to come, and so where it will park -
+         in the cloud's own px. The rail's current offset comes off its live transform. */
+      const nowX = sr ? (sr.left - cr.left) / sc : 120;
+      let off = 0; try{ off = new DOMMatrixReadOnly(getComputedStyle(rail).transform).m41 / sc * sc; }catch(e){}
+      const chxF = nowX - (rail ? off : 0);              /* the chimney's parked x */
+      const mouthY = sr ? (sr.top - cr.top) / sc : 200;  /* its mouth */
+      const chy = mouthY - 14;
+      const D = rail ? rail.offsetWidth * 0.86 : 380;    /* the run, start to park */
+      const t0 = window.__ltTrainT0 || performance.now(), TRAVEL = (typeof TRAIN_TRAVEL_MS === "number" ? TRAIN_TRAVEL_MS : 3400);
+      const elapsed = performance.now() - t0;
+      const xAt = (t)=> chxF + D * (1 - _trainEaseCurve(Math.min(1, Math.max(0, t / TRAVEL))));
+      /* when the chimney passes under x (the inverse of xAt, by halving) */
+      const tAt = (x)=>{ let lo = 0, hi = TRAVEL; for(let i = 0; i < 28; i++){ const m = (lo + hi) / 2; if(xAt(m) > x) lo = m; else hi = m; } return (lo + hi) / 2; };
+
+      /* THE COLUMN that joins chimney and cloud, as on the mockup: three puffs from just above the
+         parked chimney up into the cloud's underside, built once we know where the chimney parks */
+      if(!tcl.querySelector(".lt-tcol")){
+        const sag = +tcl.dataset.sag || 0;
+        const top = 150 + sag * Math.pow((chxF - 320) / 320, 2) - sag * 0.38, n = 3;   /* [r93] the arched underside */
+        for(let j = 0; j < n; j++){
+          const f = (j + 1) / (n + 1), dd = Math.round(24 + 18 * f);
+          const x = chxF - 4 * f, y = mouthY - 10 + (top - (mouthY - 10)) * f;
+          const c = document.createElement("i"); c.className = "lt-tcol";
+          c.style.cssText = "left:" + (x - dd / 2) + "px;top:" + (y - dd / 2) + "px;width:" + dd + "px;height:" + dd + "px";
+          c.dataset.cx = x; c.dataset.cy = y;
+          tcl.insertBefore(c, tcl.firstChild);
+        }
+      }
       if(reduce || typeof tcl.animate !== "function"){
         tcl.classList.add("lt-settled"); ttl.classList.add("lt-static"); finishWords(); return; }
-      const sc = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--scale")) || 1;
-      const stm = el.querySelector(".train-steam");
-      const cr = tcl.getBoundingClientRect(), sr = stm ? stm.getBoundingClientRect() : null;
-      /* [r89/r90] the smoke: just above the chimney's mouth, in the cloud's own px; and the small
-         cloud it first gathers into, a little higher and towards the middle */
-      const chx = sr ? (sr.left - cr.left) / sc : 120, chy = sr ? (sr.top - cr.top) / sc - 18 : 190;
-      const gx = chx + (320 - chx) * 0.25, gy = Math.min(chy - 40, 118);
-      const BILL = 1500, WR = 1300;
-      /* [r91] THE CLOUD IS BUILT FROM A STREAM OUT OF THE CHIMNEY. Yasir: "all the smoke should come
-         from the chimney and on that smoke the title will be written" - r90's puffs all grew at once,
-         so it read as a second cloud appearing next to the train's smoke. Now the chimney sends the
-         puffs out ONE AFTER ANOTHER (nearest place first): each leaves the chimney at the size of an
-         ordinary steam puff, rises straight up out of it, then drifts across and swells into its
-         place - so the cloud visibly piles up out of the train's smoke. The soft inside fills in as
-         the puffs gather round it. Every piece still starts and ends at the same instant (its own
-         stagger is inside its keyframes), so the page is re-styled once at each end, not 16 times. */
-      void BILL; void gx; void gy;                        /* (r90's single-burst timings, no longer used) */
-      const STEP = 135, RUN = 1150;
+
+      const RUN = 1300, WR = 1300, EARLIEST = 650;      /* the train is well inside the card by then */
       const all = [...tcl.children].map(k => ({ k, cx:+k.dataset.cx, cy:+k.dataset.cy,
-        fill: k.classList.contains("lt-tbody") || k.classList.contains("lt-tcore") }));
-      const puffs = all.filter(p => !p.fill)
-        .sort((p, q) => Math.hypot(p.cx - chx, p.cy - chy) - Math.hypot(q.cx - chx, q.cy - chy));
-      const T = RUN + STEP * (puffs.length - 1);
-      puffs.forEach((p, i) => {
-        const f = (i * STEP) / T, u = RUN / T;           /* where this puff's own run starts, and its length */
-        const sx = (chx - p.cx).toFixed(1), sy = (chy - p.cy).toFixed(1);
-        /* straight up out of the stack first, then across to its place */
-        const ux = (chx + (p.cx - chx) * 0.18 - p.cx).toFixed(1), uy = (chy - 46 - p.cy).toFixed(1);
+        fill: k.classList.contains("lt-tbody") || k.classList.contains("lt-tcore"),
+        col: k.classList.contains("lt-tcol") }));
+      /* each puff leaves the chimney as the chimney passes under its place; the column last */
+      const puffs = all.filter(p => !p.fill).map(p => {
+        let te = p.col ? TRAVEL - 260 + 90 * (p.cy < 160 ? 1 : 0) : tAt(Math.min(chxF + D, Math.max(chxF, p.cx)));
+        return Object.assign(p, { te: Math.max(EARLIEST, te) });
+      }).sort((p, q) => p.te - q.te);
+      for(let i = 1; i < puffs.length; i++) puffs[i].te = Math.max(puffs[i].te, puffs[i - 1].te + 85);
+      const lastTe = puffs[puffs.length - 1].te;
+      const T = Math.max(1, lastTe + RUN - elapsed);     /* the whole cloud, from now */
+      puffs.forEach(p => {
+        const startAt = Math.max(0, p.te - elapsed);
+        const ex = p.col ? chxF : xAt(p.te);              /* where the chimney is when this one leaves */
+        const f = startAt / T, u = Math.min(1 - f, RUN / T);
+        const sx = (ex - p.cx).toFixed(1), sy = (chy - p.cy).toFixed(1);
+        /* straight up out of the stack, trailing a little behind the train, then into its place */
+        const ux = (ex + (p.cx - ex) * 0.25 + 10 - p.cx).toFixed(1), uy = (chy - 42 - p.cy).toFixed(1);
         const start = "translate3d(" + sx + "px," + sy + "px,0) scale(.16)";
         const frames = [];
         if(f > 0) frames.push({ offset:0, opacity:0, transform:start });
@@ -15255,16 +15338,15 @@ if(document.fonts && document.fonts.load){
         if(f + u < 1) frames.push({ offset:1, opacity:1, transform:"translate3d(0,0,0) scale(1)" });
         p.k.animate(frames, { duration:T, fill:"both" });
       });
-      /* the inside: it thickens as the puffs gather round it - from a third of the way in */
+      /* the inside thickens as the puffs gather round it */
       all.filter(p => p.fill).forEach(p => {
-        p.k.animate([{ offset:0, opacity:0 }, { offset:.34, opacity:0, easing:"ease-in-out" }, { offset:1, opacity:1 }],
+        p.k.animate([{ offset:0, opacity:0 }, { offset:.4, opacity:0, easing:"ease-in-out" }, { offset:1, opacity:1 }],
                     { duration:T, fill:"both" });
       });
       /* the words: the window and the words slide by the same distance in opposite directions */
+      ltArcTitle();
       const tw = win ? Math.round(win.getBoundingClientRect().width / sc) : 600;
-      const formed = T;
       setTimeout(()=>{
-        /* (no class change here: it re-styled the whole moving cloud in the middle of its motion) */
         if(!win || !word){ finishWords(); return; }
         const ease = "cubic-bezier(.42,0,.32,1)";
         win.animate([{ transform:"translate3d(" + (-tw) + "px,0,0)" }, { transform:"translate3d(0,0,0)" }],
@@ -15272,10 +15354,14 @@ if(document.fonts && document.fonts.load){
         const wa = word.animate([{ transform:"translate3d(" + tw + "px,0,0)" }, { transform:"translate3d(0,0,0)" }],
                     { duration:WR, easing:ease, fill:"forwards" });
         wa.onfinish = finishWords;
-        setTimeout(()=>{ if(!ttl.classList.contains("lt-written-done")) finishWords(); }, WR + 600);
-      }, formed - 380);                                   /* the words start as the cloud settles */
+        setTimeout(finishWords, WR + 600);
+      }, T - 320);                                        /* the words start as the cloud settles */
     }
     window.__ltFormCloud = formTitleCloud;
+    /* [r92] Yasir: "as the train moves ahead the smoke will start collecting, and on it the title
+       appears". The cloud starts with the train's run - each puff leaves the moving chimney as it
+       passes under the puff's place - so the cloud fills in right to left behind the train. */
+    requestAnimationFrame(()=> formTitleCloud(ltStep));
     /* never leave the cover without its title: by 9 s it is there, formed or not */
     setTimeout(()=>{ if(tcl && !tcl.classList.contains("lt-form")) formTitleCloud(null);
       setTimeout(()=> ttl && ttl.classList.add("lt-written", "lt-written-done", "lt-static"), 2600); }, 9000);
