@@ -5820,31 +5820,120 @@ if(document.fonts && document.fonts.load){
 
      The shared engine's boot() does not know this hero kind, so it leaves #sgHero empty and this
      fills it afterwards. Nothing in the shared engine is touched. */
+  /* [r90] THE COVER'S TITLE IS DRESSED AT ONCE, under the loading screen: the bigger title, the
+     taller card and the (hidden) cloud and words. Only the MOTION waits for the train. Dressing it
+     when the train set off showed the plain old title for a moment and then made the card jump. */
+  function ltPrepTitle(){
+    /* [r74] the title stays TEXT (Yasir asked for the original back); it is still layered
+       above the train, so the steam passes behind it */
+    const ttl = document.getElementById("sgTitle");
+    if(ttl) ttl.classList.add("lt-title-front");
+    /* [r87] and the card grows to hold the title's cloud (see .sg-card.lt-cloud-card) */
+    { const _card = ttl && ttl.closest(".sg-card"); if(_card) _card.classList.add("lt-cloud-card"); }
+    /* [r88] THE TITLE CLOUD, MADE OF THE TRAIN'S SMOKE (see .lt-tcloud in train_styles.css).
+       Built now, invisible; formed by formTitleCloud() when the train parks. Each entry is a puff:
+       its centre x, y and diameter in the cloud's own 640x162 box. */
+    if(ttl && !ttl.querySelector(".lt-tcloud")){
+      const words = ttl.textContent;
+      const tcl = document.createElement("div"); tcl.className = "lt-tcloud"; tcl.setAttribute("aria-hidden", "true");
+      const body = document.createElement("i"); body.className = "lt-tbody";
+      body.style.cssText = "left:40px;top:66px;width:560px;height:86px";
+      body.dataset.cx = 320; body.dataset.cy = 109;
+      tcl.appendChild(body);
+      [[34,118,52],[78,104,84],[140,84,104],[222,70,124],[318,64,128],[414,68,124],[500,80,108],
+       [574,98,88],[618,116,54],[170,126,62],[270,130,64],[380,130,64],[480,126,60]].forEach(([x, y, dd])=>{
+        const p = document.createElement("i");
+        p.style.cssText = "left:" + (x - dd / 2) + "px;top:" + (y - dd / 2) + "px;width:" + dd + "px;height:" + dd + "px";
+        p.dataset.cx = x; p.dataset.cy = y;
+        tcl.appendChild(p);
+      });
+      const core = document.createElement("i"); core.className = "lt-tcore";
+      core.style.cssText = "left:52px;top:44px;width:536px;height:118px";
+      core.dataset.cx = 320; core.dataset.cy = 103;
+      tcl.appendChild(core);                              /* last: it sits over the puffs' overlaps */
+      /* [r89] the words sit in a sliding window - see .lt-twin in the stylesheet */
+      const win = document.createElement("span"); win.className = "lt-twin";
+      const tw = document.createElement("span"); tw.className = "lt-tword"; tw.textContent = words;
+      win.appendChild(tw);
+      ttl.textContent = ""; ttl.appendChild(tcl); ttl.appendChild(win);
+    }
+  }
+
   function dressLandingTrain(){
     const hero = (typeof CARD !== "undefined" && CARD.landing_hero) || null;
     if(!hero || hero.kind !== "matra_train") return false;
     const el = document.getElementById("sgHero");
     if(!el) return false;
     if(el.dataset.ltDone) return true;                    // idempotent
-    el.dataset.ltDone = "1";
-    const ms = hero.matras || [];
 
     /* r7: THE GREETING WAITS FOR THE TRAIN. It used to start at boot, i.e. under a 3.4s arrival
        with a whistle, a chug bed and two sparkles over it — the same clash this bundle fixed on
        all seven activity screens, still live on the one screen every child sees first.
        `ltReady()` is the single release point, and the backstop below fires it even if the
        arrival never completes, because a cover that never speaks is worse than one that speaks
-       over itself. */
-    window.__ltReady = false;
-    window.__ltWaiters = [];
-    function ltReady(){
-      if(window.__ltReady) return;
-      window.__ltReady = true;
-      const q = window.__ltWaiters; window.__ltWaiters = [];
-      q.forEach(fn => { try{ fn(); }catch(e){} });
+       over itself.
+       [r90] Set up ONCE, at once: the engine asks landingTrainReady() the instant its loading
+       screen clears, which is now BEFORE the train is built (below). */
+    if(!window.__ltInit){
+      window.__ltInit = true;
+      window.__ltReady = false;
+      window.__ltWaiters = [];
+      window.__ltReadyFn = function(){
+        if(window.__ltReady) return;
+        window.__ltReady = true;
+        const q = window.__ltWaiters; window.__ltWaiters = [];
+        q.forEach(fn => { try{ fn(); }catch(e){} });
+      };
+      window.landingTrainReady = (fn)=>{ if(window.__ltReady) fn(); else window.__ltWaiters.push(fn); };
+      /* [r88] two things finish the arrival: the matras landing, and the title written on its
+         cloud. The greeting waits for both. */
+      window.__ltSteps = 0;
+      window.__ltStepFn = ()=>{ if(++window.__ltSteps >= 2) window.__ltReadyFn(); };
     }
-    window.landingTrainReady = (fn)=>{ if(window.__ltReady) fn(); else window.__ltWaiters.push(fn); };
-    setTimeout(ltReady, 7000);        /* never leave the cover silent on a stalled arrival */
+    const ltReady = window.__ltReadyFn, ltStep = window.__ltStepFn;
+    ltPrepTitle();                                        /* [r90] the title, at once */
+
+    /* [r90] THE TRAIN SETS OFF WHEN THE COVER CAN BE SEEN. This used to run as soon as the page's
+       HTML was ready - under the white loading screen, which only clears once everything has
+       loaded (min 1.6 s). Measured: on a slow load the train had arrived, and the cloud had begun
+       to form, before the cover appeared - so the child saw it start mid-way. It now waits for the
+       engine's `body.loaded`, set the moment the loading screen starts to fade. */
+    /* ...and once its own pictures are in. They are fetched and decoded NOW, under the loading
+       screen, exactly as before - building the train later had them start downloading only as it
+       set off, and it arrived invisible (measured: smoke and labels, no train, for ~4 s). A 2 s cap
+       after the cover appears means a slow picture can never hold the cover still. */
+    if(!window.__ltGo){
+      if(!window.__ltArt){
+        window.__ltArtImgs = [TRAIN_ART.src, TRAIN_SPR.src].map(u => {
+          const im = new Image(); im.decoding = "async"; im.src = u; return im; });
+        window.__ltArt = Promise.all(window.__ltArtImgs.map(im => new Promise(r => {
+            /* loaded and decoded - or loaded and 400 ms on, whichever is first */
+            const fin = ()=> r();
+            if(im.decode) im.decode().then(fin, fin);
+            const onl = ()=> setTimeout(fin, 400);
+            if(im.complete && im.naturalWidth) onl(); else { im.addEventListener("load", onl); im.addEventListener("error", fin); }
+          })))
+          .then(()=>{ window.__ltArtOk = true; window.__ltKick && window.__ltKick(); });
+      }
+      const isLoaded = ()=> !document.getElementById("bootLoader") || document.body.classList.contains("loaded");
+      window.__ltKick = ()=>{
+        if(window.__ltGo || !isLoaded()) return;
+        if(!window.__ltCapT) window.__ltCapT = setTimeout(()=>{ window.__ltCap = true; window.__ltKick(); }, 2000);
+        if(window.__ltArtOk || window.__ltCap){ window.__ltGo = true; clearTimeout(window.__ltCapT); dressLandingTrain(); }
+      };
+      if(!window.__ltObs){
+        window.__ltObs = new MutationObserver(()=> window.__ltKick());
+        window.__ltObs.observe(document.body, { attributes:true, attributeFilter:["class"] });
+      }
+      window.__ltKick();                                  /* dresses it now if it is ready */
+      return true;
+    }
+    if(window.__ltObs){ window.__ltObs.disconnect(); window.__ltObs = null; }
+    el.dataset.ltDone = "1";
+    const ms = hero.matras || [];
+    /* [r90] 12 s from the train setting off: the arrival ends with the title written on its cloud,
+       and at 7 s this backstop released the greeting in the middle of the writing */
+    setTimeout(ltReady, 12000);       /* never leave the cover silent on a stalled arrival */
 
     const tc = TrainChrome.mount(el, {
       coaches: ms.length,
@@ -5862,14 +5951,20 @@ if(document.fonts && document.fonts.load){
          what makes the two covers read as the same train: 0.294 * the 592px ink band = 174. */
       maxH: 174,
       on_enter: ()=>{
+        if(window.__ltUnclip) window.__ltUnclip();          /* [r91] parked: the clip comes off */
         const last = ms.length - 1;
+        /* [r88/r90] the train has parked: once the matras have popped onto the coaches, its smoke
+           grows into the title cloud. Measured on r89: the second matra's pop (a 60 ms task) landed
+           in the middle of the cloud's growth; now the two never overlap. */
+        setTimeout(()=>{ if(window.__ltFormCloud) window.__ltFormCloud(ltStep); else ltStep(); },
+                   220 + last * 520 + 200);
         [...el.querySelectorAll(".lt-matra")].forEach((sp, i)=> setTimeout(()=>{
           sp.classList.remove("lt-pending"); sp.classList.add("lt-pop");
           sfxSparkle();                       // SME: "a light sparkle/pop SFX when each matra appears"
           /* r7: the greeting waits for THIS — the last matra has popped and its sparkle has
              sounded, so the arrival is genuinely over and nothing is left to talk over. The pop
              animation is 420ms; the clip starts once it has landed rather than on top of it. */
-          if(i === last) setTimeout(ltReady, 460);
+          if(i === last) setTimeout(ltStep, 460);
         }, 220 + i * 520));
       }
     });
@@ -5886,6 +5981,21 @@ if(document.fonts && document.fonts.load){
        that is really a title illustration. Marked here rather than hidden globally, because the
        activity screens still want it. */
     (tc.shell || el).classList.add("lt-cover");
+    /* [r91] THE TRAIN ARRIVES INSIDE THE CARD. Yasir: "the train should be inside the main
+       rectangular box, not outside of it". It slides in from 86% of its own width to the right -
+       past the card's right edge - so for the arrival the train is clipped to the inside of the
+       card's frame (9 px border); the clip comes off once it has parked. Swifty and the speaker,
+       which overlap the card's corner on purpose, are not part of the train and are not clipped. */
+    const _shell = tc.shell || el, _cardEl = _shell.closest(".sg-card");
+    if(_cardEl){
+      const sc0 = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--scale")) || 1;
+      const sr0 = _shell.getBoundingClientRect(), cr0 = _cardEl.getBoundingClientRect(), B = 9;
+      const L = (cr0.left - sr0.left) / sc0 + B, Tp = (cr0.top - sr0.top) / sc0 + B;
+      const R = (cr0.right - sr0.left) / sc0 - B, Bt = (cr0.bottom - sr0.top) / sc0 - B;
+      _shell.style.clipPath = "polygon(" + L + "px " + Tp + "px," + R + "px " + Tp + "px," +
+                              R + "px " + Bt + "px," + L + "px " + Bt + "px)";
+      window.__ltUnclip = ()=>{ _shell.style.clipPath = ""; };
+    }
     /* [r73] the steam stays under the title. The plume rose 0.62 of the
        train's height - on the cover, straight into the title - so here it rises a little over a
        third of that, and the title is layered above the train so any wisp passes behind it. */
@@ -5898,15 +6008,98 @@ if(document.fonts && document.fonts.load){
          chimney - so they read as steam leaving the stack rather than something resting on it. */
       const top0 = parseFloat(st.style.top) || 0;
       st.style.top = (top0 - 7) + "px";
-      st.style.setProperty("--tc-rise", Math.round(r * 0.36) + "px");
+      /* [r86] higher again: on the cloud cover the puffs climb into the title cloud and vanish in it */
+      st.style.setProperty("--tc-rise", Math.round(r * 0.62) + "px");
       st.style.setProperty("--tc-drift", "-14px");
       const pf = parseFloat(st.style.getPropertyValue("--tc-puff")) || 26;
-      st.style.setProperty("--tc-puff", Math.round(pf * 0.8) + "px");
+      /* [r86] fuller again: the puffs now vanish into the title cloud rather than over the words */
+      st.style.setProperty("--tc-puff", Math.round(pf * 1.15) + "px");
     }
-    /* [r74] the title stays TEXT (Yasir asked for the original back); it is still layered
-       above the train, so the steam passes behind it */
+    /* [r74/r87/r88] the title, its card and its cloud - prepared by ltPrepTitle() (below), which
+       already ran under the loading screen; this just picks the pieces up */
     const ttl = document.getElementById("sgTitle");
-    if(ttl) ttl.classList.add("lt-title-front");
+    ltPrepTitle();
+    var tcl = ttl ? ttl.querySelector(".lt-tcloud") : null;
+    /* the train has parked: the cloud's puffs leave the chimney - nearest first - and swell into
+       place, then the words are written on it, then `done` (the greeting may start) */
+    function formTitleCloud(done){
+      if(!tcl || tcl.classList.contains("lt-form")){ if(done) done(); return; }
+      tcl.classList.add("lt-form");
+      const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const win = ttl.querySelector(".lt-twin"), word = ttl.querySelector(".lt-tword");
+      let _fin = false;
+      const finishWords = ()=>{
+        if(_fin) return; _fin = true;
+        ttl.classList.add("lt-written", "lt-written-done");      /* a marker only - no style change */
+        /* the greeting a beat later, so its start-up cannot catch the last frames of the writing */
+        if(done) setTimeout(done, 300);
+      };
+      if(reduce || typeof tcl.animate !== "function"){
+        tcl.classList.add("lt-settled"); ttl.classList.add("lt-static"); finishWords(); return; }
+      const sc = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--scale")) || 1;
+      const stm = el.querySelector(".train-steam");
+      const cr = tcl.getBoundingClientRect(), sr = stm ? stm.getBoundingClientRect() : null;
+      /* [r89/r90] the smoke: just above the chimney's mouth, in the cloud's own px; and the small
+         cloud it first gathers into, a little higher and towards the middle */
+      const chx = sr ? (sr.left - cr.left) / sc : 120, chy = sr ? (sr.top - cr.top) / sc - 18 : 190;
+      const gx = chx + (320 - chx) * 0.25, gy = Math.min(chy - 40, 118);
+      const BILL = 1500, WR = 1300;
+      /* [r91] THE CLOUD IS BUILT FROM A STREAM OUT OF THE CHIMNEY. Yasir: "all the smoke should come
+         from the chimney and on that smoke the title will be written" - r90's puffs all grew at once,
+         so it read as a second cloud appearing next to the train's smoke. Now the chimney sends the
+         puffs out ONE AFTER ANOTHER (nearest place first): each leaves the chimney at the size of an
+         ordinary steam puff, rises straight up out of it, then drifts across and swells into its
+         place - so the cloud visibly piles up out of the train's smoke. The soft inside fills in as
+         the puffs gather round it. Every piece still starts and ends at the same instant (its own
+         stagger is inside its keyframes), so the page is re-styled once at each end, not 16 times. */
+      void BILL; void gx; void gy;                        /* (r90's single-burst timings, no longer used) */
+      const STEP = 135, RUN = 1150;
+      const all = [...tcl.children].map(k => ({ k, cx:+k.dataset.cx, cy:+k.dataset.cy,
+        fill: k.classList.contains("lt-tbody") || k.classList.contains("lt-tcore") }));
+      const puffs = all.filter(p => !p.fill)
+        .sort((p, q) => Math.hypot(p.cx - chx, p.cy - chy) - Math.hypot(q.cx - chx, q.cy - chy));
+      const T = RUN + STEP * (puffs.length - 1);
+      puffs.forEach((p, i) => {
+        const f = (i * STEP) / T, u = RUN / T;           /* where this puff's own run starts, and its length */
+        const sx = (chx - p.cx).toFixed(1), sy = (chy - p.cy).toFixed(1);
+        /* straight up out of the stack first, then across to its place */
+        const ux = (chx + (p.cx - chx) * 0.18 - p.cx).toFixed(1), uy = (chy - 46 - p.cy).toFixed(1);
+        const start = "translate3d(" + sx + "px," + sy + "px,0) scale(.16)";
+        const frames = [];
+        if(f > 0) frames.push({ offset:0, opacity:0, transform:start });
+        frames.push({ offset:f, opacity:0, transform:start, easing:"cubic-bezier(.25,.6,.4,1)" });
+        frames.push({ offset:f + .10 * u, opacity:1 });
+        frames.push({ offset:f + .38 * u, opacity:1, transform:"translate3d(" + ux + "px," + uy + "px,0) scale(.42)",
+                      easing:"cubic-bezier(.3,.1,.25,1)" });
+        frames.push({ offset:f + u, opacity:1, transform:"translate3d(0,0,0) scale(1)" });
+        if(f + u < 1) frames.push({ offset:1, opacity:1, transform:"translate3d(0,0,0) scale(1)" });
+        p.k.animate(frames, { duration:T, fill:"both" });
+      });
+      /* the inside: it thickens as the puffs gather round it - from a third of the way in */
+      all.filter(p => p.fill).forEach(p => {
+        p.k.animate([{ offset:0, opacity:0 }, { offset:.34, opacity:0, easing:"ease-in-out" }, { offset:1, opacity:1 }],
+                    { duration:T, fill:"both" });
+      });
+      /* the words: the window and the words slide by the same distance in opposite directions */
+      const tw = win ? Math.round(win.getBoundingClientRect().width / sc) : 600;
+      const formed = T;
+      setTimeout(()=>{
+        /* (no class change here: it re-styled the whole moving cloud in the middle of its motion) */
+        if(!win || !word){ finishWords(); return; }
+        const ease = "cubic-bezier(.42,0,.32,1)";
+        win.animate([{ transform:"translate3d(" + (-tw) + "px,0,0)" }, { transform:"translate3d(0,0,0)" }],
+                    { duration:WR, easing:ease, fill:"forwards" });
+        const wa = word.animate([{ transform:"translate3d(" + tw + "px,0,0)" }, { transform:"translate3d(0,0,0)" }],
+                    { duration:WR, easing:ease, fill:"forwards" });
+        wa.onfinish = finishWords;
+        setTimeout(()=>{ if(!ttl.classList.contains("lt-written-done")) finishWords(); }, WR + 600);
+      }, formed - 380);                                   /* the words start as the cloud settles */
+    }
+    window.__ltFormCloud = formTitleCloud;
+    /* never leave the cover without its title: by 9 s it is there, formed or not */
+    setTimeout(()=>{ if(tcl && !tcl.classList.contains("lt-form")) formTitleCloud(null);
+      setTimeout(()=> ttl && ttl.classList.add("lt-written", "lt-written-done", "lt-static"), 2600); }, 9000);
+
     void tc;
     return true;
   }

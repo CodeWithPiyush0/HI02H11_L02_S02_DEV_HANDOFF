@@ -600,3 +600,65 @@ Measured with the real audio, logging `.swc-sprite` data-sheet / data-f / data-t
 track at t+16 ms in 98.3-100 % of samples per run (final build: 100 / 100 / 100 % served, 100 / 99.7 %
 as a file); every miss is a sample whose t+16 lands exactly on a 25 ms step boundary (data-t is
 rounded to whole ms), none away from a syllable edge; 0 open-mouth frames after the VO in every run.
+
+## r86 — the cover title on a cloud (Yasir's mockup)
+
+Only the title changed. «मात्राओं की रेल» stays live text, now 84 px (was 60) in a brighter bold blue
+with a darker edge under it, on a cloud cut out of Yasir's mockup (`1_SPEC/extract_title_cloud.py`:
+the words removed by harmonic fill, the cloud keyed off the sky with a smooth anti-aliased edge, the
+smoke tail to the mockup's chimney trimmed along the two lobes' own circles) ->
+`assets/UI/title_cloud.webp` (10 KB); source and mockup kept in `1_SPEC/game_art_src/cover/`.
+The title's box keeps its 66 px height and both the words and the cloud move with `top` / absolute
+positioning, so the train, Swifty, the speaker, the play button and every sound are where and what
+they were (measured: same boxes to the pixel). The cloud floats over the card's top edge. The
+chimney puffs already pass behind the title layer, so they now climb into the cloud's underside and
+vanish in it (rise 0.36 -> 0.62 of the train's height, puffs 0.8 -> 1.15 size).
+
+## r87 — the cover card holds the title cloud
+
+Yasir: "the title is getting out of the main area - increase this area slightly so that it adjusts in
+the box". The cover card grows 80 px at the top (456 -> 536) and its content is pushed down by the
+same 80 px, so the cloud now sits inside the frame and the title, train, Swifty, speaker and play
+button keep their places relative to each other and to the frame; the card stays centred on the
+screen, so the whole group sits ~40 px lower. The frame is now CSS drawn to the measurements of
+`start_card.webp` (9 px white border as an inset shadow, 44 px corners, white fill at 166/255) - a
+stretched image would squash its corners and a nine-slice left a seam. Checked at 1024x700 and
+1382x850; the play button still starts the lesson with its sound.
+
+## r88 — the title cloud is the train's own smoke, in CSS, and forms in sequence
+
+Yasir: "the train smoke and the smoke on which the text is written do not look the same"; the cover
+should go "train arrives with smoke -> the smoke gets bigger -> the text is written on it",
+smoothly, and "do not use an image for the cloud/smoke - make it using CSS".
+- The image cloud (r86) is gone (`title_cloud.webp` and its extraction script removed). The cloud is
+  now thirteen puffs drawn with the chimney puff's own radial gradient (white highlight, blue-grey
+  body, soft rim) round a soft body, plus a white core behind the words so the overlaps blend into
+  one cloud. Same colours, same blur as `.train-steam`.
+- The sequence (CSS transitions on transform / opacity / mask, started from the train's arrival):
+  the train parks -> every puff of the cloud leaves the chimney, nearest first, and swells into its
+  place (~1.4 s) -> the title is written left to right behind a soft-edged mask (1.25 s) -> the
+  greeting starts (it now waits for the matras AND the title; the 7 s backstop still stands).
+  Recorded with Chrome's screencast: puffs leave the chimney ~0.4 s after the train parks, the cloud
+  is complete ~1 s later, the words are written over the next ~0.7 s.
+- Reduced motion: the finished cover at once. Backstop: the title is there by 9 s regardless.
+- Unchanged: the train and its arrival, the steam, the matra pops and sounds, Swifty, the speaker,
+  the play button, the card (r87) - same positions to the pixel.
+
+## r91 — the cloud is built out of the chimney's smoke; title tops; the train arrives inside the card
+
+Yasir: "all the smoke should come from the chimney and on that smoke the title will be written -
+currently the train smokes and then another cloud appears"; "the text gets cut from the top"; "the
+train should be inside the main rectangular box".
+- **A stream from the chimney.** The puffs now leave the chimney one after another (135 ms apart,
+  nearest place first), each at the size of an ordinary steam puff: up out of the stack, then
+  across, swelling into its place - the cloud piles up out of the train's smoke (~2.8 s). Its soft
+  inside thickens as the puffs gather. Still one start and one end for every piece (compositor-run,
+  no per-frame repaint). Then the title is written; then the greeting.
+- **Title tops.** The writing's mask had 12 px above an 84 px title on a 66 px line, so the matras
+  and the bindu of «ओं» / «रे» were cut. 48 px now (40 below).
+- **Inside the card.** The train slides in from 86 % of its width to the right, past the card's
+  edge; for the arrival it is clipped to the inside of the card's frame and the clip comes off once
+  it has parked. Measured at the first frame: rail to x 1286, card edge 1200, train cut at the
+  inner border. Swifty and the speaker (which overlap the corner on purpose) are not clipped.
+Measured: no slow frames while the cloud forms and the title is written (3 runs); the only long
+task is the one that starts the animation, before anything moves.

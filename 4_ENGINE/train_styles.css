@@ -1595,6 +1595,118 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
 
 /* [r73/r74] the cover's text title sits above the train, so the steam passes behind it */
 #sgTitle.lt-title-front{ position:relative; z-index:6; }
+/* [r86] THE TITLE ON A CLOUD - Yasir's cover mockup. The title stays live text (sharp at every size,
+   editable), drawn bigger and bolder on a cloud (r88: built in CSS from the train's own smoke - see
+   .lt-tcloud below). Everything else on the cover is untouched: the title's BOX keeps
+   its old 66 px height, and both the words and the cloud are moved with `top` / absolute
+   positioning, which do not re-flow the page - so the train, Swifty, the speaker and the play
+   button stay exactly where they were. The cloud floats over the card's top edge, into the sky.
+   The chimney's puffs already pass BEHIND this layer (r73), so they rise into the cloud's
+   underside and vanish in it: the cloud reads as the train's own smoke. */
+#sgTitle.lt-title-front{
+  --tcl-top: -46px;                        /* the cloud's top, from the title's (moved) box */
+  font-size:84px; line-height:66px; height:66px; top:-36px; white-space:nowrap;
+  /* solid, not a gradient: a text-clipped background is the element's own background layer, and
+     the cloud (a child) would paint over it. The mockup's bold rounded blue with a darker edge under
+     it and a soft shadow; the cloud gets the same soft shadow through the filter. */
+  color:#1a4fb4;
+  text-shadow:0 4px 0 #0b3d8c, 0 9px 14px rgba(11,61,140,.28);
+  /* [r89] no `filter` here: a filter on the title group is re-drawn on every frame anything inside
+     it moves - measured as the main cost of the cloud's stutter */
+}
+/* [r87] THE CARD MAKES ROOM FOR THE CLOUD. Yasir: "the title is getting out of the main area -
+   increase this area slightly so that it adjusts in the box". The card grows 80 px at the TOP and
+   its content area is pushed down by the same 80 px (padding), so the title, the train and the
+   bottom-pinned Swifty / speaker / play button keep their places inside the frame; the card stays
+   centred on the screen. The frame is drawn in CSS to the measurements of its own art
+   (start_card.webp: a 9 px white border, 44 px corners, a white fill at 166/255) rather than
+   stretched taller, which would squash its corners - and not as a nine-slice either, which left a
+   seam where its edge met its translucent middle. The border is an INSET shadow, so it takes no
+   layout room and the bottom-pinned pieces sit exactly where they sat on the image frame. */
+.sg-card.lt-cloud-card{
+  height:536px; padding-top:80px;
+  background:rgba(255,255,255,.651);
+  border-radius:44px;
+  box-shadow:inset 0 0 0 9px #fff;
+}
+/* [r88] THE CLOUD IS THE TRAIN'S OWN SMOKE - CSS, no image. Yasir: "the train smoke and the smoke
+   on which the text is written do not look the same"; "do not use an image for the cloud/smoke".
+   The cloud is built from the very puff the chimney blows (.train-steam span: the same radial
+   gradient - white highlight up-left, blue-grey body, soft rim), thirteen of them round a soft
+   body, with a white core behind the words so the overlaps blend into one cloud.
+   [r89] SMOOTH. Yasir: "it still does not feel smooth". Measured on r88: frames averaged 23-26 ms
+   with stalls of 100-150 ms, because every frame was being re-PAINTED - a filter on the title
+   group, a blur on each puff, and the writing done by moving a mask over shadowed text. Now every
+   moving thing is a transform or an opacity in a CSS keyframe animation, which the compositor runs
+   on its own thread without repainting anything:
+     · the cloud: all the puffs leave the chimney together, gather into a small cloud just above
+       it, then swell out as one mass into the full cloud - smoke growing, not balls thrown
+     · the writing: a clipping window with a soft right edge slides across the words while the
+       words themselves are held still by the opposite slide - the text is painted once */
+#sgTitle.lt-title-front .lt-tcloud{
+  position:absolute; z-index:-1; pointer-events:none;
+  left:50%; top:var(--tcl-top); width:640px; height:162px; margin-left:-320px;
+}
+#sgTitle.lt-title-front .lt-tcloud i{
+  position:absolute; display:block; border-radius:50%;
+  /* the chimney puff's own colours, its darker band moved out towards the rim so overlapping
+     puffs blend into one cloud */
+  background:radial-gradient(circle at 36% 32%,#FDFEFF 0%,#F1F6FA 36%,#DCE7F1 64%,rgba(196,211,226,.9) 84%,rgba(186,203,221,0) 100%);
+  /* [r90] AT REST IN ITS FINAL PLACE, AT FULL SIZE, ALL BUT INVISIBLE: so each puff is drawn once,
+     at full resolution, while the train is still arriving - not in the first frame it appears,
+     which was one of the measured stalls. The motion itself is a Web Animation (formTitleCloud). */
+  opacity:.002; transform:translate3d(0,0,0);
+  will-change:transform, opacity; backface-visibility:hidden;
+}
+#sgTitle.lt-title-front .lt-tcloud i.lt-tbody{
+  border-radius:46px;
+  background:radial-gradient(ellipse 62% 70% at 46% 38%,#FDFEFF 0%,#F2F7FB 46%,#DCE7F1 80%,#CFDCE8 100%);
+}
+#sgTitle.lt-title-front .lt-tcloud i.lt-tcore{
+  background:radial-gradient(ellipse 50% 50% at 50% 50%,rgba(253,254,255,.97) 0%,rgba(248,251,253,.94) 52%,rgba(244,248,252,.6) 72%,rgba(244,248,252,0) 100%);
+}
+/* [r90] the path each puff takes - out of the chimney, through the small cloud just above it, out
+   to its place - is a Web Animation with literal px (see formTitleCloud): CSS keyframes built on
+   var() are not guaranteed to run on the compositor. */
+/* the writing: the window (.lt-twin) and the words (.lt-tword) slide by the same distance in
+   opposite directions, so the words stay where they are and the window's soft right edge sweeps
+   across them. The window is padded so the letters' darker edge and shadow are inside it, and its
+   right padding is as wide as the soft edge, so at rest the edge lies past the last letter. */
+#sgTitle.lt-title-front .lt-twin{
+  /* [r90] hidden by the MASK alone, not by overflow:hidden - a clip lets the browser skip painting
+     the words until they slide into view, so they were painted for the first time in the middle of
+     the writing (measured 70-100 ms frames); under a mask they are painted once, at load */
+  display:inline-block; position:relative;
+  /* [r91] 48 px of room ABOVE the line: at 84 px on a 66 px line the matras and the bindu of
+     «ओं» / «रे» rise well above the line box, and 12 px of mask cut their tops off */
+  padding:48px 84px 40px 22px; margin:-48px -84px -40px -22px;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 70px),transparent 100%);
+          mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 70px),transparent 100%);
+  -webkit-mask-size:100% 100%; mask-size:100% 100%;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  transform:translate3d(calc(-1 * var(--tw,600px)),0,0);
+  will-change:transform;
+}
+#sgTitle.lt-title-front .lt-tword{
+  display:inline-block;
+  transform:translate3d(var(--tw,600px),0,0);
+  will-change:transform;
+}
+/* [r90] the slide itself is a Web Animation too (formTitleCloud) */
+/* [r90] written: NOTHING changes. Taking the window, its mask and its layer away once the words were
+   written forced the whole title to be re-painted (measured: an 82 ms task and a 400 ms frame right
+   at the end). At rest the window's soft edge already lies past the last letter, so leaving it in
+   place looks exactly the same and costs nothing. */
+/* without motion (reduced motion, or the backstop): the cloud and the words simply there */
+#sgTitle.lt-title-front.lt-static .lt-twin, #sgTitle.lt-title-front.lt-static .lt-tword{ transform:none; }
+#sgTitle.lt-title-front .lt-tcloud.lt-settled i{ opacity:1; transform:none; }
+/* no motion asked for: the finished cover, at once */
+@media (prefers-reduced-motion:reduce){
+  #sgTitle.lt-title-front .lt-tcloud i{ animation:none !important; opacity:1; transform:none; }
+  #sgTitle.lt-title-front .lt-twin, #sgTitle.lt-title-front .lt-tword{
+    animation:none !important; transform:none; -webkit-mask-image:none; mask-image:none; }
+}
+
 /* [r74] Yasir: "move the train little upwards" - lifted, not re-laid-out, so nothing else on the
    cover moves with it */
 .sg-hero .train-shell.lt-cover{ position:relative; top:-22px; }
