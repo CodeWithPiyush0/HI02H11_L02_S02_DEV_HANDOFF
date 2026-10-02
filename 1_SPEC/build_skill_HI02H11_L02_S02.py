@@ -510,6 +510,8 @@ def s_tap(sid, words, target, matra, correct_line):
     # [r65] Yasir: put inverted commas on the letter in the heading - «छोटी “उ” की मात्रा …».
     # On screen only; the recordings say the same words either way, so their ids do not move.
     nq = n.replace(LETTER[matra], "“%s”" % LETTER[matra])
+    # [r96] Yasir: «छोटी» / «बड़ी» only in the VO, never on screen -> «“उ” की मात्रा …»
+    nq = "“%s”" % LETTER[matra]
     return {"id": sid, "phase": "guided", "eis": "symbolic", "type": "TRAIN_TAP",
             "prompt_hi": "%s की मात्रा वाले शब्द पर टैप कीजिए।" % nq,
             "audio": {

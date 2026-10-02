@@ -1372,8 +1372,8 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    The sort rounds MOVE the card into the cart, so the tray closed up behind it and the remaining
    cards slid sideways under the child's finger. An empty box holds the gap open: the row stays
    still, and what has already been placed stays readable at a glance. */
-.tr-ghost{ border:3px dashed rgba(11,61,140,.16); border-radius:14px;
-  background:rgba(255,255,255,.34); box-sizing:border-box; flex:0 0 auto;
+/* [r96] no dashed outline any more: the box is invisible and folds away (closeGap) */
+.tr-ghost{ border:0; background:transparent; box-sizing:border-box; flex:0 0 auto;
   pointer-events:none; }
 
 
@@ -1406,7 +1406,7 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    dashed outline underneath them, which is the part that reads as the card emptying out. */
 .sc-opt{ transition:background .34s ease, border-color .34s ease, box-shadow .34s ease; }
 .sc-opt > *{ transition:opacity .34s ease; }
-.sc-opt.sc-ghost{ background:rgba(255,255,255,.34); border:3px dashed rgba(11,61,140,.16);
+.sc-opt.sc-ghost{ background:transparent; border-color:transparent;   /* [r96] no dashed outline */
   box-shadow:none; cursor:default; }
 .sc-opt.sc-ghost > *{ opacity:0; }
 .sc-opt.sc-ghost.sc-gone > *{ visibility:hidden; }   /* only once the fade has finished */

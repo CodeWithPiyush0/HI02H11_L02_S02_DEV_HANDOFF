@@ -1089,6 +1089,29 @@
 
   /* Finish a test slide. `silent` = solved on the final attempt -> celebrate visually only,
      which is the SME's "Correct Answer on 3rd Attempt … No VO." */
+  /* [r96] A USED CARD LEAVES NO EMPTY BOX - THE ROW CLOSES UP. Yasir: "in all the screens where we
+     drag the elements into the coach / drop zone, the dragged element's dashed border should be
+     removed and the next element will move". So the slot a card leaves (sort trays: the shadow
+     box; page 12: the dimmed tile; the sentence pages: the emptied option) folds away: its width
+     and the row's gap shrink to nothing over 320 ms, so the cards after it slide across smoothly
+     instead of jumping. */
+  function closeGap(el){
+    if(!el || !el.isConnected || el._closing) return;
+    el._closing = true;
+    const row = el.parentElement;
+    const gap = row ? (parseFloat(getComputedStyle(row).columnGap) || 0) : 0;
+    const w = el.offsetWidth;
+    el.style.boxSizing = "border-box";
+    el.style.width = w + "px"; el.style.minWidth = "0"; el.style.flex = "0 0 auto";
+    el.style.overflow = "hidden"; el.style.pointerEvents = "none";
+    el.style.border = "0"; el.style.background = "transparent"; el.style.boxShadow = "none";
+    void el.offsetWidth;
+    el.style.transition = "width .32s ease, margin .32s ease, opacity .2s ease, padding .32s ease";
+    el.style.width = "0px"; el.style.paddingLeft = el.style.paddingRight = "0";
+    el.style.marginRight = (-gap) + "px"; el.style.opacity = "0";
+    setTimeout(()=>{ if(el.isConnected) el.style.display = "none"; }, 360);
+  }
+
   function finishSlide(slide, train, silent, signal){
     state.locked = true;
     if(typeof stopNudge === "function") stopNudge();
@@ -1388,6 +1411,7 @@
           g.style.height = tile.offsetHeight + "px";
           tile.parentNode.insertBefore(g, tile);
           tile._ghost = g;
+          requestAnimationFrame(()=> closeGap(g));         /* [r96] and folds away */
         }
         tile.classList.add("snapped");
         /* the card belongs on the coach's painted CREAM PANEL, not loose in the coach body.
@@ -2692,6 +2716,7 @@
             blank.innerHTML = '<span class="ink-glyph wb-inakshar">' + tile.dataset.akshar + "</span>";
             /* the option is consumed — it belongs to exactly one coach */
             tile.classList.add("snapped", "wb-used");
+            closeGap(tile);                                /* [r96] its place folds away */
             /* SME: "Option snaps into the blank space. The complete word appears." The split form
                is replaced by the whole word a beat later so the child reads it as one word, with
                the matra they just supplied still marked. */
@@ -2880,8 +2905,9 @@ const LINES = {
 
 /* ======================= स्तर (levels) ======================= */
 const LEVELS = [
-  {name:"बड़ी ऊ",  target:UU, gates:6, speed:0.155, easy:true },
-  {name:"छोटी उ",  target:U,  gates:6, speed:0.170, easy:true }
+  /* [r96] names are shown on screen - «छोटी» / «बड़ी» only in the VO */
+  {name:"ऊ",  target:UU, gates:6, speed:0.155, easy:true },
+  {name:"उ",  target:U,  gates:6, speed:0.170, easy:true }
 ];
 
 /* ======================= canvas setup ======================= */
@@ -3650,7 +3676,7 @@ function resolveGate(g){
     G.missedWords.push(rightWord);
     G.shake = 0.30; G.flashCol="rgba(150,130,110,.18)"; G.flash=0.3;
     dust(laneX(G.lane,1), groundY()-95*S, 26);
-    G.pops.push({text:"सही शब्द: "+rightWord, sub:(g.target===U?"छोटी उ ( ु )":"बड़ी ऊ ( ू )"), col:"#ffb0a0", life:1.7});
+    G.pops.push({text:"सही शब्द: "+rightWord, sub:(g.target===U?"उ ( ु )":"ऊ ( ू )"), col:"#ffb0a0", life:1.7});
     sfxGate(false); sfxWrong(); sfxBonk(); VOICE.clear(); VOICE.say("wrong");
     VOICE.say("correct_is"); VOICE.say(g.words[g.okLane].id, rightWord); G.afterWrong = true;
     if(G.hearts<=0){ gameOver(); return; }
@@ -5202,8 +5228,7 @@ function gameOver(){
   VOICE.clear();
   setTimeout(function(){ if(G.mode === "over") VOICE.say("retry"); }, 1350);
   if(G.score>G.best){ G.best=G.score; saveBest(); }
-  const t = G.target===U ? "छोटी उ — नीचे छोटी रेखा ( ु )"
-                         : "बड़ी ऊ — नीचे लंबी रेखा ( ू )";
+  const t = G.target===U ? "उ ( ु )" : "ऊ ( ू )";
   $("overTip").textContent = t;
   /* [r77] no card: once she has landed the screen veils while "try again" is spoken, then the
      level restarts */
@@ -5567,15 +5592,16 @@ if(document.fonts && document.fonts.load){
                actually landed - do it any earlier and the child watches the card empty out
                before the thing that left it has arrived. */
             b.classList.add("sc-ghost");                       /* [r32] starts the dissolve */
-            setTimeout(()=> b.classList.add("sc-gone"), 380);   /* hidden only once it has faded */
+            setTimeout(()=>{ b.classList.add("sc-gone"); closeGap(b); }, 380);   /* [r96] then folds away */
           }, 460);
         } else {
-          b.classList.add("sc-ghost", "sc-gone");   /* no flight (reduced motion): straight swap */
+          b.classList.add("sc-ghost", "sc-gone"); closeGap(b);   /* no flight (reduced motion): straight swap */
         }
         fbCorrect();
         if(typeof confettiCannon === "function") confettiCannon();
         if(typeof setSwMood === "function") setSwMood("celebrate");
-        sparkAt(b); sfxSparkle();
+        /* [r96] Yasir: no little star left behind on pages 14-17 - the sparkle sound stays */
+        sfxSparkle();
         SwiftPAL.emit("sentence_complete_first_try", {
           slide_id: slide.id, phase: slide.phase, value: true,
           first_try: tries === 0, attempts: tries + 1,
@@ -5738,7 +5764,8 @@ if(document.fonts && document.fonts.load){
           "top:"  + (z.top + z.height / 2 - r.height / 2) + "px;";
         document.body.appendChild(c);
         pinned = c;
-        tile.classList.add("sc-ghost", "sc-gone");   // its slot is an empty box immediately
+        tile.classList.add("sc-ghost", "sc-gone");   // its slot is emptied immediately
+        closeGap(tile);                               // [r96] ...and folds away
       }
 
       const chooseFrom = (b, fromZone)=>{

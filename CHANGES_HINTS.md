@@ -711,3 +711,20 @@ and only the words move. Measured at 1382x850: words 158..238 px, cloud 100..285
 
 Yasir: "move the text a little more down". Words top -26 -> -18 px, cloud `--tcl-top` -56 -> -64 px,
 so again only the words move. Measured at 1382x850: words 165..245 px, cloud 100..285 px.
+
+## r96 — used cards leave no box; no छोटी/बड़ी on screen; no leftover star
+
+Yasir: "the dragged element's dashed border should be removed and the next element will move";
+"wherever it's written बड़ी __ / छोटी __ remove बड़ी/छोटी - only in the VO"; "from page 14 to 17 a
+small star remains after the drop - remove it".
+- **The row closes up.** `closeGap()` folds the slot a used card leaves - width and the row's gap
+  to nothing over 320 ms - so the cards after it slide across. Sort trays (pages 9, 10, 11, 13: the
+  dashed shadow box is gone and folds away), page 12 (the dimmed letter tile now leaves), pages 14-17
+  (the emptied option folds away). Measured with real drags: page 10 the three cards slid 60 px
+  left; page 12 the remaining three letters slid 61 px; page 14 the two other options closed up.
+- **On-screen text.** Pages 6-8 headings now read «“उ” की मात्रा वाले शब्द पर टैप कीजिए।» /
+  «“ऊ” …»; the runner game's level names, its wrong-answer pop and its fall tip read «उ ( ु )» /
+  «ऊ ( ू )». The VO is unchanged (no clip re-recorded; all 145 audio files kept). A scan of every
+  page's visible text: no छोटी/बड़ी anywhere.
+- **The star.** The ✨ placed over the chosen option on pages 14-17 is gone; its sparkle sound stays.
+  Measured: 0 stars during the 1.6 s after a correct drop.

@@ -590,7 +590,7 @@
    "phase": "guided",
    "eis": "symbolic",
    "type": "TRAIN_TAP",
-   "prompt_hi": "छोटी “उ” की मात्रा वाले शब्द पर टैप कीजिए।",
+   "prompt_hi": "“उ” की मात्रा वाले शब्द पर टैप कीजिए।",
    "audio": {
     "prompt": "vo_tap_prompt_u",
     "hint1": "vo_tap_h1_u",
@@ -628,7 +628,7 @@
    "phase": "guided",
    "eis": "symbolic",
    "type": "TRAIN_TAP",
-   "prompt_hi": "बड़ी “ऊ” की मात्रा वाले शब्द पर टैप कीजिए।",
+   "prompt_hi": "“ऊ” की मात्रा वाले शब्द पर टैप कीजिए।",
    "audio": {
     "prompt": "vo_tap_prompt_uu",
     "hint1": "vo_tap_h1_uu",
@@ -666,7 +666,7 @@
    "phase": "guided",
    "eis": "symbolic",
    "type": "TRAIN_TAP",
-   "prompt_hi": "छोटी “उ” की मात्रा वाले शब्द पर टैप कीजिए।",
+   "prompt_hi": "“उ” की मात्रा वाले शब्द पर टैप कीजिए।",
    "audio": {
     "prompt": "vo_tap_prompt_u",
     "hint1": "vo_tap_h1_u",
