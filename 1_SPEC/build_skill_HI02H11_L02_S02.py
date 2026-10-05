@@ -588,7 +588,8 @@ def s_word_build(sid):
     opts.append({"akshar": "पा", "audio": vo("vo_ak_pa", "पा")})
     return {"id": sid, "phase": "practice", "eis": "enactive", "type": "WORD_BUILD",
             # the mockup's own on-screen heading; the note's wording is the VO line below it
-            "prompt_hi": "चित्र देखकर सही अक्षर खींचकर शब्द पूरा कीजिए।",
+            # [r97] Yasir: the page 12 instruction (the VO already says exactly this)
+            "prompt_hi": "चित्र देखकर सही अक्षर से शब्द पूरा कीजिए।",
             "audio": {
                 "prompt": vo("vo_%s_prompt" % sid.lower(), "चित्र देखकर सही अक्षर से शब्द पूरा कीजिए।"),
                 "hint1": vo("vo_%s_h1" % sid.lower(),
@@ -767,13 +768,16 @@ def build_slides():
                                 "%s में %s की मात्रा है। अब इसे सही मात्रा वाली बोगी में डालिए।",
                                 "%s को %s की मात्रा वाली बोगी में डालिए।")
                      for w in ["मुकुट", "पुल", "तरबूज", "कबूतर"]],
-                    "चित्र को सुनिए और उसे सही मात्रा वाली बोगी में डालिए।",
-                    "चित्र को सुनिए और उसे सही मात्रा वाली बोगी में डालिए।",
+                    # [r97] Yasir: the page 13 instruction, on screen and in the VO
+                    "चित्र को सुनिए और उसे सही मात्रा वाले डिब्बे में डालिए।",
+                    "चित्र को सुनिए और उसे सही मात्रा वाले डिब्बे में डालिए।",
                     p2_h1, None))
 
     # Four sentence screens. Sentence 4 is the NOTE's wording, «मीठा ___ खाना अच्छा लगता है।» — the
     # mockup draws «गर्मी में मीठा ___ …», a different sentence. Confirmed with the user on
     # 2026-09-23: the note wins (CHANGES.md Q1).
+    # [r100] the scene is सीमा again - the "image of boy" Yasir asked to change is the «खुश» card's
+    # picture (obj_khush), not this scene; r97 swapped the wrong one
     S.append(s_sentence("P3", "scn_seema_khush",                               # deck slide 14
                         "सीमा आज बहुत ", " है।", "खुश", ["खुश", "फूल", "तरबूज"],
                         "शाबाश! सीमा आज बहुत खुश है।", "सीमा कैसी दिख रही है"))

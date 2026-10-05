@@ -728,3 +728,69 @@ small star remains after the drop - remove it".
   page's visible text: no छोटी/बड़ी anywhere.
 - **The star.** The ✨ placed over the chosen option on pages 14-17 is gone; its sparkle sound stays.
   Measured: 0 stars during the 1.6 s after a correct drop.
+
+## r97 — page 1 letters stay lit; the next arrow pulses; pages 12-14
+
+- **Page 1.** Both pairs (उ → ु, ऊ → ू) stay lit: the first no longer fades to 42 % when the second
+  arrives, and at the end both are lit with their matra glowing. Measured: both active, letter
+  opacity 1, during the second pair's line and after it.
+- **The next arrow pulses** whenever it is live (`.nav-btn.active:not(:disabled)`, scale 1 -> 1.09,
+  1.3 s loop, centred). A disabled arrow does not pulse; reduced motion: no pulse. Measured on page
+  1: scale 1.00 -> 1.09 -> 1.00; page 2 during its VO: disabled, no animation.
+- **Page 12** heading «चित्र देखकर सही अक्षर से शब्द पूरा कीजिए।» (the VO already said this).
+- **Page 13** heading and VO «चित्र को सुनिए और उसे सही मात्रा वाले डिब्बे में डालिए।»; `vo_p2_prompt`
+  re-recorded (Gemini Leda, -16 LUFS, 3.84 s). Only the instruction changed - the per-card rung-2
+  lines still say «बोगी».
+- **Page 14** picture: Yasir's cheerful boy (`scn_khush_boy.png`, his sticker placed full height on a
+  soft sky-to-cream 800x600 backdrop to fit the scene frame); the rung-2 glow is on his face. The
+  original file moved to `1_SPEC/game_art_src/scenes/`. `scn_seema_khush.png` is no longer used.
+  The sentence still names सीमा (a girl's name) - left as it is, pending Yasir's call.
+
+## r98 — the cover's play button appears when the greeting ends, and pulses
+
+Yasir: "the play button will only enable once the VO is finished; once it is finished the play button
+appears and it should have a pulse effect, without any glow".
+- Not on screen at all (no grey disc) until the greeting has finished; then it pops in (0.45 s) and
+  pulses while it waits - a plain scale 1 -> 1.09, no ring or glow (the soft shadow is part of the
+  button art). `.sg-btn.lt-play-shown`, set the first time the button becomes ready. A later replay
+  of the greeting from the speaker greys it out while it plays, as before; it does not vanish.
+- Engine (this lesson's copy): the cover's 12 s "never strand the child" timer enabled the button in
+  the MIDDLE of the greeting, which with this cover's longer opening still speaks at 12 s. It now
+  waits while a clip is sounding (re-checks each second, 25 s cap).
+- A watcher bug caught in testing and fixed before shipping: classList.add() rewrites the class
+  attribute even when the class is present, so adding it from inside its own MutationObserver looped
+  until the tab crashed. It now adds once and disconnects.
+Measured (2 runs): greeting 8.6 -> 13.2 s, button first visible 13.25 s / 13.38 s, 0 visible frames
+before the greeting ended; scale 1.000 .. 1.090; tapping it starts the lesson; no console errors.
+
+## r99 — the play button disabled during the greeting; background music for the lesson
+
+- **Play button.** Yasir: "you removed the play button - it should be disabled, and once the VO is
+  completed it will enable". r98 hid it until the greeting ended; it is back on screen from the
+  start as the grey disabled disc, turns live when the greeting ends and pulses (scale only, no
+  glow) while it waits. The r98 fix to the 12 s timer stays.
+- **Background music.** Yasir's "Standard Background Music 2.mp3" (4:00, -16 LUFS) -> `bgm_lesson.ogg`
+  (Vorbis q3, 2.4 MB; the mp3 kept in `1_SPEC/game_art_src/bgm/`). One looping <audio> element (a
+  decoded 4-minute buffer would be ~90 MB on a tablet), volume steered every frame: 0.68 at rest,
+  0.32 under a sound effect (train chug/whistle, right/wrong, button sounds, celebration - the train's
+  <audio> effects are tracked, the engine's buffer effects via a wrapper of `playSfx`), 0.16 under any
+  voice-over (`isPlaying`); down in ~0.12 s, back up in ~0.6 s. Faded out and paused on the runner
+  game's page (it has its own music), back after it. Starts on the cover if the browser allows sound
+  there, otherwise on the first touch.
+Measured: cover - button visible and disabled for the whole greeting, then live and pulsing; music
+0.16 under the greeting, up to 0.68 between; pages 1+ - 0.16 under VO; game page 0 and paused; back
+on page 17 - playing, 0.66 at rest. No console errors.
+Note: iPad Safari ignores an <audio> element's volume, so there the music would not duck.
+
+## r100 — page 14: the right picture changed; music starts with the play button
+
+- **Page 14.** r97 replaced the wrong picture: Yasir's "image of boy" is the «खुश» answer card's picture
+  (`obj_khush`), not the scene (सीमा). The scene is सीमा again (`scn_seema_khush`, its face glow
+  restored - and it matches the sentence «सीमा आज बहुत खुश है।» again); `scn_khush_boy.png` removed.
+  The «खुश» card now shows Yasir's boy (cut out, 504x575, the old card's height). The same card
+  picture is used on page 17's «खुश» option, which changes with it. Previous card picture kept as
+  `1_SPEC/game_art_src/scenes/obj_khush_previous.png`.
+- **Music.** Yasir: "the bg music should only play when we click on the play button". It starts with
+  the play button's tap and nothing else - not on the cover, not on another touch. Measured: no
+  music on the cover after the greeting or after a tap on the card; playing after the play tap
+  (0.16 under page 1's VO).

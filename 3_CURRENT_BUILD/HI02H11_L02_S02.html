@@ -3065,6 +3065,29 @@ body.vo-lock .coach-body.dd-zone > .coach-face{ pointer-events:none !important; 
 
 /* ---------- (1) the next button's arrow ---------- */
 .nav-btn::after{content:"\2192";font-size:52px;line-height:1;}
+/* [r97] Yasir: "when the VO is finished we enable the next button - I want it to pulsate". It pulses
+   for as long as it is live (the engine marks a live arrow .active and enables it; a disabled one
+   never pulses). The pill is centred with translateX(-50%), so every frame keeps that. */
+@keyframes ltNavPulse{
+  0%,100%{ transform:translateX(-50%) scale(1); }
+  50%    { transform:translateX(-50%) scale(1.09); }
+}
+.nav-btn.active:not(:disabled){ animation:ltNavPulse 1.3s ease-in-out infinite; }
+.nav-btn.active:not(:disabled):active{ animation:none; }
+@media (prefers-reduced-motion:reduce){ .nav-btn.active:not(:disabled){ animation:none; } }
+/* [r98/r99] THE COVER'S PLAY BUTTON. Yasir (r99): "the play button should be disabled, and once the VO
+   is completed it will enable" - so it IS on screen from the start, as the grey disabled disc,
+   while the greeting plays; when the greeting ends it turns into the live button and pulses for as
+   long as it waits - a plain scale, no ring, no glow (the soft shadow is part of the button art).
+   `lt-play-shown` marks the first time it becomes ready (train_modules.js); a later replay of the
+   greeting from the speaker greys it out again while it plays. */
+@keyframes ltPlayPulse{
+  0%,100%{ transform:translateX(-50%) scale(1); }
+  50%    { transform:translateX(-50%) scale(1.09); }
+}
+.sg-btn.lt-play-shown:not(.sg-waiting):not(:disabled){ animation:ltPlayPulse 1.3s ease-in-out infinite; }
+.sg-btn.lt-play-shown:not(.sg-waiting):not(:disabled):active{ animation:none; }
+@media (prefers-reduced-motion:reduce){ .sg-btn.lt-play-shown{ animation:none !important; } }
 .end-btn::after{content:"\2192";font-size:52px;line-height:1;}
 
 /* ---------- (2) the play button ----------
@@ -4362,7 +4385,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    "vo_okp_kabootar": "शाबाश! कबूतर में ऊ की मात्रा है।",
    "vo_p2_h2_kabootar": "कबूतर में बड़ी ऊ की मात्रा है। अब इसे सही मात्रा वाली बोगी में डालिए।",
    "vo_p2_h3_kabootar": "कबूतर को बड़ी ऊ की मात्रा वाली बोगी में डालिए।",
-   "vo_p2_prompt": "चित्र को सुनिए और उसे सही मात्रा वाली बोगी में डालिए।",
+   "vo_p2_prompt": "चित्र को सुनिए और उसे सही मात्रा वाले डिब्बे में डालिए।",
    "vo_name_khush": "खुश",
    "vo_p3_try_khush": "सीमा आज बहुत खुश है।",
    "vo_p3_try_phool": "सीमा आज बहुत फूल है।",
@@ -4887,7 +4910,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    "phase": "practice",
    "eis": "enactive",
    "type": "WORD_BUILD",
-   "prompt_hi": "चित्र देखकर सही अक्षर खींचकर शब्द पूरा कीजिए।",
+   "prompt_hi": "चित्र देखकर सही अक्षर से शब्द पूरा कीजिए।",
    "audio": {
     "prompt": "vo_p1_prompt",
     "hint1": "vo_p1_h1",
@@ -4955,7 +4978,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    "phase": "practice",
    "eis": "enactive",
    "type": "TRAIN_SORT",
-   "prompt_hi": "चित्र को सुनिए और उसे सही मात्रा वाली बोगी में डालिए।",
+   "prompt_hi": "चित्र को सुनिए और उसे सही मात्रा वाले डिब्बे में डालिए।",
    "audio": {
     "prompt": "vo_p2_prompt",
     "hint1": "vo_p2_h1"
@@ -5785,7 +5808,7 @@ function _chainMs(srcs, gapMs){
    no reason to fetch it again and the reviewer keeps hearing the previous take. __AUDIO_V is
    stamped by the builder from the CONTENT of the audio folder, so it changes exactly when a clip
    changes and not otherwise - a fresh URL on every build would defeat caching for no reason. */
-var __AUDIO_V = "bd9e3aeee880";
+var __AUDIO_V = "dae8aa1dc0ac";
 function _av(src){
   if(typeof src !== "string" || src.indexOf("assets/Audio/") < 0) return src;
   return src.indexOf("?") >= 0 ? src : src + "?v=" + __AUDIO_V;
@@ -10750,6 +10773,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         : "assets/Audio/" + name + "." + AUDIO_EXT);
       a.volume = 0.55;
       _sfxLive.add(a); a.addEventListener("ended", ()=> _sfxLive.delete(a), { once:true });
+      if(window.__lessonBgm) window.__lessonBgm.track(a);      /* [r99] the music steps back */
       a.play().catch(()=> fallback && fallback());
     }catch(e){ if(fallback) fallback(); }
   }
@@ -12864,17 +12888,17 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       $("navBtn").onclick = ()=> completeSlide(true);
 
       let i = 0, finished = false;
-      /* the deck's END STATE is the last pair still lit and the earlier one faded slightly */
+      /* [r97] Yasir: "when the VO is finished both the letters should be enabled - currently when
+         the first letter's VO finishes and the second's starts, the first gets disabled". So at the
+         end BOTH pairs are lit (r-earlier: only the last, the first faded to 42 %). */
       const finish = ()=>{
         if(finished) return; finished = true;
         state.demoRunning = false;
         els.forEach((e, k) => {
-          e.classList.toggle("active", k === els.length - 1);
-          e.classList.toggle("shown",  k !== els.length - 1);
+          e.classList.add("active"); e.classList.remove("shown");
           e.querySelectorAll(".mp-arrow, .mp-matra").forEach(x => x.classList.add("mp-in"));
-          /* the glow belongs to the pair that is still lit; a faded pair must not keep it */
           const mm = e.querySelector(".mp-matra");
-          if(mm) mm.classList.toggle("mp-hl", k === els.length - 1);
+          if(mm) mm.classList.add("mp-hl");
         });
         setNavActive(true);
       };
@@ -12883,9 +12907,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         if(CARD.slides[state.idx] !== slide) return;      // navigated away -> drop the chain
         if(i >= els.length){ finish(); return; }
         const k = i, el = els[k], p = pairs[k]; i++;
-        /* a pair already taught fades; the one arriving lights up */
-        els.forEach(e => { if(e !== el && e.classList.contains("active")){
-          e.classList.remove("active"); e.classList.add("shown"); } });
+        /* [r97] a pair already taught STAYS lit - it no longer fades when the next one arrives */
 
         /* 1 · the LETTER arrives on its own */
         el.classList.add("active");
@@ -16804,6 +16826,113 @@ if(document.fonts && document.fonts.load){
     if(document.readyState === "complete") arm(); else window.addEventListener("load", arm);
   })();
 
+
+  /* [r99] THE LESSON'S BACKGROUND MUSIC. Yasir: "a bg music used across the file except the runner
+     game, as it already has its music; at 65-70 % volume; when any VO or sfx is playing reduce the
+     volume so the VO can be heard".
+     One looping <audio> element (bgm_lesson.ogg, cut from his mp3) - not a decoded buffer: four
+     minutes of stereo decoded is ~90 MB, too much for a tablet. Its volume is steered every frame:
+         nothing else sounding      0.68
+         a sound effect sounding    0.32   (train chug / whistle, right / wrong, button sounds ...)
+         a voice-over speaking      0.16   (the engine's isPlaying - every VO clip)
+     dropping fast (~0.12 s) and coming back slowly (~0.6 s), so a word is never sung over and the
+     music does not pump between clips. On the runner game's page it fades out completely - the game
+     has its own music - and comes back after it.
+     [r100] Yasir: "the bg music should only play when we click on the play button" - so it starts
+     with that tap, and nothing else starts it (not the cover, not another touch). */
+  const BGM = (function(){
+    const BASE = 0.68, SFX = 0.32, VO = 0.16;
+    const src = (typeof _av === "function") ? _av("assets/Audio/bgm_lesson.ogg") : "assets/Audio/bgm_lesson.ogg";
+    let el = null, vol = 0, started = false, sfxUntil = 0;
+    const live = new Set();
+    const make = ()=>{
+      if(el) return el;
+      el = new Audio(src); el.loop = true; el.preload = "auto"; el.volume = 0;
+      return el;
+    };
+    const tryStart = ()=>{
+      if(started) return;
+      make();
+      const p = el.play();
+      if(p && p.then) p.then(()=>{ started = true; }, ()=>{});
+      else started = true;
+    };
+    const onGame = ()=>{
+      try{ const s = CARD.slides[state.idx]; return !!(s && s.type === "MINI_GAME" &&
+                    document.body && !document.body.classList.contains("is-start")); }catch(e){ return false; }
+    };
+    let last = performance.now();
+    const tick = ()=>{
+      const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
+      if(el && started){
+        let want = BASE;
+        if(sfxUntil > now || live.size) want = SFX;
+        if(typeof isPlaying !== "undefined" && isPlaying) want = VO;
+        if(onGame()) want = 0;
+        const tc = want < vol ? 0.12 : 0.6;
+        vol += (want - vol) * (1 - Math.exp(-dt / tc));
+        if(Math.abs(want - vol) < 0.002) vol = want;
+        try{ el.volume = Math.max(0, Math.min(1, vol)); }catch(e){}
+        if(want === 0 && vol < 0.003 && !el.paused) el.pause();
+        else if(want > 0 && el.paused) el.play().catch(()=>{});
+      }
+    };
+    (function loop(){ tick(); requestAnimationFrame(loop); })();
+    setInterval(tick, 250);                       /* keeps steering if frames are throttled */
+    /* the play button's tap - the same user gesture lets the browser play it */
+    const hookPlay = ()=>{ const b = document.getElementById("sgBtn"); if(!b) return false;
+      b.addEventListener("click", ()=>{ if(!b.disabled) tryStart(); }, true); return true; };
+    if(!hookPlay()) document.addEventListener("DOMContentLoaded", hookPlay);
+    return {
+      /* an <audio> sound effect: the music stays down for as long as it plays */
+      track(a){ if(!a) return; live.add(a);
+        const off = ()=> live.delete(a);
+        a.addEventListener("ended", off, { once:true }); a.addEventListener("pause", off, { once:true });
+        a.addEventListener("error", off, { once:true }); setTimeout(off, 12000); },
+      /* a buffer sound effect of known (or guessed) length */
+      duckFor(sec){ sfxUntil = Math.max(sfxUntil, performance.now() + (sec || 1) * 1000 + 150); },
+      get volume(){ return vol; }, get element(){ return el; }
+    };
+  })();
+  window.__lessonBgm = BGM;
+  /* the engine's buffer sound effects (celebration, play / next button sounds) duck it too */
+  if(typeof window.playSfx === "function" && !window.playSfx.__bgm){
+    const _ps = window.playSfx;
+    window.playSfx = function(id){
+      let sec = 1.0;
+      try{ const s = "assets/Audio/" + id + "." + AUDIO_EXT;
+           const b = (typeof _voiceBuffers !== "undefined") && (_voiceBuffers.get(s) || _voiceBuffers.get(_av(s)));
+           if(b) sec = b.duration; }catch(e){}
+      BGM.duckFor(sec);
+      return _ps.apply(this, arguments);
+    };
+    window.playSfx.__bgm = true;
+  }
+
+  /* [r98] the cover's play button appears the first time it is ready (see .lt-play-shown) */
+  (function playButtonAppears(){
+    const hook = ()=>{
+      const b = document.getElementById("sgBtn"); if(!b) return false;
+      /* ready = enabled AFTER having been held for the greeting - the button starts life enabled
+         for an instant before the lesson disables it, and that instant must not count */
+      let held = false, ob = null;
+      const chk = ()=>{
+        const waiting = b.disabled || b.classList.contains("sg-waiting");
+        if(waiting){ held = true; return; }
+        if(!held) return;
+        /* once, and the watcher stops: classList.add() rewrites the class attribute even when the
+           class is already there, so adding it from inside this observer would re-trigger it forever */
+        if(ob){ ob.disconnect(); ob = null; }
+        if(!b.classList.contains("lt-play-shown")) b.classList.add("lt-play-shown");
+      };
+      ob = new MutationObserver(chk);
+      ob.observe(b, { attributes:true, attributeFilter:["class", "disabled"] });
+      chk();
+      return true;
+    };
+    if(!hook()) document.addEventListener("DOMContentLoaded", hook);
+  })();
+
   (function watchLanding(){
     let n = 0;
     const tick = ()=>{ if(dressLandingTrain()) return; if(++n > 60) return; setTimeout(tick, 120); };
@@ -18142,9 +18271,18 @@ function boot(){
     }
     _speakLanding();
   };
-  /* never strand the child behind a clip that never ends or never starts */
-  setTimeout(()=>{ if(_onLandingNow() && $("sgBtn") && $("sgBtn").disabled){
-    setStartBtnReady(true); armStartNudge(); } }, 12000);
+  /* never strand the child behind a clip that never ends or never starts.
+     [r98] ...but never cut a greeting that IS playing: with this lesson's longer cover (the train,
+     its cloud and the title come first) the greeting can still be speaking at 12 s, and this used
+     to enable the play button in the middle of it. While a clip is sounding it looks again a
+     second later; capped at 25 s in all. */
+  (function _startBackstop(t){
+    setTimeout(()=>{
+      if(!(_onLandingNow() && $("sgBtn") && $("sgBtn").disabled)) return;
+      if(isPlaying && t < 25000){ _startBackstop(t + 1000); return; }
+      setStartBtnReady(true); armStartNudge();
+    }, t === 12000 ? 12000 : 1000);
+  })(12000);
   const sgVo = $("sgVo"); if(sgVo) sgVo.onclick = (e)=>{ e.stopPropagation(); playLanding(true); };   /* true = an explicit replay never waits for the train */
   // ---- [engine JS] r4/P2 boot loader: loader.gif until assets warm, then it dismisses ITSELF into
   // the landing (NO tap gate). DUAL auto-dismiss (window 'load' OR a 2.5s watchdog — never strand the

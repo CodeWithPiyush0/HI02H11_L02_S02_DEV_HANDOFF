@@ -1023,6 +1023,29 @@ body.vo-lock .coach-body.dd-zone > .coach-face{ pointer-events:none !important; 
 
 /* ---------- (1) the next button's arrow ---------- */
 .nav-btn::after{content:"\2192";font-size:52px;line-height:1;}
+/* [r97] Yasir: "when the VO is finished we enable the next button - I want it to pulsate". It pulses
+   for as long as it is live (the engine marks a live arrow .active and enables it; a disabled one
+   never pulses). The pill is centred with translateX(-50%), so every frame keeps that. */
+@keyframes ltNavPulse{
+  0%,100%{ transform:translateX(-50%) scale(1); }
+  50%    { transform:translateX(-50%) scale(1.09); }
+}
+.nav-btn.active:not(:disabled){ animation:ltNavPulse 1.3s ease-in-out infinite; }
+.nav-btn.active:not(:disabled):active{ animation:none; }
+@media (prefers-reduced-motion:reduce){ .nav-btn.active:not(:disabled){ animation:none; } }
+/* [r98/r99] THE COVER'S PLAY BUTTON. Yasir (r99): "the play button should be disabled, and once the VO
+   is completed it will enable" - so it IS on screen from the start, as the grey disabled disc,
+   while the greeting plays; when the greeting ends it turns into the live button and pulses for as
+   long as it waits - a plain scale, no ring, no glow (the soft shadow is part of the button art).
+   `lt-play-shown` marks the first time it becomes ready (train_modules.js); a later replay of the
+   greeting from the speaker greys it out again while it plays. */
+@keyframes ltPlayPulse{
+  0%,100%{ transform:translateX(-50%) scale(1); }
+  50%    { transform:translateX(-50%) scale(1.09); }
+}
+.sg-btn.lt-play-shown:not(.sg-waiting):not(:disabled){ animation:ltPlayPulse 1.3s ease-in-out infinite; }
+.sg-btn.lt-play-shown:not(.sg-waiting):not(:disabled):active{ animation:none; }
+@media (prefers-reduced-motion:reduce){ .sg-btn.lt-play-shown{ animation:none !important; } }
 .end-btn::after{content:"\2192";font-size:52px;line-height:1;}
 
 /* ---------- (2) the play button ----------
