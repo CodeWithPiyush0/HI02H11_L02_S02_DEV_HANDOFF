@@ -2173,6 +2173,9 @@ body.is-start .phase-gate{
 .mp-pic{ opacity:0; display:inline-block; line-height:0; }
 .mp-pic.mp-in{ opacity:1; }
 .mp-img{ width:146px; height:146px; object-fit:contain; }
+/* [r103] Yasir: "in page 3 and page 5 increase the size of the object's image a little" - their
+   picture is the meet-pic-box one (MEET_PAIR examples), 220 -> 270 px */
+.meet-pic-box.mex-pic .pic-img{ width:270px; height:270px; }
 .mp-emoji{ font-size:108px; line-height:1; }
 /* the callout was almost unreadable at opacity .35 before its cue; .62 keeps it legible */
 .mp-callout{ opacity:.62; display:inline-flex; align-items:center; gap:10px;
@@ -3065,6 +3068,9 @@ body.vo-lock .coach-body.dd-zone > .coach-face{ pointer-events:none !important; 
 
 /* ---------- (1) the next button's arrow ---------- */
 .nav-btn::after{content:"\2192";font-size:52px;line-height:1;}
+/* [r103] the transition's text, held until Swiftee says it - then it pops in */
+#phaseGateTitle{ transition:opacity .25s ease, transform .35s cubic-bezier(.34,1.5,.6,1); }
+#phaseGateTitle.pg-title-wait{ opacity:0; transform:scale(.85); }
 /* [r97] Yasir: "when the VO is finished we enable the next button - I want it to pulsate". It pulses
    for as long as it is live (the engine marks a live arrow .active and enables it; a disabled one
    never pulses). The pill is centred with translateX(-50%), so every frame keeps that. */
@@ -3085,7 +3091,17 @@ body.vo-lock .coach-body.dd-zone > .coach-face{ pointer-events:none !important; 
   0%,100%{ transform:translateX(-50%) scale(1); }
   50%    { transform:translateX(-50%) scale(1.09); }
 }
-.sg-btn.lt-play-shown:not(.sg-waiting):not(:disabled){ animation:ltPlayPulse 1.3s ease-in-out infinite; }
+/* [r103] Yasir: "when the VO is finished then only the play button will be visible - we don't need a
+   disabled play button". Not on screen before the greeting has finished, nor while a replay of it
+   plays; each time it becomes ready it pops in, then pulses. */
+.sg-btn:not(.lt-play-shown), .sg-btn.sg-waiting{ visibility:hidden; opacity:0; }
+@keyframes ltPlayIn{
+  0%  { opacity:0; transform:translateX(-50%) scale(.4); }
+  70% { opacity:1; transform:translateX(-50%) scale(1.06); }
+  100%{ opacity:1; transform:translateX(-50%) scale(1); }
+}
+.sg-btn.lt-play-shown:not(.sg-waiting):not(:disabled){
+  animation:ltPlayIn .45s cubic-bezier(.34,1.4,.6,1) both, ltPlayPulse 1.3s ease-in-out .45s infinite; }
 .sg-btn.lt-play-shown:not(.sg-waiting):not(:disabled):active{ animation:none; }
 @media (prefers-reduced-motion:reduce){ .sg-btn.lt-play-shown{ animation:none !important; } }
 .end-btn::after{content:"\2192";font-size:52px;line-height:1;}
@@ -4091,6 +4107,11 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
   "talk_at_ms": 1960,
   "at": {
    "round3": "MG1"
+  },
+  "title_cue_ms": {
+   "tutorial": 4030,
+   "guided": 3970,
+   "practice": 1260
   }
  },
  "scaffold_rules": {
@@ -4401,7 +4422,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    "vo_p4_try_mukut": "मैं मुकुट जल्दी उठता हूँ।",
    "vo_p4_h1": "फिर से पढ़िए। चित्र देखिए, बच्चा कब उठ रहा है? सही शब्द चुनकर वाक्य पूरा कीजिए।",
    "vo_p4_h3": "मैं सुबह जल्दी उठता हूँ। सुबह चुनिए।",
-   "vo_p4_correct": "शाबाश! मैंने सही शब्द चुनकर वाक्य पूरा किया।",
+   "vo_p4_correct": "शाबाश! सही शब्द चुनकर वाक्य पूरा किया।",
    "vo_p5_try_phool": "बगीचे में सुंदर फूल खिले हैं।",
    "vo_p5_try_tarbooj": "बगीचे में सुंदर तरबूज खिले हैं।",
    "vo_p5_try_subah": "बगीचे में सुंदर सुबह खिले हैं।",
@@ -4768,6 +4789,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
     ],
     "single": false,
     "demo": true,
+    "keep_train_next": true,
     "cards": [
      {
       "bin": "ु",
@@ -5808,7 +5830,7 @@ function _chainMs(srcs, gapMs){
    no reason to fetch it again and the reviewer keeps hearing the previous take. __AUDIO_V is
    stamped by the builder from the CONTENT of the audio folder, so it changes exactly when a clip
    changes and not otherwise - a fresh URL on every build would defeat caching for no reason. */
-var __AUDIO_V = "dae8aa1dc0ac";
+var __AUDIO_V = "af190757b5f7";
 function _av(src){
   if(typeof src !== "string" || src.indexOf("assets/Audio/") < 0) return src;
   return src.indexOf("?") >= 0 ? src : src + "?v=" + __AUDIO_V;
@@ -7189,6 +7211,25 @@ function refreshMatraWords(root){
 }
 
 /* ---------- 11. DRAG-DROP PRIMITIVE ---------- */
+/* [r103] THE DROP ZONE UNDER A POINT - and a zone may catch from a bigger area than its own box.
+   Yasir: "in all the pages where we drag and drop into the train coach, increase its drop area". A
+   module gives a zone `_hitRect()` (a screen rect - e.g. the whole coach plus a margin); when nothing
+   is directly under the finger, the zone whose catch area holds the point (nearest centre first)
+   takes the drop. Zones without `_hitRect` behave exactly as before. */
+function _zoneAt(x, y){
+  const under = document.elementFromPoint(x, y);
+  const z = under && under.closest && under.closest(".dd-zone");
+  if(z) return z;
+  let best = null, bd = Infinity;
+  document.querySelectorAll(".dd-zone").forEach(zz => {
+    if(typeof zz._hitRect !== "function" || !zz.isConnected) return;
+    const r = zz._hitRect(); if(!r) return;
+    if(x < r.left || x > r.right || y < r.top || y > r.bottom) return;
+    const d = Math.hypot(x - (r.left + r.right) / 2, y - (r.top + r.bottom) / 2);
+    if(d < bd){ bd = d; best = zz; }
+  });
+  return best;
+}
 function makeDraggable(tileEl, onDrop, opts){
   let startX=0, startY=0, dx=0, dy=0, dragging=false;
   let scale = 1;
@@ -7229,9 +7270,8 @@ function makeDraggable(tileEl, onDrop, opts){
     const cx = p.clientX, cy = p.clientY;
     document.querySelectorAll(".dd-zone").forEach(z => z.classList.remove("hover"));
     tileEl.style.pointerEvents = "none";
-    const under = document.elementFromPoint(cx, cy);
+    const zone = _zoneAt(cx, cy);                               /* [r103] */
     tileEl.style.pointerEvents = "";
-    const zone = under?.closest?.(".dd-zone");
     if(zone && !zone.classList.contains("filled")) zone.classList.add("hover");
     e.preventDefault();
   }
@@ -7257,9 +7297,8 @@ function makeDraggable(tileEl, onDrop, opts){
     const p = e.changedTouches ? e.changedTouches[0] : e;
     // hide the tile from hit-testing so we detect the zone underneath it
     tileEl.style.pointerEvents = "none";
-    const under = document.elementFromPoint(p.clientX, p.clientY);
+    const zone = _zoneAt(p.clientX, p.clientY);                 /* [r103] */
     tileEl.style.pointerEvents = "";
-    const zone = under?.closest?.(".dd-zone");
     document.querySelectorAll(".dd-zone").forEach(z => z.classList.remove("hover"));
     if(zone && !zone.classList.contains("filled")){
       // snap
@@ -11544,7 +11583,13 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
        Capturing the mount's epoch and checking it before running the callback closes that. */
     const myGen = _voGen;
     state.trainDepart = null;          /* [r26] cleared per mount; set once the train exists */
+    /* [r103] THE SAME TRAIN STAYS. When the page before handed its train on (keep_train_next), this
+       page's train is already standing there: no arrival, and the page does not slide in either. */
+    const kept = !!window.__ltKeepTrain && CARD.slides[state.idx] && window.__ltKeepTrain === CARD.slides[state.idx].id;
+    window.__ltKeepTrain = null;
+    if(kept) requestAnimationFrame(()=>{ const sh = document.getElementById("slideHost"); if(sh) sh.classList.remove("slide-in"); });
     const tc = TrainChrome.mount(host, {
+      entry:       kept ? false : undefined,
       coaches: n,
       coach_label: (opts.labels || []).map(h => (h == null || h === "") ? null : { html: h }),
       coach_body:  (opts.bodies || []).map(h => ({ html: h || "" })),
@@ -11560,11 +11605,15 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       const body = tc.body(i);
       body.classList.add("tr-body");          /* makeDraggable hit-tests this */
       body.dataset.idx = String(i);
+      /* [r103] a coach catches a drop anywhere on the whole coach - roof, label, wheels - and a
+         little around it (see _zoneAt in the engine) */
+      if(opts.dropZone) body._hitRect = ()=> _padRect(el.getBoundingClientRect(), 26);
       return { el, body: tc.faceEls[i], zone: body, label: tc.labelEls[i] };
     });
     /* [r26] the engine drives the departure through this, without knowing about trains */
     state.trainDepart = (done)=> tc.depart(done);
     return {
+      kept,
       wrap: tc.shell, rail: tc.rail, coaches, chrome: tc,
       /* run `fn` once the train has stopped — immediately if it already has, and never at all
          if the screen has moved on in the meantime */
@@ -11707,6 +11756,11 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
     el.style.width = "0px"; el.style.paddingLeft = el.style.paddingRight = "0";
     el.style.marginRight = (-gap) + "px"; el.style.opacity = "0";
     setTimeout(()=>{ if(el.isConnected) el.style.display = "none"; }, 360);
+  }
+
+  /* [r103] a screen rect grown by `p` px on every side */
+  function _padRect(r, p){
+    return { left:r.left - p, top:r.top - p, right:r.right + p, bottom:r.bottom + p };
   }
 
   function finishSlide(slide, train, silent, signal){
@@ -11867,7 +11921,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       /* SME round 3, on the picture-sort screen: "Coach labels उ and ऊ appear one by one."
          Settled by default (engine fact 1) — `tr-lblseq` only drives the staggered fade-in, so a
          frozen capture still photographs BOTH labels rather than an empty coach roof. */
-      requestAnimationFrame(()=> train.coaches.forEach((c, i) => {
+      if(!train.kept) requestAnimationFrame(()=> train.coaches.forEach((c, i) => {   /* [r103] kept: already up */
         c.label.style.setProperty("--tr-lbl-delay", (i * 340) + "ms");
         c.label.classList.add("tr-lblseq");
       }));
@@ -11944,37 +11998,31 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
       function sortDemo(tile, done){
         hintHold(function(fin){
         const steps = [];
+        /* [r103] RUNG 2 READS EVERY OPTION STILL IN THE TRAY, one by one. Yasir, page 10: "all options
+           will be read aloud with matra highlighted"; page 13: "all options read aloud with its text,
+           don't highlight the matra in its name". */
+        const left = [...tray.querySelectorAll(".tr-card")].filter(t => !t.classList.contains("snapped"));
         if(d.kind === "word"){
-          /* "जो शब्द गलत डाला गया, उसे read out करें ... शब्द में उसकी मात्रा highlight/glow करें" */
-          const lbl = tile.querySelector(".tr-cardlbl");
-          steps.push((next)=>{
-            if(lbl) matraHLSoon(lbl, tile.dataset.bin, { glow:true, pulse:true });
-            say(clip(tile.dataset.audio), ()=> setTimeout(()=>{ matraClear(lbl); next(); }, 260));
-          });
-          steps.push.apply(steps, binReadSteps(false));
+          left.forEach(t => steps.push((next)=>{
+            const lbl = t.querySelector(".tr-cardlbl");
+            if(lbl) matraHLSoon(lbl, t.dataset.bin, { glow:true, pulse:true });
+            say(clip(t.dataset.audio), ()=> setTimeout(()=>{ matraClear(lbl); next(); }, 260));
+          }));
         } else if(d.kind === "picture"){
-          /* "चित्र के नीचे कुछ देर के लिए शब्द दिखाएँ और उसकी मात्रा highlight/glow करें"।
-             This is the one place the picture round shows its word, and it shows it for this
-             beat only - see flag F3. The round-3 note "the word should not be displayed at any
-             point" is superseded here by the later document, and nowhere else: the word is
-             removed again before the rung ends. */
-          steps.push((next)=>{
+          left.forEach(t => steps.push((next)=>{
             const w = document.createElement("span");
             w.className = "tr-revealword ink-glyph";
-            w.textContent = tile.dataset.word || "";
-            tile.appendChild(w);
-            /* [r65] the picture lifts to make room and the word sits INSIDE the card - it was
-               hanging off the bottom edge ("the name is getting out of that option box") */
-            tile.classList.add("tr-revealing");
+            w.textContent = t.dataset.word || "";
+            t.appendChild(w);
+            t.classList.add("tr-revealing");
             requestAnimationFrame(()=> w.classList.add("in"));
-            matraHLSoon(w, tile.dataset.bin, { glow:true, pulse:true });
-            say(clip(tile.dataset.audio), ()=> setTimeout(()=>{
+            say(clip(t.dataset.audio), ()=> setTimeout(()=>{
               w.classList.remove("in");
-              tile.classList.remove("tr-revealing");
+              t.classList.remove("tr-revealing");
               setTimeout(()=> w.remove(), 340);
               next();
-            }, 900));
-          });
+            }, 500));
+          }));
         } else {
           steps.push.apply(steps, binReadSteps(true));
         }
@@ -12137,6 +12185,10 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
           if(k >= tiles.length){
             if(nh){ nh.classList.remove("show", "hint-glow"); nh.style.animation = ""; }
             return sayOpt(A(slide, "outro"), ()=>{ state.demoRunning = false;
+              /* [r103] Yasir: pages 9 and 10 are one train - the demo hands its train to the
+                 activity: no departure here, no arrival there; only the options change */
+              if(d.keep_train_next && CARD.slides[state.idx + 1]){
+                state.trainDepart = null; window.__ltKeepTrain = CARD.slides[state.idx + 1].id; }
               finishSlide(slide, train, true, "sort_demo_done"); });
           }
           const tile = tiles[k++];
@@ -13290,6 +13342,9 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
                               && !tile.classList.contains("snapped"))
           say(clip(tile.dataset.audio), ()=>{}); };
 
+        /* [r103] each blank catches a drop anywhere on its coach and a little around it */
+        document.querySelectorAll("#slideHost .wb-blank").forEach(b => { const c = train.coaches[+b.dataset.idx];
+          if(c && !b._hitRect) b._hitRect = ()=> _padRect(c.el.getBoundingClientRect(), 26); });
         makeDraggable(tile, (zone)=>{
           if(hintBusy) return;                      /* a demonstration is speaking */
           const blank = zone.closest(".wb-blank"); if(!blank) return;
@@ -17928,6 +17983,11 @@ function phaseBlurTransition(cb, toPhase){
            img.removeAttribute("src"); void img.offsetWidth; img.src = _gateSrc; }
   _warmGate();                                  /* no-op once warm; covers a gate before 'load' */
   const title = $("phaseGateTitle"); if(title) title.textContent = PHASE_GATE_TITLE[toPhase] || "";
+  /* [r103] THE TEXT APPEARS WHEN SWIFTEE SAYS IT. Yasir: "in all the transition pages the text will only
+     appear when its VO plays, like «चलिए शुरू करें»". CARD.gate.title_cue_ms[phase] is where that phrase
+     starts inside the clip (measured); the title is held hidden until then. No cue -> as before. */
+  const _cue = ((CARD.gate && CARD.gate.title_cue_ms) || {})[toPhase];
+  if(title) title.classList.toggle("pg-title-wait", _cue != null);
   $("stage").classList.add("blurred", "gating");
   document.body.classList.add("gating");
   gate.classList.add("show","hint-glow");
@@ -17950,6 +18010,8 @@ function phaseBlurTransition(cb, toPhase){
     setTimeout(()=> go(true), 4000);
   };
   _startTalkClock(()=>{ if(tok !== _gateToken){ closeGate(); return; }
+  if(title && _cue != null) setTimeout(()=>{ if(tok === _gateToken) title.classList.remove("pg-title-wait"); },
+                                       voSrc ? _cue : 0);
   play(voSrc, ()=>{
     if(tok !== _gateToken){ closeGate(); return; }               // a newer gate superseded us
     const hold = Math.max(200, 2000 - (Date.now() - openedAt));  // Swiftie peeks ≥2s even with no/short VO

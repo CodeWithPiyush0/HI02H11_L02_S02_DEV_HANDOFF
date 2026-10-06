@@ -818,3 +818,31 @@ so nothing is lost; the beat before that word after a mistake is 600 ms (was 150
 early. Measured: 3 s after each of two wrong answers the run is at 100 % of full pace; no slow stretch
 anywhere (the only dips are single frames of timing noise, as before); every target word, repeats
 included, was heard before its pair arrived.
+
+## r103 — eight changes
+
+1. **Cover:** no disabled play button - it is not on screen until the greeting has finished (nor
+   while a replay of it plays); then it pops in and pulses. Measured: 0 visible samples during the
+   greeting, visible after.
+2. **Transitions:** the text appears when Swiftee says it. `CARD.gate.title_cue_ms` = where the phrase
+   starts in each kit clip (tutorial «चलिए, शुरू करें!» 4030 ms, guided «चलिए, साथ में करें!» 3970,
+   practice «अब आपकी बारी!» 1260 - silencedetect); the engine holds `#phaseGateTitle` hidden until
+   then and pops it in. Measured: VO start -> text +4.16 s on the first transition.
+3. **Pages 3 and 5:** the picture (`.meet-pic-box.mex-pic .pic-img`) 220 -> 270 px.
+4. **Pages 9 and 10 are one train:** the demo hands its train on (`keep_train_next`): no departure
+   after the demo, no arrival and no slide-in on page 10 - the same train stands there, the heading
+   changes and the four cards come into the tray. Measured: page 10 mounted parked, not entering,
+   no slide-in, no departure seen.
+5. **Page 10, rung 2:** every option still in the tray is read aloud, one by one, its matra
+   highlighted while it is read; then the card's own rung-2 line. (The coach labels are no longer
+   read at this rung.) Measured: सुई, आलू, गुड़, सूरज, then vo_g4_h2_sui.
+6. **Page 13, rung 2:** every picture still in the tray shows its word under it while its name is
+   read, one by one, no matra highlight; then the card's rung-2 line. Measured: कबूतर, मुकुट, तरबूज,
+   पुल, 0 highlights.
+7. **Page 15:** the correct line «शाबाश! सही शब्द चुनकर वाक्य पूरा किया।» («मैंने» removed);
+   `vo_p4_correct` re-recorded (Leda, -16 LUFS).
+8. **Bigger drop area on the train screens:** the engine's drop test (`_zoneAt`) lets a zone catch
+   from a bigger area; every coach on the sort screens (pages 9, 10, 11, 13) and every blank on page
+   12 now catches a drop anywhere on its whole coach - roof label, body, wheels - plus 26 px around
+   it. Measured: a card dropped on the coach's roof label (y 157-209, the coach body starts at 215)
+   was placed. The sentence pages (14-17) are not train coaches and are unchanged.

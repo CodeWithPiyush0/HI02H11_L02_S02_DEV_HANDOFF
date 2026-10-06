@@ -710,6 +710,7 @@ def build_slides():
                                      "देखिए, शब्द को उसकी मात्रा वाले डिब्बे में कैसे डालते हैं।"),
                         "outro": vo("vo_g4d_end", "अब आप भी ऐसे ही करके देखिए।")},
               "data": {"kind": "word", "bins": g4_bins, "single": False, "demo": True,
+                       "keep_train_next": True,     # [r103] the activity on page 10 keeps this train
                        "cards": [sort_card(w, vo("vo_g4d_" + slug(key_of(w)),
                                                  "%s में %s की मात्रा है, इसलिए %s %s वाले डिब्बे में गया।"
                                                  % (w, MATRA_NAME[matra_of(w)], w, LETTER[matra_of(w)])))
@@ -783,7 +784,7 @@ def build_slides():
                         "शाबाश! सीमा आज बहुत खुश है।", "सीमा कैसी दिख रही है"))
     S.append(s_sentence("P4", "scn_subah_uthna",                               # deck slide 15
                         "मैं ", " जल्दी उठता हूँ।", "सुबह", ["सुबह", "दूध", "मुकुट"],
-                        "शाबाश! मैंने सही शब्द चुनकर वाक्य पूरा किया।", "बच्चा कब उठ रहा है"))
+                        "शाबाश! सही शब्द चुनकर वाक्य पूरा किया।", "बच्चा कब उठ रहा है"))
     S.append(s_sentence("P5", "scn_bageecha",                                  # deck slide 16
                         "बगीचे में सुंदर ", " खिले हैं।", "फूल", ["फूल", "तरबूज", "सुबह"],
                         "शाबाश! बगीचे में सुंदर फूल खिले हैं।", "बगीचे में क्या खिले हैं"))
@@ -875,7 +876,11 @@ def build_card(slides):
         "gate": {"img": "assets/UI/swifty_gate_seek.webp", "talk_at_ms": 1960,
                  # [r83] Yasir: the third transition «अब आपकी बारी!» after page 17, i.e. just before
                  # the runner game - not in front of the first practice page (engine: CARD.gate.at)
-                 "at": {"round3": "MG1"}},
+                 "at": {"round3": "MG1"},
+                 # [r103] where each transition's on-screen phrase starts inside its clip, so the text
+                 # appears when Swiftee says it: «चलिए, शुरू करें!» / «चलिए, साथ में करें!» /
+                 # «अब आपकी बारी!» - measured (silencedetect -35 dB) on the shared kit clips
+                 "title_cue_ms": {"tutorial": 4030, "guided": 3970, "practice": 1260}},
         # REVIEW-1 LADDER — three rungs on every test screen:
         #   wrong 1 = rung-1 VO, nothing else moves and nothing is highlighted
         #   wrong 2 = rung-2 VO plus a DEMONSTRATION (words read out, matras glowed, sentences
