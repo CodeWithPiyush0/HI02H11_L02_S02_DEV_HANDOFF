@@ -14256,9 +14256,11 @@ function resolveGate(g){
      tenth of z into several screens' worth of arch sliding at the camera. Stopped here, the
      reaction plays at the place she actually passed through. */
   g.pin = true; g.fx = 0; g.chosenLane = G.lane;
-  G.cleared++;
   const chosen = g.words[G.lane];
-  G.pips.push(!!(chosen && chosen.ok));
+  /* [r101] Yasir: "for an incorrect answer don't switch to the next question - show the same question
+     again". Only a RIGHT answer finishes a question: it counts towards the level and fills a progress
+     dot. A wrong one costs a heart and its question comes back on the next pair of portals. */
+  if(chosen && chosen.ok){ G.cleared++; G.pips.push(true); }
   if(chosen && chosen.ok){
     G.right++; G.score += 100 + G.right*10;
     G.flashCol="rgba(120,255,190,.22)"; G.flash=0.35;
@@ -14275,6 +14277,7 @@ function resolveGate(g){
     sfxGate(false); sfxWrong(); sfxBonk(); VOICE.clear(); VOICE.say("wrong");
     VOICE.say("correct_is"); VOICE.say(g.words[g.okLane].id, rightWord); G.afterWrong = true;
     if(G.hearts<=0){ gameOver(); return; }
+    repeatQuestion(g);
   }
   hud();
   const L = LEVELS[G.level];
@@ -14285,6 +14288,21 @@ function resolveGate(g){
      level, and its word could slip in between the last "शाबाश" and "वाह! ..." */
   else if(G.cleared + G.gates.filter(x => !x.done).length < L.gates)
     spawnGate(Math.max(1.0, (G.gates.length?Math.max.apply(null,G.gates.map(x=>x.z)):0) + GATE_GAP));
+}
+
+/* [r101] the same question on the next pair of portals: the same two words, their sides dealt again
+   (so the child reads them rather than just switching lanes). The pair already waiting up the track
+   takes them; if there is none, one is made. Its word is spoken as it comes near, as for any pair. */
+function repeatQuestion(g){
+  const words = g.words.map(w => ({ t:w.t, id:w.id, ok:w.ok }));
+  if(Math.random() < 0.5) words.reverse();
+  let nx = G.gates.filter(x => !x.done).sort((a, b) => a.z - b.z)[0];
+  if(!nx){
+    spawnGate(Math.max(1.0, (G.gates.length ? Math.max.apply(null, G.gates.map(x => x.z)) : 0) + GATE_GAP));
+    nx = G.gates[G.gates.length - 1];
+  }
+  nx.words = words; nx.target = g.target; nx.okLane = words.findIndex(w => w.ok);
+  nx.spoken = false; nx.heard = false; nx.waitT = 0; nx.repeat = true;
 }
 
 /* gold, rising, slow to fade - the reward for getting through */
@@ -14338,10 +14356,12 @@ function update(dt){
      not been heard to the end by the time its pair is two-thirds of the way in, the world eases
      to a fifth of its speed - as it does under the level's intro - until it has (at most 7 s). */
   const fg = G.gates.find(x => !x.done);
-  let waitWord = false;
-  if(fg && !fg.heard && fg.z < 0.55){ fg.waitT = (fg.waitT || 0) + dt; waitWord = fg.waitT < 8; }
-  G.waitF = (G.waitF == null ? 1 : G.waitF);
-  G.waitF += ((waitWord ? 0.2 : 1) - G.waitF) * (1 - Math.exp(-dt*5));
+  /* [r102] NO SLOWING DOWN. Yasir: "after a mistake the character slows down for a fraction of a
+     second - we don't need it". It was this wait (above): the long wrong-answer feedback made the next
+     word late, and the run eased to a fifth of its speed until it had been heard. Since r101 that next
+     pair repeats the word the feedback has just said, so the run keeps its speed always. */
+  void fg;
+  G.waitF = 1;
   const v = G.speed * (G.hold ? 0.20 : 0.20 + 0.80*G.ramp) * dt * G.waitF;
   // gates
   for(const g of G.gates){
@@ -14356,7 +14376,7 @@ function update(dt){
        right word ("सही शब्द है पूजा"), and the new target followed it within 0.3 s - two words
        back to back, which is exactly what "it plays both words" sounds like. */
     if(!g.spoken && !g.done && g.z<=0.62 && G.gates.find(x => !x.done) === g &&
-       VOICE.quietFor() >= (G.afterWrong ? 1500 : 700) && !document.body.classList.contains("vo-lock")){
+       VOICE.quietFor() >= (G.afterWrong ? 600 : 700) && !document.body.classList.contains("vo-lock")){   /* [r102] 1500 -> 600: no slow-down to wait for it now */
       g.spoken = true; G.afterWrong = false;  /* after "सही शब्द है ..." a longer beat: a new word */
       /* [r77] Yasir: only the TARGET word is spoken - the one to catch - not both portals' */
       const tw = g.words.find(w => w.ok) || g.words[0];

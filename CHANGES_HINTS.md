@@ -794,3 +794,27 @@ Note: iPad Safari ignores an <audio> element's volume, so there the music would 
   the play button's tap and nothing else - not on the cover, not on another touch. Measured: no
   music on the cover after the greeting or after a tap on the card; playing after the play tap
   (0.16 under page 1's VO).
+
+## r101 — runner game: a wrong answer brings the same question back
+
+Yasir: "in the matra runner game, for an incorrect answer don't switch to the next question, show the
+same question again". A wrong portal still costs a heart and plays «फिर से देखिए। सही शब्द है …»;
+then the next pair of portals carries the SAME two words (`repeatQuestion`), their sides dealt again so
+the child reads rather than just switching lanes, and its target word is spoken as it comes near.
+Only a right answer finishes a question - counts towards the level's 6 and fills a progress dot.
+Three wrong in a level still ends in the fall and a restart of that level.
+Measured (in-page pilot, pairs 1 and 3 answered wrong): बन्दूक wrong -> बन्दूक again -> right;
+अंगूर wrong -> अंगूर again -> right; questions done 0,0,1,1,2,3,4,5 -> level 2 after the 6th right
+answer; hearts 3 -> 2 -> 1 (+1 at the level change). No console errors.
+The standalone copy in Downloads (Matra_Runner_Game) was not updated.
+
+## r102 — runner game: no slow-down after a mistake
+
+Yasir: "after making a mistake the character slows down for a fraction of a second - we don't need to
+slow it down". It was r78's wait: the long wrong-answer feedback («फिर से देखिए। सही शब्द है …») made
+the next word late, and the run eased to a fifth of its speed until that word had been heard. Removed -
+the run keeps its speed always. Since r101 the next pair repeats the word the feedback has just said,
+so nothing is lost; the beat before that word after a mistake is 600 ms (was 1500) so it still lands
+early. Measured: 3 s after each of two wrong answers the run is at 100 % of full pace; no slow stretch
+anywhere (the only dips are single frames of timing noise, as before); every target word, repeats
+included, was heard before its pair arrived.
