@@ -846,3 +846,87 @@ included, was heard before its pair arrived.
    12 now catches a drop anywhere on its whole coach - roof label, body, wheels - plus 26 px around
    it. Measured: a card dropped on the coach's roof label (y 157-209, the coach body starts at 215)
    was placed. The sentence pages (14-17) are not train coaches and are unchanged.
+
+## r104 — the transition text types itself, in sync with Swiftee
+
+Yasir: "in transition screens the text will appear with a typewriter animation, one letter at a time,
+in sync". The phrase types in one akshara at a time («च» «लि» «ए» «,» «शु» «रू» «क» «रें» «!») over
+exactly the time Swiftee takes to say it - `CARD.gate.title_dur_ms` (tutorial 1230, guided 1300,
+practice 850 ms, measured), starting at `title_cue_ms`. Aksharas, not code points, so a matra never
+shows without its letter; every akshara holds its place from the start (only its opacity changes),
+so the line does not slide as it grows. The cue now counts from the moment the clip is actually
+sounding, not from the play() call (the guided clip took 380 ms to start and the text ran early).
+Measured, 2 runs: first akshara 6-26 ms after the phrase starts, last one ~120 ms before it ends,
+on all three transitions.
+
+## r105 — transition text centred, transition VO without delay, the standard celebration line
+
+- **Centred.** r103/r104's `pg-title-wait` / `pg-typing` transforms replaced the title's own
+  translateX(-50%), so the text started at the screen's centre line instead of being centred on it.
+  Both keep it now. Measured on all three transitions: text centre = screen centre (682 of 1364).
+- **No VO delay.** `CARD.gate.talk_at_ms` 1960 -> 0: the transition line starts as the gate opens
+  (measured 23-135 ms after it opens). The typewriter still follows the phrase (cue from the clip's
+  real start). Note: the bird's own speaking frames start ~2 s into its animation, so for the first
+  two seconds she is still rising while the line plays.
+- **Celebration line** «बहुत बढ़िया, दोस्त! तुमने कमाल कर दिया!» (standard end-screen dialogue).
+  `vo_cel_prompt` re-recorded (Leda, -16 LUFS, 2.94 s); the build re-measured the lip-sync track
+  (117 steps) - the jump is fitted to «बहुत बढ़िया, दोस्त!» (0.2-1.08 s, then a 0.3 s pause). Its
+  «तुम» is the standard line's own wording, allowed by name in the register guard (REGISTER_ALLOW).
+  Measured: mouth = track 100 % in 2 runs, 0 open-mouth frames after the line.
+
+## r106 — Swiftee rises first, then speaks; on the celebration she jumps first, then speaks
+
+Yasir: "in all the transition Swifty gifs, first she should seek from the bottom, then start speaking,
+so the VO should start when she starts speaking; and on the last celebration screen Swifty jumps and
+celebrates, then starts speaking - the VO should only play when she starts speaking". (Reverses r105's
+"no delay in the VO".)
+- **Transitions.** `CARD.gate.talk_at_ms` 0 -> 1960 again: the line starts on the bird's first speaking
+  frame, after she has risen. The typewriter still counts from the clip's real start. Measured, 2 runs:
+  the VO starts 1973-1989 ms after the gate opens on all three transitions, and the aksharas still type
+  over the phrase (first one 10-20 ms after it starts).
+- **Celebration.** The line is no longer played on arrival (`state.ownsAudio`). The kit's own शाबाश
+  sheet (its standing frames + its jump frames, 30 frames, ~1.35 s) plays first with only the
+  celebration sound; then the line starts and the kit's player takes over: its track is arranged so it
+  lands the jump over the clip's lead-in and lip-syncs the whole line on the talk sheet (kit files
+  unchanged; only the wrapper in the build script changed). Measured, 3+ runs: jump frames 0.31-1.45 s,
+  the line starts at 1.44-1.45 s; mouth = track 100 % on the kit's clock, kit clock = clip clock within
+  one display frame; sheets shabaash -> talk -> idle; 0 open-mouth frames after the line; arrow button
+  unchanged (124x82 at the same place); no console errors.
+
+## r107 — Swiftee's beak moves with every transition line; the play button sounds on the press
+
+- **Lip-synced transitions.** Yasir: "when «चलिए शुरू करें» plays Swifty stays static, no mouth movement -
+  same on transitions 2 and 3". The gate art is a fixed animation: its talking part opened the beak 7
+  times whatever the clip said, then blinked and held a still frame for 1.2 s - exactly where the
+  on-screen phrase is spoken (6.0-7.2 s into the gate). Now she still rises on the animation, and from
+  her first speaking frame (1.96 s) she is drawn from `assets/UI/swifty_gate_talk.webp` - a sheet of
+  the same art's own frames 37-67 (836 KB), built from swifty_gate_seek.webp by the build script - on
+  a canvas in the animation's exact place. The beak opens on each syllable of that transition's own
+  clip (track measured on every build by celebration_kit/make_lipsync.py, as it ships;
+  `CARD.gate.talk` / `CARD.gate.lips`), a different open beak each syllable with the closed beak the
+  art draws beside it; she blinks in pauses; the beak shuts when the line ends. The sheet is decoded
+  and drawn once during the landing so the switch is never late. Measured, 2 runs x 3 transitions:
+  beak = track 98.8-100 % (frame-accurate), one opening per syllable (15 / 19 / 5), the beak moves all
+  through «चलिए, शुरू करें!» / «चलिए, साथ में करें!» / «अब आपकी बारी!», 0 open-beak frames before or after
+  the line, bird box identical before/after the switch (561.8, 488.6, 240.3 x 209.4), no errors.
+- **Play button sound.** A click fires when the finger lifts (measured 136-149 ms after the press),
+  so the sound came late. It now plays on the press (pointerdown); the click still starts the lesson
+  and does not play it twice; a keyboard press still sounds on the click. Measured: sound starts
+  1 ms after the press (was 143 ms), once.
+
+## r108 — the transition text types while the words are spoken, and always completes
+
+Yasir: "in the first transition «चलिए, शुरू करें» VO plays but its text could not be completed (not in
+sync with the VO)". The r104 typewriter spread the letters evenly over the phrase on timers of its
+own: «शु» typed in the 0.3 s pause after «चलिए,», and nothing tied the end of the text to the end of
+the voice. Now:
+- the build measures where each phrase is actually voiced in its clip (25 ms RMS above -42 dBFS,
+  gaps under 150 ms bridged) -> `CARD.gate.title_voice_ms`: tutorial «चलिए,» 4025-4400 + «शुरू करें!»
+  4700-5275, guided 3975-4325 + 4650-5275, practice 1250-2125 ms;
+- the letters are placed only inside those stretches (punctuation comes with the letter before it),
+  read every frame on the clip's own clock (`_voiceClock`, now shared with the beak's lip-sync);
+- when the clip ends, anything not yet shown appears at once, so the line is always complete.
+Measured from the cover's play button (served and opened as a file) and on all three transitions:
+«चलिए,» types 4042-4389 ms, nothing in the pause, «शुरू करें!» 4744-5223 ms; the full line is on screen
+0.38-0.46 s before the clip ends; guided and practice likewise inside their voiced stretches; beak =
+track 99.1-99.4 %; no errors.

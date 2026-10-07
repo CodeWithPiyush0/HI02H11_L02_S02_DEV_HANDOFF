@@ -1028,7 +1028,13 @@ body.vo-lock .coach-body.dd-zone > .coach-face{ pointer-events:none !important; 
 .nav-btn::after{content:"\2192";font-size:52px;line-height:1;}
 /* [r103] the transition's text, held until Swiftee says it - then it pops in */
 #phaseGateTitle{ transition:opacity .25s ease, transform .35s cubic-bezier(.34,1.5,.6,1); }
-#phaseGateTitle.pg-title-wait{ opacity:0; transform:scale(.85); }
+/* [r105] every transform here keeps the title's own translateX(-50%) - r103/r104 dropped it, so the
+   text started at the screen's centre line instead of being centred on it */
+#phaseGateTitle.pg-title-wait{ opacity:0; transform:translateX(-50%) scale(.85); }
+/* [r104] the typewriter: the line is up at once, each akshara fades in on its beat */
+#phaseGateTitle.pg-typing{ transition:none; transform:translateX(-50%); }
+#phaseGateTitle .pg-tw{ opacity:0; transition:opacity .09s linear; }
+#phaseGateTitle .pg-tw.on{ opacity:1; }
 /* [r97] Yasir: "when the VO is finished we enable the next button - I want it to pulsate". It pulses
    for as long as it is live (the engine marks a live arrow .active and enables it; a disabled one
    never pulses). The pill is centred with translateX(-50%), so every frame keeps that. */
@@ -1631,6 +1637,11 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    pgPeek slide-up would rise it twice; and the frame is cropped to the bird, so the height clamp
    applies to the bird itself rather than to a mostly-empty square. */
 .phase-gate #phaseGateImg.pg-card{ animation:none; height:clamp(200px,30vh,290px); }
+/* [r107] from her first speaking frame the gate bird is drawn lip-synced (engine _gateLips) on a
+   canvas that takes the animation's exact place: same height clamp, its own 505x440 aspect */
+.phase-gate #phaseGateCv{ display:none; height:clamp(200px,30vh,290px); width:auto; pointer-events:none; }
+.phase-gate.pg-talking #phaseGateImg{ display:none; }
+.phase-gate.pg-talking #phaseGateCv{ display:block; }
 
 /* [r73/r74] the cover's text title sits above the train, so the steam passes behind it */
 #sgTitle.lt-title-front{ position:relative; z-index:6; }

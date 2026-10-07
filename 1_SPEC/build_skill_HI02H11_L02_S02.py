@@ -807,8 +807,9 @@ def build_slides():
     # ---- screen 18 · CELEBRATION ------------------------------------------------------
     # The deck carries NO recommendation on this page, so it is unchanged — there is no imperative
     # in it to flip.
-    recap = ("शाबाश! आज हमने सीखा, छोटी उ और बड़ी ऊ की मात्रा पहचानना, "
-             "और मात्रा वाले शब्द पढ़ना।")
+    # [r105] Yasir: the standard end-screen dialogue «बहुत बढ़िया, दोस्त! तुमने कमाल कर दिया!» - its
+    # तुम is the standard line's own wording, allowed by name in guard_register (REGISTER_ALLOW)
+    recap = CEL_LINE
     S.append({"id": "CEL", "phase": "practice", "eis": "iconic", "type": "CELEBRATION",
               "prompt_hi": recap,
               "audio": {"prompt": vo("vo_cel_prompt", recap)}, "data": {}})
@@ -873,6 +874,8 @@ def build_card(slides):
         # deployment caches assets/ as immutable and would keep serving the long version.
         # [r84] Yasir's sounds for the landing play button and the next arrow (engine: CARD.ui_sfx)
         "ui_sfx": {"play": "sfx_play_button", "next": "sfx_next_button"},
+        # [r106] Yasir: "first she should seek from the bottom, then start speaking - the VO should start
+        # when she starts speaking": back to her first speaking frame (r105 had made it 0)
         "gate": {"img": "assets/UI/swifty_gate_seek.webp", "talk_at_ms": 1960,
                  # [r83] Yasir: the third transition «अब आपकी बारी!» after page 17, i.e. just before
                  # the runner game - not in front of the first practice page (engine: CARD.gate.at)
@@ -880,7 +883,9 @@ def build_card(slides):
                  # [r103] where each transition's on-screen phrase starts inside its clip, so the text
                  # appears when Swiftee says it: «चलिए, शुरू करें!» / «चलिए, साथ में करें!» /
                  # «अब आपकी बारी!» - measured (silencedetect -35 dB) on the shared kit clips
-                 "title_cue_ms": {"tutorial": 4030, "guided": 3970, "practice": 1260}},
+                 "title_cue_ms": {"tutorial": 4030, "guided": 3970, "practice": 1260},
+                 # [r104] ...and how long Swiftee takes to say it: the typewriter runs over this
+                 "title_dur_ms": {"tutorial": 1230, "guided": 1300, "practice": 850}},
         # REVIEW-1 LADDER — three rungs on every test screen:
         #   wrong 1 = rung-1 VO, nothing else moves and nothing is highlighted
         #   wrong 2 = rung-2 VO plus a DEMONSTRATION (words read out, matras glowed, sentences
@@ -1090,6 +1095,9 @@ def guard_prompts(slides):
 
 BAD_REGISTER = ["करो", "सोचो", "देखो", "डालो", "सुनो", "चुनो", "पढ़ो", "बोलो", "ढूँढो",
                 "घुमाओ", "मिलाओ", "लगाओ", "बनाओ", "तुम"]
+# [r105] the one line allowed a तुम form: the standard Swiftee end-screen dialogue Yasir chose
+CEL_LINE = "बहुत बढ़िया, दोस्त! तुमने कमाल कर दिया!"
+REGISTER_ALLOW = {CEL_LINE}
 
 
 def guard_register(slides, card):
@@ -1106,6 +1114,8 @@ def guard_register(slides, card):
     targets += [("%s heading" % s["id"], s.get("prompt_hi") or "") for s in slides]
     targets += [("phase title %s" % k, v) for k, v in card["phase_transition_title"].items()]
     for where, text in targets:
+        if text in REGISTER_ALLOW:
+            continue
         for b in BAD_REGISTER:
             if b in text:
                 hits.append("%s: %s" % (where, text))
@@ -1428,6 +1438,92 @@ def celebration_anim(slides):
     return {"base": "assets/UI/celebration/", "vo": vo_id, "meta": meta, "track": track}
 
 
+# ---------------------------------------------------------------- [r107] the gate bird speaks the line
+# Yasir: "when «चलिए शुरू करें» plays Swifty stays static, no mouth movement - same on transitions 2
+# and 3". The gate art is a fixed animation: its talking part (1.96-6.3 s) opens the beak only 7 times
+# whatever the clip says, then it blinks and holds a still frame for 1.2 s - exactly where «चलिए, शुरू
+# करें!» falls (6.0-7.2 s into the gate). So the rise stays the animation, and from her first speaking
+# frame she is drawn from a sheet of the SAME art's own frames (37-67: rest, blinks, the 7 open beaks
+# and the closed beak beside each), lip-synced to THIS transition's clip: the beak opens on each
+# syllable of the track the celebration kit's make_lipsync.py measures (run as it ships), blinks in
+# the pauses, and shuts when the line ends. Engine: CARD.gate.talk + CARD.gate.lips.
+GATE_TALK_FIRST, GATE_TALK_LAST, GATE_TALK_COLS = 37, 67, 8
+GATE_TALK_SHEET = "assets/UI/swifty_gate_talk.webp"
+
+
+def gate_talk(card):
+    import subprocess, tempfile
+    from PIL import Image
+    g = card["gate"]
+    src = os.path.join(BUNDLE, g["img"])
+    out = os.path.join(BUNDLE, GATE_TALK_SHEET)
+    if not os.path.isfile(src):
+        print("  !!  gate lip-sync skipped (%s missing) - the gate keeps its own animation" % g["img"])
+        return
+    im = Image.open(src)
+    fw, fh = im.size
+    n = GATE_TALK_LAST - GATE_TALK_FIRST + 1
+    if not os.path.isfile(out) or os.path.getmtime(out) < os.path.getmtime(src):
+        rows = (n + GATE_TALK_COLS - 1) // GATE_TALK_COLS
+        sheet = Image.new("RGBA", (fw * GATE_TALK_COLS, fh * rows), (0, 0, 0, 0))
+        for k in range(n):
+            im.seek(GATE_TALK_FIRST + k)
+            sheet.paste(im.convert("RGBA"), ((k % GATE_TALK_COLS) * fw, (k // GATE_TALK_COLS) * fh))
+        sheet.save(out, "WEBP", quality=90, method=6)
+    lips = {}
+    for phase, vo in (("tutorial", "vo_pt_tutorial"), ("guided", "vo_pt_guided"), ("practice", "vo_pt_practice")):
+        vp = os.path.join(AUD_DIR, vo + ".ogg")
+        if not os.path.isfile(vp):
+            continue
+        tmp = os.path.join(tempfile.gettempdir(), "gate_track_%s_%s.json" % (CODE, phase))
+        subprocess.run([sys.executable, os.path.join(KIT, "make_lipsync.py"), vp, "--json", tmp],
+                       check=True, capture_output=True)
+        tr = json.load(open(tmp, encoding="utf-8"))
+        if "1" not in tr["bits"]:
+            sys.exit("X  the %s gate VO measured silent - no lip-sync track" % phase)
+        lips[phase] = {"bits": tr["bits"], "step_ms": tr["step_ms"]}
+    g["talk"] = {"src": GATE_TALK_SHEET, "first": GATE_TALK_FIRST, "cols": GATE_TALK_COLS, "fw": fw, "fh": fh,
+                 "rest": 37, "blink": [38, 39, 40],
+                 # each open beak with the closed beak drawn right after it in the art
+                 "open": [[42, 43], [44, 45], [51, 52], [53, 54], [55, 56], [58, 59], [60, 61]]}
+    g["lips"] = lips
+    # [r108] WHEN EACH WORD OF THE ON-SCREEN PHRASE IS SPOKEN. Yasir: "in the first transition the
+    # «चलिए, शुरू करें» VO plays but its text does not complete - not in sync with the VO". The typewriter
+    # spread the letters evenly over the whole phrase, so «शु» typed in the pause after «चलिए,» and the
+    # rest ran on timers of its own. Measured here from the clip (25 ms RMS, voice = above -42 dBFS,
+    # gaps under 150 ms bridged): the voiced stretches inside the phrase. The engine types the letters
+    # only while the voice is sounding, on the clip's own clock (CARD.gate.title_voice_ms).
+    import array
+    voice = {}
+    for phase, vo in (("tutorial", "vo_pt_tutorial"), ("guided", "vo_pt_guided"), ("practice", "vo_pt_practice")):
+        vp = os.path.join(AUD_DIR, vo + ".ogg")
+        cue, dur = g["title_cue_ms"].get(phase), g["title_dur_ms"].get(phase)
+        if not os.path.isfile(vp) or cue is None or dur is None:
+            continue
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", vp, "-ac", "1", "-ar", "16000", "-f", "s16le", "-"],
+                             capture_output=True, check=True).stdout
+        a = array.array("h"); a.frombytes(raw[: len(raw) // 2 * 2])
+        segs = []
+        for i in range(0, len(a) - 400, 400):
+            ms = i // 16
+            if not (cue - 150 <= ms <= cue + dur + 200):
+                continue
+            r = (sum(x * x for x in a[i:i + 400]) / 400) ** 0.5
+            if r > 32768 * 10 ** (-42 / 20):
+                if segs and ms - segs[-1][1] < 150:
+                    segs[-1][1] = ms + 25
+                else:
+                    segs.append([ms, ms + 25])
+        segs = [x for x in segs if x[1] - x[0] >= 50]
+        if not segs:
+            sys.exit("X  no voice measured inside the %s phrase window" % phase)
+        voice[phase] = segs
+    g["title_voice_ms"] = voice
+    print("  OK  transition phrases, voiced (ms in clip): %s" % voice)
+    print("  OK  gate lip-sync: %s (%d frames, %d KB), tracks for %s"
+          % (GATE_TALK_SHEET, n, os.path.getsize(out) // 1024, sorted(lips)))
+
+
 CEL_WRAP = r"""
 /* [r85] THE CELEBRATION SWIFTIE - the kit's README wrapper, verbatim in intent. The engine's
    CELEBRATION module is wrapped, not edited: it still does everything it did (sfx, sunburst, stars,
@@ -1493,8 +1589,49 @@ CEL_WRAP = r"""
     if(!box) return r;
     if(img) img.style.display = "none";
     box.innerHTML = "";
-    SwiftieCelebration.play({ host: box, meta: EA.meta, base: EA.base,
-                              bits: EA.track.bits, step_ms: EA.track.step_ms, audio: clock });
+    /* [r106] SHE JUMPS AND CELEBRATES FIRST, THEN SPEAKS. Yasir: "in the last celebration screen Swifty
+       jumps and celebrates, then starts speaking - the VO should only play when she starts speaking".
+       So the line is NOT played by the page on arrival (ownsAudio): the jump - the kit's own शाबाश
+       sheet, its standing frames and its jump frames - plays first, silent but for the celebration
+       sound; then the line starts and the kit's player takes over, with a track arranged so that it
+       finishes the landing over the clip's lead-in and then lip-syncs the WHOLE line on the talk
+       sheet (a 25 ms stand-in "first word" stops the kit spending the real first words on a jump). */
+    state.ownsAudio = true;
+    const M = EA.meta, S = M.shabaash, COLS = M.cols || 6;
+    const sp = document.createElement("div"); sp.className = "swc-sprite";
+    sp.innerHTML = '<div class="swc-art"></div>'; box.appendChild(sp);
+    const art = sp.firstChild; art.style.aspectRatio = M.fw + " / " + M.fh;
+    art.style.backgroundImage = 'url("' + EA.base + S.src + '")';
+    const showF = (i)=>{ const c = i % COLS, rr = Math.floor(i / COLS);
+      art.style.backgroundPosition = (c * 100 / (COLS - 1)) + "% " + (rr * 100 / (COLS - 1)) + "%";
+      sp.dataset.sheet = "shabaash"; sp.dataset.f = i; };
+    const frames = S.pre.concat(S.word), FMS = 45;          /* ~22 fps: 30 frames, 1.35 s */
+    showF(frames[0]);
+    const bits = EA.track.bits, lead = Math.max(0, bits.indexOf("1"));
+    const step = EA.track.step_ms || 25;
+    const bits2 = "1" + "00000000" + bits.slice(lead);      /* stand-in word, 200 ms gap, the line */
+    const shift = (9 - lead) * step / 1000;                 /* keeps the line on the clip's clock */
+    const clock2 = {
+      get paused(){ return clock.paused; }, get ended(){ return clock.ended; },
+      get currentTime(){ const t = clock.currentTime; return t > 0 ? Math.max(0.001, t + shift) : 0; }
+    };
+    const t0 = performance.now();
+    (function jump(){
+      if(!sp.isConnected || CARD.slides[state.idx] !== slide) return;
+      const k = Math.floor((performance.now() - t0) / FMS);
+      if(k < frames.length){ showF(frames[k]); requestAnimationFrame(jump); return; }
+      /* the jump is over: the line starts, and the kit takes over the moment it is sounding */
+      const src = (typeof audioFor === "function") ? audioFor(slide, "prompt") : null;
+      if(src) play(src, ()=>{});
+      const h = SwiftieCelebration.play({ host: box, meta: M, base: EA.base, bits: bits2, step_ms: step, audio: clock2 });
+      h.el.style.animation = "none"; h.el.style.position = "absolute"; h.el.style.inset = "0";
+      h.el.style.visibility = "hidden";
+      (function swap(){
+        if(!h.el.isConnected) return;
+        if(h.el.dataset.t !== undefined || h.el.dataset.sheet === "idle"){ h.el.style.visibility = ""; sp.remove(); return; }
+        requestAnimationFrame(swap);
+      })();
+    })();
     return r;
   };
 })();
@@ -1547,6 +1684,7 @@ def main():
     if img_orphan:
         print("  !!  images no longer used by the card (delete before packaging): %s" % img_orphan)
 
+    gate_talk(card)                                      # [r107]
     card["end_anim"] = celebration_anim(slides)          # [r85]
     if not card["end_anim"]:
         del card["end_anim"]
