@@ -6288,6 +6288,14 @@ if(document.fonts && document.fonts.load){
     const make = ()=>{
       if(el) return el;
       el = new Audio(src); el.loop = true; el.preload = "auto"; el.volume = 0;
+      /* [r110] Yasir: "once the bg music completes, play it again - it should play continuously in a
+         loop". `loop` is set, but a browser can still let a long streamed track finish (its seek back
+         to the start fails on a stream it cannot seek), and then the music simply stops. So if it
+         ever ends, it starts again from the top. */
+      el.addEventListener("ended", ()=>{
+        try{ el.currentTime = 0; }catch(e){}
+        if(started) el.play().catch(()=>{});
+      });
       return el;
     };
     const tryStart = ()=>{
@@ -6301,9 +6309,19 @@ if(document.fonts && document.fonts.load){
       try{ const s = CARD.slides[state.idx]; return !!(s && s.type === "MINI_GAME" &&
                     document.body && !document.body.classList.contains("is-start")); }catch(e){ return false; }
     };
-    let last = performance.now();
+    let last = performance.now(), lastPos = -1, movedAt = performance.now();
     const tick = ()=>{
       const now = performance.now(), dt = Math.min(0.1, (now - last) / 1000); last = now;
+      /* [r110] ...and if it should be playing but has stopped moving for 2 s (stuck at its end, or
+         stalled), it is started again - from the top when it is at the end */
+      if(el && started && !el.paused && !onGame()){
+        if(el.currentTime !== lastPos){ lastPos = el.currentTime; movedAt = now; }
+        else if(now - movedAt > 2000){
+          movedAt = now;
+          try{ if(el.ended || (el.duration && el.duration - el.currentTime < 1.5)) el.currentTime = 0; }catch(e){}
+          el.play().catch(()=>{});
+        }
+      } else movedAt = now;
       if(el && started){
         let want = BASE;
         if(sfxUntil > now || live.size) want = SFX;

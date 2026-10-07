@@ -954,3 +954,18 @@ Measured: transitions - beak = track 98.5-99.2 %, one opening per syllable (13 /
 inside its spoken words (e.g. «चलिए,» 3083-3342, «शुरू करें!» 3702-4104 ms), full line before the
 clip ends, also from the cover's play button; celebration - jump first, mouth = track 100 %, 0 open
 frames after; no errors. Manifest regenerated (durations, voice notes).
+
+## r110 — the lesson's music always starts again when it ends
+
+Yasir: "once the bg music completes, play it again - it should play continuously in a loop". The
+music element already had `loop` set, and in Chrome (served and opened as a file) it does loop -
+measured at 16x speed: at 4:00 it seeks to 0 and plays on. But a browser can still let a long
+streamed track finish when its seek back to the start fails (the local server here reports the file
+as not seekable, for one), and then the music just stops. Two safety nets on `__lessonBgm`
+(train_modules.js):
+- on `ended`, back to 0 and play again;
+- if it should be playing (not paused, not on the runner page) but has not moved for 2 s, play
+  again - from the top when it is at its end.
+Measured: with `loop` switched OFF (a browser whose loop fails), the track ended at 240.02 s and was
+playing again from 0 within 5 ms, and on for another full minute; with `loop` on, it loops as before.
+The ducking under voice / sounds and the silence on the runner page are unchanged.
