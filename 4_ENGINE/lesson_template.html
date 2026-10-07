@@ -16783,7 +16783,9 @@ function phaseBlurTransition(cb, toPhase){
       const c = clock();
       if(c.ended){ show(n); return; }
       let t = c.t;
-      if(t == null && lost == null && performance.now() - t0 > 1500) lost = performance.now();  /* no voice */
+      /* [r109] no voice after 1.5 s AND the clip is no longer on its way (play() gave up or ended):
+         type without it. A clip still loading keeps the text waiting for the voice. */
+      if(t == null && lost == null && !isPlaying && performance.now() - t0 > 1500) lost = performance.now();
       if(t == null && lost != null) t = _segs[0][0] + (performance.now() - lost);
       if(t != null){ let k = next; while(k < n && t >= at[k]) k++; show(k); }
       if(next < n) requestAnimationFrame(typeTick);

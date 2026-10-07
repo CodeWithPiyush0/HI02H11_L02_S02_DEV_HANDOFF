@@ -930,3 +930,27 @@ Measured from the cover's play button (served and opened as a file) and on all t
 «चलिए,» types 4042-4389 ms, nothing in the pause, «शुरू करें!» 4744-5223 ms; the full line is on screen
 0.38-0.46 s before the clip ends; guided and practice likewise inside their voiced stretches; beak =
 track 99.1-99.4 %; no errors.
+
+## r109 — the recorded voice-over is in
+
+Yasir added recorded VOs for every lesson clip (131 WAVs, named by Audio ID - the manifest's
+recording list, transition lines included). Now:
+- **Sources** moved out of the build (they would have shipped 26 MB twice) to
+  `1_SPEC/game_art_src/lesson_voice/source_wav/`; the TTS takes they replace are kept in
+  `1_SPEC/game_art_src/lesson_voice/gemini_backup/` (133 files, with the two unplayed clips).
+- **`1_SPEC/prepare_lesson_voice.py`** (new) trims each clip (30 ms kept before the voice, 120 ms
+  after - the recordings had ~0.3 s at each end), levels it to -16 LUFS with a -1 dBFS limiter and
+  writes it as 16-bit PCM WAV, 24 kHz mono, under the lesson's `.ogg` names (the builder reads the
+  cues from these files as WAV). Measured: all 131 at -16.5 to -15.8 LUFS, peaks <= -1.0 dBFS.
+- **Cues** re-measured by the build from the new files: page 1 highlight (1403 / 1336 ms), pages 2 / 4
+  sound steps (now all three of प। पु। पुल। / फ। फू। फूल। resolve), pages 3 / 5 picture + matra
+  moments, both lip-sync tracks (celebration 2954 ms; the three transitions), the audio cache stamp.
+- **Transition text** cues re-measured on the recorded transition lines (`title_cue_ms` /
+  `title_dur_ms`): «चलिए, शुरू करें!» 3075 + 1150, «चलिए, साथ में करें!» 3575 + 1325, «अब आपकी बारी।»
+  925 + 850 ms.
+- **Typewriter safety net** (engine): "no voice after 1.5 s -> type anyway" now waits while the clip
+  is still loading (`isPlaying`), so a slow clip can no longer make the text run ahead of the voice.
+Measured: transitions - beak = track 98.5-99.2 %, one opening per syllable (13 / 19 / 5), every letter
+inside its spoken words (e.g. «चलिए,» 3083-3342, «शुरू करें!» 3702-4104 ms), full line before the
+clip ends, also from the cover's play button; celebration - jump first, mouth = track 100 %, 0 open
+frames after; no errors. Manifest regenerated (durations, voice notes).

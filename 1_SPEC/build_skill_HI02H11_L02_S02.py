@@ -883,9 +883,12 @@ def build_card(slides):
                  # [r103] where each transition's on-screen phrase starts inside its clip, so the text
                  # appears when Swiftee says it: «चलिए, शुरू करें!» / «चलिए, साथ में करें!» /
                  # «अब आपकी बारी!» - measured (silencedetect -35 dB) on the shared kit clips
-                 "title_cue_ms": {"tutorial": 4030, "guided": 3970, "practice": 1260},
+                 # [r109] re-measured on the recorded transition lines (25 ms envelope, the phrase
+                 # after the last long pause): «चलिए, शुरू करें!» 3075-4225 ms of 4.32 s, «चलिए, साथ
+                 # में करें!» 3575-4900 of 5.01 s, «अब आपकी बारी।» 925-1775 of 1.87 s
+                 "title_cue_ms": {"tutorial": 3075, "guided": 3575, "practice": 925},
                  # [r104] ...and how long Swiftee takes to say it: the typewriter runs over this
-                 "title_dur_ms": {"tutorial": 1230, "guided": 1300, "practice": 850}},
+                 "title_dur_ms": {"tutorial": 1150, "guided": 1325, "practice": 850}},
         # REVIEW-1 LADDER — three rungs on every test screen:
         #   wrong 1 = rung-1 VO, nothing else moves and nothing is highlighted
         #   wrong 2 = rung-2 VO plus a DEMONSTRATION (words read out, matras glowed, sentences
