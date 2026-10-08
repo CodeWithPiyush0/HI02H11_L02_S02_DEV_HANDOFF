@@ -20,6 +20,9 @@ CSS_END   = "/* == TRAIN STYLES :: END == */"
 
 js  = io.open(os.path.join(SCRATCH, "train_modules.js"), encoding="utf-8").read()
 css = io.open(os.path.join(SCRATCH, "train_styles.css"), encoding="utf-8").read()
+# [r111] File5's correct-answer confetti (FLN kit recipe 7 + its call site + its whole-window layer)
+js  += "\n" + io.open(os.path.join(SCRATCH, "confetti_mtg.js"), encoding="utf-8").read()
+css += "\n" + io.open(os.path.join(SCRATCH, "confetti_mtg.css"), encoding="utf-8").read()
 src = io.open(ENGINE, encoding="utf-8").read()
 
 # ---- closing-tag guard ---------------------------------------------------------------------

@@ -969,3 +969,22 @@ as not seekable, for one), and then the music just stops. Two safety nets on `__
 Measured: with `loop` switched OFF (a browser whose loop fails), the track ended at 240.02 s and was
 playing again from 0 within 5 ms, and on for another full minute; with `loop` on, it loops as before.
 The ducking under voice / sounds and the silence on the runner page are unchanged.
+
+## r111 — File5's confetti and File5's play button
+
+Yasir: "from File5 extract the same confetti effect (animation) in this file, and the play button
+should be 140x140 px and placed the same as that file - don't change anything else".
+- **Confetti.** File5's correct-answer confetti, copied unchanged (verified byte-identical) into
+  `4_ENGINE/confetti_mtg.js` / `confetti_mtg.css`: the FLN animation kit's confetti (recipe 7; the kit
+  core it needs was already in this engine, byte-identical to File5's), File5's call site - ~100 stars,
+  rectangles, lines and squares over the whole window, 1.5x size, the slower fall - and its
+  body-level `#fxLayer` (added to lesson_template.html where File5 has it). `inject_train.py` adds the
+  two files as File5's does. It replaces the side-cannon `confettiCannon()`; every call site is
+  unchanged, and they are all the lesson's correct answers (the runner game does not call it).
+  No confetti sound (File5 has none either).
+- **Play button.** 116 -> 140 x 140 px, and File5's placement rule `bottom:12px` (File5: "the 140px
+  button sat over the cover's track ties: 28 px lower clears them"). The play-button rules are now
+  identical to File5's.
+Measured side by side with File5: button 140 x 140, bottom 12 px, same place (within the pulse's
+1-2 px); a correct answer on page 6 fires one burst of 100 pieces in #fxLayer (fixed, z 5000) in both
+files; no console errors.

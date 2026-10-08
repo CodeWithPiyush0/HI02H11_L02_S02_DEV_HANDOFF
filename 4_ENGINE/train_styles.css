@@ -1627,7 +1627,7 @@ body.auto-next #navBtn{ visibility:hidden; pointer-events:none; }
    sg-waiting swaps the art for the grey disc instead of recolouring a pill.
    ============================================================================================ */
 .sg-btn, .sg-btn.sg-waiting{
-  width:116px; min-width:0; height:116px; padding:0; border:none; border-radius:50%; font-size:0; color:transparent;
+  width:140px; min-width:0; height:140px; padding:0; border:none; border-radius:50%; font-size:0; color:transparent;
   background:url("assets/Images/play_btn.svg") center/contain no-repeat; box-shadow:none; }
 .sg-btn::after{ content:none; }
 .sg-btn.sg-waiting{ background-image:url("assets/Images/play_btn_disabled.svg"); }
@@ -1879,3 +1879,6 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
   @media (prefers-reduced-motion:reduce){.mr-root .bar i{transition:none} }
 
 /* ==== MATRA-RUNNER CSS END ==== */
+/* [r111] Yasir: "the size of the play button should be 140x140 px and its placement the same as File5":
+   File5's rule - the 140px button sits 28px lower (bottom 40 -> 12) so it clears the cover's track ties */
+.sg-btn, .sg-btn.sg-waiting{ bottom:12px; }
