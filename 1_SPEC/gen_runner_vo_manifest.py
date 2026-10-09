@@ -36,23 +36,34 @@ POOL_U, POOL_UU = pool("POOL_U"), pool("POOL_UU")
 
 # ---- where each line plays (the game's own flow, r77-r79) ------------------------------------
 LINE_INFO = {
+    # [r112] the temple-run tutorial and the obstacle bump - TTS placeholders (Leda) until recorded
+    "tut_lane":   ("Tutorial",    "First time only, after the lesson's instruction: the run stops in front of a "
+                                  "stone block, a hand shows the left/right swipe. TTS PLACEHOLDER - record."),
+    "tut_jump":   ("Tutorial",    "Tutorial step 2: the run stops in front of a log, a hand shows the swipe up. "
+                                  "TTS PLACEHOLDER - record."),
+    "tut_slide":  ("Tutorial",    "Tutorial step 3: the run stops in front of a low barrier, a hand shows the "
+                                  "swipe down. TTS PLACEHOLDER - record."),
+    "tut_go":     ("Tutorial",    "End of the tutorial, before the level 1 goal. TTS PLACEHOLDER - record."),
+    "hit":        ("Feedback",    "Swifty runs into an obstacle (a heart is lost). TTS PLACEHOLDER - record."),
     "goal_uu":    ("Instruction", "Level 1 start, after the lesson's own instruction has finished. "
                                   "Also the 2nd line of the level transition when the next level is ऊ."),
     "goal_u":     ("Instruction", "2nd line of the level 1 → level 2 transition (screen blurred), "
                                   "right after «वाह! …»."),
     "level_next": ("Transition",  "End of a level: screen blurs, level-up chime, then this line, "
                                   "followed by the next level's goal."),
-    "right":      ("Feedback",    "Child runs through the correct portal."),
-    "wrong":      ("Feedback",    "Child runs through the wrong portal (1st of 3 lines)."),
-    "correct_is": ("Feedback",    "After «फिर से देखिए।» on a wrong portal, followed by the correct word "
+    "right":      ("Feedback",    "Child runs into the orb with the correct word."),
+    "wrong":      ("Feedback",    "Child runs into the orb with the wrong word (1st of 3 lines)."),
+    "correct_is": ("Feedback",    "After «फिर से देखिए।» on a wrong orb, followed by the correct word "
                                   "of that pair (2nd of 3 lines)."),
-    "retry":      ("Feedback",    "All three hearts lost: after Swifty's fall, screen blurred, "
+    "retry":      ("Feedback",    "All three hearts lost (wrong words and/or obstacles): after Swifty's fall, screen blurred, "
                                   "then the level restarts."),
-    "win":        ("Transition",  "Last level finished: screen blurred, then the lesson moves on."),
+    "win":        ("Transition",  "Last level finished: screen blurred, then the lesson moves on. New line (no portals "
+                                  "any more) - TTS PLACEHOLDER - record; the old take is in runner_voice/replaced/."),
     "level_up":   ("Feedback",    "NOT PLAYED - left over from the draft that showed a level card."),
 }
-ORDER = ["goal_uu", "goal_u", "level_next", "right", "wrong", "correct_is", "retry", "win", "level_up"]
-WORD_WHEN = ("Target word: spoken once as its pair of portals comes near - only the word to catch, "
+ORDER = ["tut_lane", "tut_jump", "tut_slide", "tut_go", "goal_uu", "goal_u", "level_next", "right", "wrong",
+         "correct_is", "hit", "retry", "win", "level_up"]
+WORD_WHEN = ("Target word: spoken once as its pair of word orbs comes near - only the word to catch, "
              "never both portals' words. Also said after «सही शब्द है» when the child misses it.")
 
 
@@ -153,15 +164,18 @@ spec = [
     ("1. Game page opens", "The lesson says its own instruction (NOT in this manifest - lesson clip "
                            "assets/Audio/vo_mg_prompt.ogg): «अब एक खेल! ऊपर दी गई मात्रा वाले शब्द के "
                            "द्वार से निकलिए।»"),
-    ("2. Level 1 goal", "goal_uu - «%s»" % LINES.get("goal_uu", "")),
-    ("3. Each pair of portals", "Only the target word, as the pair comes near (after a clear pause)."),
-    ("4. Correct portal", "right - «%s»" % LINES.get("right", "")),
-    ("5. Wrong portal", "wrong + correct_is + the correct word - «%s %s <शब्द>»"
+    ("2. Tutorial (first time)", "tut_lane, tut_jump, tut_slide - each as the run stops in front of its "
+                                 "obstacle - then tut_go"),
+    ("3. Level 1 goal", "goal_uu - «%s»" % LINES.get("goal_uu", "")),
+    ("4. Each pair of word orbs", "Only the target word, as the pair comes near (after a clear pause)."),
+    ("5. Correct orb", "right - «%s»" % LINES.get("right", "")),
+    ("6. Wrong orb", "wrong + correct_is + the correct word - «%s %s <शब्द>»"
                         % (LINES.get("wrong", ""), LINES.get("correct_is", ""))),
-    ("6. Level ends", "Screen blurs, chime, then level_next + next goal - «%s» «%s»"
+    ("7. Obstacle hit", "hit - «%s»" % LINES.get("hit", "")),
+    ("8. Level ends", "Screen blurs, chime, then level_next + next goal - «%s» «%s»"
                       % (LINES.get("level_next", ""), LINES.get("goal_u", ""))),
-    ("7. All hearts lost", "retry - «%s», then the level restarts" % LINES.get("retry", "")),
-    ("8. Game finished", "win - «%s»" % LINES.get("win", "")),
+    ("9. All hearts lost", "retry - «%s», then the level restarts" % LINES.get("retry", "")),
+    ("10. Game finished", "win - «%s»" % LINES.get("win", "")),
 ]
 for a, b in spec:
     sp.append([a, b] if b is not None else [a])

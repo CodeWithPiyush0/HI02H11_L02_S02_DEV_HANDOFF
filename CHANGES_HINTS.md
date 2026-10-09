@@ -988,3 +988,83 @@ should be 140x140 px and placed the same as that file - don't change anything el
 Measured side by side with File5: button 140 x 140, bottom 12 px, same place (within the pulse's
 1-2 px); a correct answer on page 6 fires one burst of 100 pieces in #fxLayer (fixed, z 5000) in both
 files; no console errors.
+
+## r112 — the runner game becomes a temple run: word orbs, obstacles, jump / slide, a tutorial
+
+Yasir's feedback + reference image (golden word orbs on the temple bridge, logs / stones / thorns).
+All in `1_SPEC/matra_runner_src/index.html` (then embed -> inject -> build, as always).
+- **HUD:** level number, score and word counter removed; the matra chip «ऊ (ू)» / «उ (ु)» alone at the
+  top centre, 1.5x; hearts at the top right. Measured: chip centre = stage centre (682 of 1364).
+- **Word orbs replace the portals** (`orb.webp`, from the reference): a golden orb with two leaves per
+  lane, floating at chest height, the word written on it by the game. Run into the right one: it
+  bursts bigger and fades in a shine; a wrong one shakes, dulls and shrinks, and the right one pulses so
+  the child sees which it was (never red). Same flow as before: a wrong word costs a heart and the
+  question comes back (r101). `portal_ring.webp` is no longer loaded.
+- **Obstacles** (Yasir: full Temple Run, and a hit costs a heart): log and thorns - jump (swipe up / ↑);
+  a log on two posts - slide under (swipe down / ↓); a carved stone block - go round (left / right).
+  One after every pair of orbs, ~2 s after it - after its «शाबाश» and before the next word is spoken,
+  so the child is never dodging while listening. Never the same kind twice running. A hit: a heart,
+  Swifty's new bump pose, a bonk, «अरे! ध्यान से।»; three hearts gone (words or obstacles) -> she falls
+  and the level restarts, as before.
+- **Swifty jumps and slides** - new poses (`swifty_jump.webp`, `swifty_slide.webp`, `swifty_bump.webp`)
+  generated from her own run frame, in the run art's style; her shadow stays on the ground.
+- **Controls:** swipes act as soon as the finger has moved 26 px (up = jump, down = slide, left/right =
+  lane); a tap on a half still changes lane; ↑/↓ (W/S) keys; ▲ ▼ buttons beside ◀ ▶ on touch screens.
+- **Tutorial** (first time the game opens, after the lesson's instruction): three steps, Temple Run
+  style - the run stops in front of a stone block / a log / a low barrier, the lesson's standard hand
+  shows the swipe with a big arrow, the line is spoken, and it carries on the moment the child makes the
+  move (early moves count; nothing in the tutorial costs a heart). Then «बहुत बढ़िया! अब खेल शुरू करते
+  हैं।», the goal, and the first words. Not repeated after a fall.
+- **Coins:** 15 -> 25 px radius, higher, brighter glow, turning; the coin sound about 2.5x as loud, a
+  two-note ding with a sparkle. They come in a trail of four beside each obstacle. No score is shown.
+- **Art** (`gen_ref_art.py` groups `temple` + `char`, prepared by `prepare_runner_art.py <files>`):
+  orb, ob_log, ob_thorns, ob_block, ob_beam, swifty_jump, swifty_slide, swifty_bump - ~1.1 MB in all.
+- **Voice:** five new lines (TTS placeholders, voice Leda, levelled to -16 LUFS - to be recorded):
+  tut_lane «उँगली दाएँ या बाएँ सरकाइए, और रास्ता बदलिए।», tut_jump «उँगली ऊपर सरकाइए, और कूदिए!»,
+  tut_slide «उँगली नीचे सरकाइए, और नीचे से फिसलिए!», tut_go «बहुत बढ़िया! अब खेल शुरू करते हैं।»,
+  hit «अरे! ध्यान से।». runner_vo_manifest.xlsx regenerated (root + Downloads).
+Measured (headless Chrome, keys and real finger drags/taps): tutorial - each step freezes in front of
+its obstacle with the right overlay (side / up / down) and continues on the move, lines in order, then
+the goal; run - 6/6 words, deliberate hits cost a heart each, jumps / slides / lane changes clear the
+rest; 3 hits -> fall, «कोई बात नहीं…», level restarts with 3 hearts and no tutorial; level 2 starts with
+the «उ (ु)» chip, orbs, obstacles and coins; no console errors.
+
+## r113 — obstacles pass by, the hanging matra, a speed that grows, minimal pairs, one continuous run
+
+All in `1_SPEC/matra_runner_src/index.html` (embed -> inject -> build).
+- **Obstacles no longer disappear.** They run on past Swifty, growing towards the camera, and are drawn
+  in front of her once passed, until they leave the bottom of the screen. One she runs into is knocked
+  aside towards the parapet (tipping a little) and goes on past the same way.
+- **The matra hangs on a rope from the top of the screen** (`#hang`: a twisted rope, a ring, the wooden
+  medallion «ऊ (ू)»): it drops in with a bounce and swings gently; between levels it is pulled back up
+  and comes down again with the new matra.
+- **Speed grows with the child** - one speed for the whole game: starts slow (0.110), +0.009 for each
+  word caught, -0.014 for a wrong word or an obstacle hit (eased: down quickly, back up gently),
+  between 0.10 and 0.20; a fall starts it slow again. Swifty's stride quickens with it.
+- **The last two words of each level are minimal pairs** - the same word twice, one with the other
+  matra: फूल / फुल, कूड़ा / कुड़ा, दुकान / दूकान. Only the right word is spoken (the swapped one is only
+  shown, so it needs no recording); a wrong pick still names the right word.
+- **One run, not separate levels.** When a level ends nothing stops - no blur, no «स्तर» card: the
+  chime, the matra goes up, «वाह! अब इस लेवल को पार कीजिए।» + the next goal are spoken while it comes
+  down with the new matra, then the next words come; speed and obstacles carry on, and a heart comes
+  back as before. A fall in that stretch restarts the NEXT level. The end of the game is unchanged.
+Measured (headless Chrome, both levels): chip on its rope at the top centre; speed 0.110 -> 0.150 over
+level 1 (one hit took its target 0.119 -> 0.114), carried on to 0.20 by the end of level 2; pairs 5-6
+of each level were twins (कूड़ा/कुड़ा, जूता/जुता; चुहिया/चूहिया, दुकान/दूकान); at the level change the
+mode stayed "play", the canvas had no blur, the chip went up and came back as «उ (ु)», the next pairs
+came; a passed obstacle still on screen at z -0.10; no console errors.
+
+## r114 — smooth legs at every speed; the end-of-game line no longer mentions portals
+
+- **Legs.** Yasir: "when the speed increases, at the start her legs feel jittery or too fast". The run
+  frame was floor(G.t x 16 / cycle); with the cycle following the speed (r113), the product of a large
+  G.t and a changing rate jumped every frame - the legs skipped and whirled. The phase now ADVANCES each
+  frame by dt / cycle (`G.runPh`), so a change of speed changes how fast the legs go but never jumps
+  them, and the cycle follows how fast the world is really moving: a slow jog while the run is held at
+  the start or stopped in the tutorial, quickening smoothly with the speed (0.78-1.6 s a stride).
+  Measured over a whole game (both levels): the leg frame never went backwards and advanced at most
+  0.96 of a frame per screen frame (median 0.17 slow / 0.24 / 0.31 fast).
+- **The end-of-game line.** «शाबाश, सारे द्वार पार हो गए!» -> «शाबाश! आपने सारे शब्द पकड़ लिए!» (and the
+  hidden win card's text). TTS placeholder (Leda, -16 LUFS) until recorded; the old recording is kept in
+  `1_SPEC/game_art_src/runner_voice/replaced/win_dwar_par.wav`. runner_vo_manifest.xlsx regenerated
+  (root + Downloads). Measured: spoken 1.1 s after the last word, then the win screen, the lesson moves on.

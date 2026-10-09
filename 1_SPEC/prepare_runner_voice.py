@@ -39,6 +39,11 @@ def measure(path, pre=""):
 
 def main():
     wavs = sorted(f for f in os.listdir(SRC) if f.lower().endswith(".wav"))
+    # [r112] `prepare_runner_voice.py tut_jump hit ...` prepares ONLY those clips, so adding a line
+    # does not re-encode every recording the game already ships
+    only = set(sys.argv[1:])
+    if only:
+        wavs = [f for f in wavs if os.path.splitext(f)[0] in only]
     if not wavs:
         sys.exit("no WAVs in " + SRC)
     for f in wavs:

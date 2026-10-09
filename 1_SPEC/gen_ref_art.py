@@ -64,11 +64,13 @@ BOX = {
 def _panels():
     if not os.path.isdir(PANELS):
         os.makedirs(PANELS)
-    im = Image.open(SHEET).convert("RGB")
-    for k, b in BOX.items():
-        p = os.path.join(PANELS, k + ".png")
-        if not os.path.isfile(p):
-            im.crop(b).save(p)
+    # [r112] the first sheet is only needed to cut panels that are not there yet - it was a
+    # session image and is gone, while every panel it gave was saved long ago
+    todo = [(k, b) for k, b in BOX.items() if not os.path.isfile(os.path.join(PANELS, k + ".png"))]
+    if todo:
+        im = Image.open(SHEET).convert("RGB")
+        for k, b in todo:
+            im.crop(b).save(os.path.join(PANELS, k + ".png"))
     # Everything in the folder, not just what BOX cuts out of the first sheet. The later asset
     # sheets are cropped by hand into the same folder, and a job names a panel by its filename.
     out = {}
@@ -262,6 +264,26 @@ JOBS = {
     "brown satchel across the body, BLUE shorts and orange feet. Keep her colours, outfit and "
     "proportions exactly. Seen from BEHIND, running away from the camera and JUMPING, both feet "
     "off the ground with knees tucked and both wings raised, full body." + CUTOUT),
+   ('swifty_jump2.png', 't_scene',
+    'SWIFTY, the SAME character as the attached second reference image - a small friendly white eagle chick with a fluffy white head, a BRIGHT YELLOW hoodie, a brown satchel across the body, BLUE shorts, orange feet and small white mitten hands (NO big feathered wings). Keep her colours, outfit and proportions exactly, and the SAME back view as the reference. Seen from BEHIND, running away from the camera and JUMPING high over an obstacle like in an endless-runner game: both feet off the ground with knees tucked up, both arms raised up and out for joy, full body.' + CUTOUT),
+   ('swifty_bump.png', 'sprites',
+    'SWIFTY, the SAME character as the attached second reference image - a small friendly white eagle chick with a fluffy white head, a BRIGHT YELLOW hoodie, a brown satchel across the body, BLUE shorts, orange feet and small white mitten hands (NO big feathered wings). Keep her colours, outfit and proportions exactly, and the SAME back view as the reference. Seen from BEHIND, having just BUMPED into an obstacle in an endless-runner game: wobbling back on her heels, both arms flung up and out, knees bent, a few small yellow dizzy stars circling above her head - gently comic, not hurt, full body.' + CUTOUT),
+   ('swifty_slide.png', 't_scene',
+    'SWIFTY, the SAME character as the attached second reference image - a small friendly white eagle chick with a fluffy white head, a BRIGHT YELLOW hoodie, a brown satchel across the body, BLUE shorts, orange feet and small white mitten hands (NO big feathered wings). Keep her colours, outfit and proportions exactly, and the SAME back view as the reference. Seen from BEHIND, doing a LOW SLIDE under a barrier like Temple Run: she is NOT running and NOT standing - she has dropped down and is SITTING ON THE GROUND sliding forward on her bottom, legs stretched out in front of her along the ground, body leaning back, head ducked down low, both arms out to the sides touching the ground for balance, a little dust puff behind. Her whole figure is very LOW - only about HALF as tall as when she stands - and wider than she is tall, full body.' + CUTOUT),
+ ],
+ # ---- [r112] the temple-run round: word orbs, obstacles (the user's reference, images/34.png,
+ # cut into ref_panels/t_*.png). Cut-outs the game places on the bridge: alone, front-on, NO text.
+ "temple": [
+   ('orb.png', 't_orb',
+    "ONE glowing magical WORD ORB for a children's game, like the orb in the attached reference: a round glossy bright golden-yellow orb shaped like a plump round lemon, two small fresh green leaves sprouting from its top, a soft warm glow inside that is brighter at the centre, a white glossy highlight at the upper left. The face of the orb is COMPLETELY BLANK and smooth - NO word, NO letter, NO writing, NO symbol, NO face. No sparkles and no glow outside its outline. Seen straight on." + CUTOUT),
+   ('log.png', 't_log',
+    "ONE obstacle for a children's endless-runner game set on an old temple bridge, drawn exactly like the matching object in the attached reference: a low pile of three thick brown wooden LOGS lying horizontally on their sides, green leafy vines wrapped around them with a few tiny white flowers, the cut ends showing tree rings on the right. Long and low - about three times as wide as it is tall. Seen from the FRONT at a slight high angle, as a runner approaching it would see it." + CUTOUT),
+   ('thorns.png', 't_thorns',
+    "ONE obstacle for a children's endless-runner game set on an old temple bridge, drawn exactly like the matching object in the attached reference: a low tangle of thick green THORNY VINES twisting in loops along the ground, with sharp orange-brown thorns and a few leaves. Long and low - about four times as wide as it is tall. Seen from the FRONT at a slight high angle, as a runner approaching it would see it." + CUTOUT),
+   ('stone_block.png', 't_block',
+    "ONE obstacle for a children's endless-runner game set on an old temple bridge, drawn exactly like the matching object in the attached reference: a big solid square carved TEMPLE STONE BLOCK of weathered grey-mauve stone bricks, a carved square spiral emblem on its front face, moss and green vines creeping over it. Tall and solid, a wall the runner has to go around - about 1.2 times as wide as it is tall. Seen from the FRONT at a slight high angle, as a runner approaching it would see it." + CUTOUT),
+   ('beam.png', 't_scene',
+    "ONE obstacle for a children's endless-runner game set on an old temple bridge, drawn exactly like the matching object in the attached reference: a LOW BARRIER the runner must SLIDE UNDER: two short weathered grey carved stone posts standing apart, with ONE thick horizontal mossy wooden log resting across their TOPS like a low gate, green vines wound around the log with a few leaves hanging down a little. The space UNDER the log and between the posts is completely EMPTY and open, showing only the plain white background. About twice as wide as it is tall. Seen from the FRONT at a slight high angle, as a runner approaching it would see it." + CUTOUT),
  ],
 }
 

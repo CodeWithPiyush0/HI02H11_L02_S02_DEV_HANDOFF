@@ -114,6 +114,15 @@ GEN2_PLAN = [
     ("heart_empty.png",  "heart_empty.webp",  128, False, True),
     ("swifty_happy.png", "swifty_happy.webp", 360, False, True),
     ("swifty_hit.png",   "swifty_hit.webp",   360, False, True),
+    # [r112] the temple-run round: the word orb, the four obstacles, Swifty's jump and slide
+    ("orb.png",          "orb.webp",          420, False, True),
+    ("log.png",          "ob_log.webp",       600, False, True),
+    ("thorns.png",       "ob_thorns.webp",    600, False, True),
+    ("stone_block.png",  "ob_block.webp",     600, False, True),
+    ("beam.png",         "ob_beam.webp",      600, False, True),
+    ("swifty_jump2.png", "swifty_jump.webp",  360, False, True),
+    ("swifty_slide.png", "swifty_slide.webp", 360, False, True),
+    ("swifty_bump.png",  "swifty_bump.webp",  360, False, True),
 ]
 
 
@@ -207,6 +216,29 @@ def build_run_strip(frame_h=420):
 def main():
     if not os.path.isdir(DST):
         os.makedirs(DST)
+    # [r112] `prepare_runner_art.py orb.png log.png ...` processes ONLY those gen2 files, so adding
+    # art does not re-encode (and re-ship) every file the game already has
+    only = set(sys.argv[1:])
+    if only:
+        for src_name, out, maxw, mirror, alpha in GEN2_PLAN:
+            if src_name not in only:
+                continue
+            p = os.path.join(GEN2, src_name)
+            if not os.path.isfile(p):
+                print("  %-20s MISSING" % src_name); continue
+            im = Image.open(p)
+            im = im.convert("RGBA") if alpha else im.convert("RGB")
+            if alpha:
+                im = trim_alpha(im)
+            if im.width > maxw:
+                im = im.resize((maxw, max(1, round(im.height * maxw / im.width))), Image.LANCZOS)
+            o = os.path.join(DST, out)
+            if alpha:
+                im.save(o, "WEBP", lossless=True, quality=100, method=6)
+            else:
+                im.save(o, "WEBP", quality=82, method=6)
+            print("  %-20s -> %-20s %-11s %.0f KB" % (src_name, out, "%dx%d" % im.size, os.path.getsize(o) / 1024.0))
+        return
     total_in = total_out = 0
     print("  %-34s %-20s %-13s %s" % ("from", "to", "size", "KB"))
     for rel, out, maxw, mirror in PLAN:
