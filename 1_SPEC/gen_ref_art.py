@@ -285,9 +285,27 @@ JOBS = {
    ('beam.png', 't_scene',
     "ONE obstacle for a children's endless-runner game set on an old temple bridge, drawn exactly like the matching object in the attached reference: a LOW BARRIER the runner must SLIDE UNDER: two short weathered grey carved stone posts standing apart, with ONE thick horizontal mossy wooden log resting across their TOPS like a low gate, green vines wound around the log with a few leaves hanging down a little. The space UNDER the log and between the posts is completely EMPTY and open, showing only the plain white background. About twice as wide as it is tall. Seen from the FRONT at a slight high angle, as a runner approaching it would see it." + CUTOUT),
  ],
+ # ---- [r116] the user's new bridge (r116_new/Vine-Covered Terracotta Garden Bridge.png), as the two
+ # textures the renderer scrolls: the parapet's inner face seen front-on, and the path's surface
+ "bridge2": [
+   ('wall2.png', 't_bridge',
+    "A long, perfectly STRAIGHT horizontal strip of the PARAPET WALL from the attached reference, seen exactly "
+    "FRONT-ON with NO perspective (flat, orthographic, like a side elevation): along the top a thick rounded "
+    "terracotta-orange coping band, below it two courses of large rounded terracotta-orange bricks with dark "
+    "brown outlines and soft cel shading, exactly the colours and style of the reference, and a few green leafy "
+    "vines with small white flowers hanging down over the wall at even intervals. The wall runs the FULL WIDTH "
+    "of the picture from the very left edge to the very right edge, about SIX times as wide as it is tall, the "
+    "same height all the way along. Plain flat pure white background above and below the wall only." ),
+   ('deck2.png', 't_bridge',
+    "A SQUARE seamless TEXTURE TILE of the sandy PATH SURFACE of the bridge in the attached reference, seen "
+    "straight from directly above: a smooth warm sand-orange surface exactly the colour of the reference's path, "
+    "with very soft subtle cartoon shading and a few faint small specks and gentle smudges so movement over it "
+    "can be seen - NO tiles, NO bricks, NO lines, NO cracks, NO objects, NO walls. It fills the whole square edge "
+    "to edge and repeats seamlessly." + WIDE.replace("WIDE PANORAMIC picture, far wider than it is tall", "picture")),
+ ],
 }
 
-OPAQUE = {"bg_sky.png", "tex_grass.png", "tex_path.png"}
+OPAQUE = {"bg_sky.png", "tex_grass.png", "tex_path.png", "deck2.png"}
 
 
 def post(body, tries=3):

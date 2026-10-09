@@ -1068,3 +1068,49 @@ came; a passed obstacle still on screen at z -0.10; no console errors.
   hidden win card's text). TTS placeholder (Leda, -16 LUFS) until recorded; the old recording is kept in
   `1_SPEC/game_art_src/runner_voice/replaced/win_dwar_par.wav`. runner_vo_manifest.xlsx regenerated
   (root + Downloads). Measured: spoken 1.1 s after the last word, then the win screen, the lesson moves on.
+
+## r115 — bigger matra, normal pace, roomier coins, words read only after mistakes, a celebration
+
+- **The hanging matra** 1.5em -> 2.2em (measured 90 -> 132 px at 1382 wide); the rope a little shorter.
+- **Pace.** Starts at the old level-1 pace (0.155, was 0.11 since r113) and climbs +0.0055 a word to
+  0.22; a wrong word or a hit -0.012 (not below 0.14). Legs stay smooth (r114): measured over a whole
+  game, the leg frame never went back and advanced at most 1.0 frame per screen frame.
+- **Coins** 0.06 -> 0.11 of the road apart (a trail of four beside each obstacle).
+- **Voice** (Yasir: "before collecting words no VO; one error - both options' VOs; two errors - the
+  correct answer's VO"): a new pair is silent - the child reads it. A wrong orb says only «फिर से
+  देखिए।» (no longer «सही शब्द है …» - and the toast no longer prints the answer); the pair comes back,
+  and after a first mistake both its words are read, left then right, each orb swelling and glowing as
+  its word is said; after a second mistake only the right word. Measured: पूजा/सुराही - silent; miss ->
+  «फिर से देखिए», then «सुराही», «पूजा»; miss -> «फिर से देखिए», then «पूजा»; every other pair silent.
+- **Twin words** (the wrong option of the last two pairs, फूल -> फुल) now have clips `<id>_x` so they can
+  be read: TTS placeholders, 44 of 46 (many through a fallback voice - EAR-CHECK list in the manifest).
+  The model refused झुठ and चाकु, so झूठ and चाकू are left out of the minimal pairs (`NO_TWIN`) until
+  those two are recorded. runner_vo_manifest.xlsx: a "Twin" section; `correct_is` marked not played.
+- **The celebration** (instead of the blur): the run slows to a stop, the matra goes up; Swifty glides
+  to the middle, turns and cheers, hopping, under a warm turning sunburst; «शाबाश!» pops in; every word
+  caught comes up as a golden orb, a row under ऊ and a row under उ, each with a ding; the lesson's
+  confetti falls twice; «शाबाश! आपने सारे शब्द पकड़ लिए!»; then the lesson moves on, as before.
+  Measured: overlay on, 2 rows / 12 orbs of the words actually caught, no blur, confetti in #fxLayer,
+  the line spoken, the lesson moved on; no console errors.
+
+## r116 — Yasir's new runner art: valley video, bridge, star coin, the matra board
+
+His four files (moved out of the build into `1_SPEC/game_art_src/r116_new/`, where they would otherwise
+have shipped as ~8 MB of unused source) -> `1_SPEC/prepare_bridge2.py`:
+- **Valley video** -> `bg_valley.mp4` (1280x720, no audio, the last second cross-faded into the first:
+  a seamless 9 s loop, 594 KB from 3.3 MB) + `bg_valley.webp` (its first frame, shown until it plays).
+  The sun is pinned to the vanishing point again: `VALLEY_CX` 0.525 -> 0.504, `VALLEY_HY` 0.40 -> 0.389
+  (measured). The generator's small sparkle mark in its lower right is left alone - in the game that
+  corner falls behind the right-hand parapet (painting it out smeared a streak).
+- **Bridge.** His picture is drawn in perspective, but the renderer scrolls two flat textures (the
+  parapet's inner face front-on, and the path as a tile). So both were generated FROM his picture
+  (`gen_ref_art.py bridge2`, his bridge as the reference): `bridge_wall.webp` - terracotta bricks with
+  flowering vines, mirrored so its ends meet; `bridge_deck.webp` - the plain warm sand path.
+- **Coin** -> `coin.webp` (the gold star coin, cut from his sheet).
+- **Board** -> `ui_badge.webp` (the flowering wooden board, cut from the same sheet): the hanging matra
+  and the celebration's row labels now sit on it; the chip takes its shape (`--mr-badge-w/-h`) and the
+  coloured ring of the old round medallion is dropped.
+Measured (whole game, headless Chrome): the bridge, valley, board, star coins on screen; the hanging
+board 196x136; tutorial, both levels, the celebration (12 words) and the lesson moving on; no console
+errors. (The test machine ran low on memory - other apps - and two runs crashed the headless tab on
+load; with leftover test browsers closed the runs pass. The new art decodes smaller than the old.)

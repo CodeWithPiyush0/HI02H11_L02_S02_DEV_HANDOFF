@@ -3870,7 +3870,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
        transform:scaleY(1.28)}.mr-root .matra{display:flex;align-items:var(--mr-badge-align, baseline);gap:.35em;
        background:var(--mr-ui-badge, var(--hud-bg)) center/100% 100% no-repeat;
        border:2px solid transparent;border-radius:999px;
-       width:var(--mr-badge-sz, auto);height:var(--mr-badge-sz, auto);
+       width:var(--mr-badge-w, var(--mr-badge-sz, auto));height:var(--mr-badge-h, var(--mr-badge-sz, auto));
        justify-content:center;color:var(--mr-wood-ink2, inherit);
        padding:var(--mr-badge-pad, .12em .75em)}.mr-root .matra em{font-style:normal;font-weight:800;font-size:var(--mr-badge-em, 1.9em);line-height:1.05}.mr-root .matra span{font-size:var(--mr-badge-sp, 1.35em);font-weight:700;opacity:.8}.mr-root .matra.u{border-color:rgba(67,184,255,.75);box-shadow:0 0 22px rgba(67,184,255,.3)}.mr-root .matra.uu{border-color:rgba(242,118,46,.75);box-shadow:0 0 22px rgba(242,118,46,.3)}.mr-root .mute{pointer-events:auto;background:var(--mr-ui-btn, var(--hud-bg)) center/100% 100% no-repeat;
        border:2px solid var(--mr-wood-line, var(--hud-line));
@@ -3885,10 +3885,33 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
      is pulled back up and comes down again with the new matra. */
   .hang{position:absolute;left:50%;top:0;z-index:3;pointer-events:none;font-size:min(2.6vh,2.1vw);
        transform:translate(-50%,-110%)}.mr-root .hang.in{animation:hangIn 1.05s cubic-bezier(.34,1.5,.55,1) both}.mr-root .hang.out{animation:hangOut .6s cubic-bezier(.55,0,.8,.2) both}.mr-root .hang-sw{transform-origin:50% 0;animation:hangSwing 3.4s ease-in-out infinite;
-       display:flex;flex-direction:column;align-items:center}.mr-root .rope{width:.46em;height:2.6em;border-radius:0 0 .2em .2em;
+       display:flex;flex-direction:column;align-items:center}.mr-root .rope{width:.5em;height:2.2em;border-radius:0 0 .2em .2em;
        background:repeating-linear-gradient(155deg,#e2b06a 0 .2em,#a46a2e .2em .4em);
        border:2px solid #5b3814;border-top:none;box-shadow:inset -.1em 0 0 rgba(0,0,0,.18)}.mr-root .rope-ring{width:1.05em;height:.8em;margin-top:-.2em;border:.22em solid #6b4318;border-radius:50%;
-       background:transparent;box-shadow:0 .1em .15em rgba(0,0,0,.35)}.mr-root .hang .matra{font-size:1.5em;margin-top:-.25em;filter:drop-shadow(0 .25em .3em rgba(0,0,0,.35))}
+       background:transparent;box-shadow:0 .1em .15em rgba(0,0,0,.35)}.mr-root /* [r115] Yasir: "increase the size of the matra" - 1.5em -> 2.2em */
+  /* [r116] on the board: no ring of colour round it - that belonged to the old round medallion */
+  .hang .matra, .mr-root .cel-row .matra{border-color:transparent;box-shadow:none}.mr-root .hang .matra{font-size:2.2em;margin-top:-.25em;filter:drop-shadow(0 .25em .3em rgba(0,0,0,.35))}.mr-root /* [r115] THE CELEBRATION at the end of the game - see celebrate() */
+  .cel{position:absolute;inset:0;z-index:6;pointer-events:none;display:none;overflow:hidden;
+       font-size:min(2.6vh,2.1vw)}.mr-root .cel.on{display:block}.mr-root .cel-wash{position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 42%,rgba(255,236,170,.55),
+       rgba(255,190,90,.18) 55%,rgba(60,30,0,.25));animation:celFade .6s ease both}.mr-root .cel-burst{position:absolute;left:50%;top:40%;width:150vmax;height:150vmax;margin:-75vmax 0 0 -75vmax;
+       background:repeating-conic-gradient(rgba(255,240,170,.30) 0 9deg,rgba(255,240,170,0) 9deg 18deg);
+       -webkit-mask:radial-gradient(circle,#000 0,#000 18%,transparent 52%);
+       mask:radial-gradient(circle,#000 0,#000 18%,transparent 52%);
+       animation:celFade .8s ease both, celSpin 22s linear infinite}.mr-root .cel-title{position:absolute;left:50%;top:6%;transform:translateX(-50%);font-weight:800;font-size:4.6em;
+       line-height:1.1;color:#ffd447;white-space:nowrap;
+       -webkit-text-stroke:.09em #6b3d0c;paint-order:stroke fill;
+       text-shadow:0 .08em 0 #6b3d0c,0 .2em .35em rgba(0,0,0,.35);
+       animation:celPop .7s cubic-bezier(.34,1.6,.55,1) .15s both}.mr-root .cel-rows{position:absolute;left:50%;top:27%;transform:translateX(-50%);display:flex;flex-direction:column;
+       gap:.6em;align-items:center}.mr-root .cel-row{display:flex;align-items:center;gap:.45em}.mr-root .cel-row .matra{font-size:1.25em;margin-right:.3em;animation:celPop .5s cubic-bezier(.34,1.6,.55,1) both}.mr-root .cel-orb{width:4.6em;height:4.9em;background:url("assets/MatraRunner/orb.webp") center/contain no-repeat;
+       display:flex;align-items:center;justify-content:center;padding-top:.75em;box-sizing:border-box;
+       font-weight:800;font-size:1.15em;color:#4a2a06;
+       filter:drop-shadow(0 0 .5em rgba(255,214,90,.8));
+       animation:celPop .5s cubic-bezier(.34,1.7,.55,1) both}
+  @keyframes celFade{from{opacity:0}to{opacity:1}}
+  @keyframes celSpin{to{transform:rotate(360deg)}}
+  @keyframes celPop{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}.mr-root .cel-title{animation-name:celPopT}
+  @keyframes celPopT{0%{transform:translateX(-50%) scale(0);opacity:0}100%{transform:translateX(-50%) scale(1);opacity:1}}
+  @media (prefers-reduced-motion:reduce){.mr-root .cel-burst{animation:celFade .8s ease both} }
   @keyframes hangIn{from{transform:translate(-50%,-110%)}to{transform:translate(-50%,0)}}
   @keyframes hangOut{from{transform:translate(-50%,0)}to{transform:translate(-50%,-110%)}}
   @keyframes hangSwing{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
@@ -13719,7 +13742,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
   /* GENERATED by 1_SPEC/embed_matra_runner.py - do not hand-edit.
      The whole of मात्रा रनर, folded into the engine: its markup, and its script
      wrapped so the lesson can start and stop it. Re-run that script to refresh. */
-  const MATRA_RUNNER_HTML = "<div class=\"rotate\">फ़ोन को घुमाएँ</div>\n<div id=\"mrStage\">\n  <canvas id=\"game\"></canvas>\n\n  <div class=\"pads\">\n    <div class=\"pad\" data-dir=\"-1\"></div>\n    <div class=\"pad\" data-dir=\"1\"></div>\n  </div>\n\n  <div class=\"hud\">\n    <div class=\"hud-top\">\n      <div class=\"hearts\" id=\"hearts\">❤❤❤</div>\n    </div>\n  </div>\n\n  <!-- [r113] the matra hangs on a rope from the top of the screen -->\n  <div class=\"hang\" id=\"hang\" aria-hidden=\"true\">\n    <div class=\"hang-sw\">\n      <div class=\"rope\"></div>\n      <div class=\"rope-ring\"></div>\n      <div class=\"matra u\" id=\"matraChip\"><em>उ</em><span>ु</span></div>\n    </div>\n  </div>\n\n  <!-- [r112] the tutorial's hand and arrow -->\n  <div class=\"tut\" id=\"tut\" aria-hidden=\"true\">\n    <div class=\"tut-arrow\">\n      <svg class=\"a-up\" viewBox=\"0 0 100 100\"><path d=\"M50 5 L90 47 H65 V93 H35 V47 H10 Z\"/></svg>\n      <svg class=\"a-side\" viewBox=\"0 0 100 100\"><path d=\"M4 50 L34 18 V36 H66 V18 L96 50 L66 82 V64 H34 V82 Z\"/></svg>\n    </div>\n    <img class=\"tut-hand\" src=\"assets/UI/nudge_hand_new.svg\" alt=\"\">\n  </div>\n\n  <div class=\"arrows\">\n    <button class=\"arrow\" data-dir=\"-1\" aria-label=\"बाएँ जाएँ\">◀</button>\n    <button class=\"arrow\" data-act=\"jump\" aria-label=\"कूदिए\">▲</button>\n    <button class=\"arrow\" data-act=\"slide\" aria-label=\"फिसलिए\">▼</button>\n    <button class=\"arrow\" data-dir=\"1\" aria-label=\"दाएँ जाएँ\">▶</button>\n  </div>\n\n  <!-- no start card: the game begins as the screen arrives -->\n\n  <!-- level done -->\n  <div class=\"screen\" id=\"scLevel\">\n    <div class=\"card\">\n      <h2 id=\"lvlTitle\">स्तर पूरा</h2>\n      <div class=\"stars\" id=\"lvlStars\">★★★</div>\n      <p class=\"nextup\" id=\"lvlNext\"></p>\n    </div>\n  </div>\n\n  <!-- game over -->\n  <div class=\"screen\" id=\"scOver\">\n    <div class=\"card\">\n      <h2>फिर से कोशिश करो</h2>\n      <p id=\"overTip\"></p>\n\n    </div>\n  </div>\n\n  <!-- win -->\n  <div class=\"screen\" id=\"scWin\">\n    <div class=\"card\">\n      <h1>शाबाश!</h1>\n      <p>आपने सारे शब्द पकड़ लिए।</p>\n    </div>\n  </div>\n</div>\n\n\n\n<!-- ============================ lesson bridge ============================\n     [r36] This file is still a complete, standalone game: open index.html on its own and\n     NOTHING below runs, because it all sits behind `window.parent === window`. It only wakes up\n     when the lesson embeds it, and then it does two things and no more:\n       · gives the child a way onward that is always on screen, so a mini-game with no natural\n         end can never become a dead end inside a lesson that has no आगे button\n       · tells the lesson when the game was won or lost, so the lesson can react\n     Nothing in the game's own code is touched - the bridge only listens to it.\n     ===================================================================== -->";
+  const MATRA_RUNNER_HTML = "<div class=\"rotate\">फ़ोन को घुमाएँ</div>\n<div id=\"mrStage\">\n  <canvas id=\"game\"></canvas>\n\n  <div class=\"pads\">\n    <div class=\"pad\" data-dir=\"-1\"></div>\n    <div class=\"pad\" data-dir=\"1\"></div>\n  </div>\n\n  <div class=\"hud\">\n    <div class=\"hud-top\">\n      <div class=\"hearts\" id=\"hearts\">❤❤❤</div>\n    </div>\n  </div>\n\n  <!-- [r115] the end-of-game celebration -->\n  <div class=\"cel\" id=\"cel\" aria-hidden=\"true\">\n    <div class=\"cel-wash\"></div>\n    <div class=\"cel-burst\"></div>\n    <div class=\"cel-title\">शाबाश!</div>\n    <div class=\"cel-rows\" id=\"celRows\"></div>\n  </div>\n\n  <!-- [r113] the matra hangs on a rope from the top of the screen -->\n  <div class=\"hang\" id=\"hang\" aria-hidden=\"true\">\n    <div class=\"hang-sw\">\n      <div class=\"rope\"></div>\n      <div class=\"rope-ring\"></div>\n      <div class=\"matra u\" id=\"matraChip\"><em>उ</em><span>ु</span></div>\n    </div>\n  </div>\n\n  <!-- [r112] the tutorial's hand and arrow -->\n  <div class=\"tut\" id=\"tut\" aria-hidden=\"true\">\n    <div class=\"tut-arrow\">\n      <svg class=\"a-up\" viewBox=\"0 0 100 100\"><path d=\"M50 5 L90 47 H65 V93 H35 V47 H10 Z\"/></svg>\n      <svg class=\"a-side\" viewBox=\"0 0 100 100\"><path d=\"M4 50 L34 18 V36 H66 V18 L96 50 L66 82 V64 H34 V82 Z\"/></svg>\n    </div>\n    <img class=\"tut-hand\" src=\"assets/UI/nudge_hand_new.svg\" alt=\"\">\n  </div>\n\n  <div class=\"arrows\">\n    <button class=\"arrow\" data-dir=\"-1\" aria-label=\"बाएँ जाएँ\">◀</button>\n    <button class=\"arrow\" data-act=\"jump\" aria-label=\"कूदिए\">▲</button>\n    <button class=\"arrow\" data-act=\"slide\" aria-label=\"फिसलिए\">▼</button>\n    <button class=\"arrow\" data-dir=\"1\" aria-label=\"दाएँ जाएँ\">▶</button>\n  </div>\n\n  <!-- no start card: the game begins as the screen arrives -->\n\n  <!-- level done -->\n  <div class=\"screen\" id=\"scLevel\">\n    <div class=\"card\">\n      <h2 id=\"lvlTitle\">स्तर पूरा</h2>\n      <div class=\"stars\" id=\"lvlStars\">★★★</div>\n      <p class=\"nextup\" id=\"lvlNext\"></p>\n    </div>\n  </div>\n\n  <!-- game over -->\n  <div class=\"screen\" id=\"scOver\">\n    <div class=\"card\">\n      <h2>फिर से कोशिश करो</h2>\n      <p id=\"overTip\"></p>\n\n    </div>\n  </div>\n\n  <!-- win -->\n  <div class=\"screen\" id=\"scWin\">\n    <div class=\"card\">\n      <h1>शाबाश!</h1>\n      <p>आपने सारे शब्द पकड़ लिए।</p>\n    </div>\n  </div>\n</div>\n\n\n\n<!-- ============================ lesson bridge ============================\n     [r36] This file is still a complete, standalone game: open index.html on its own and\n     NOTHING below runs, because it all sits behind `window.parent === window`. It only wakes up\n     when the lesson embeds it, and then it does two things and no more:\n       · gives the child a way onward that is always on screen, so a mini-game with no natural\n         end can never become a dead end inside a lesson that has no आगे button\n       · tells the lesson when the game was won or lost, so the lesson can react\n     Nothing in the game's own code is touched - the bridge only listens to it.\n     ===================================================================== -->";
   function bootMatraRunner(){
     var _dead = false, _ls = [], _raf = 0;
     function MR_ON(t, e, f, o){ t.addEventListener(e, f, o); _ls.push([t, e, f, o]); }
@@ -13755,7 +13778,7 @@ const ONLY_UU = POOL_UU.filter(w=>hasUU(w[0]) && !hasU(w[0]));
    that had heard the old goal_u.ogg would go on playing it after every redeploy. The lesson build
    stamps this from the CONTENT of the game's voice, music and feedback files, so it moves exactly
    when one of them changes. Opened on its own the game keeps the placeholder, which is harmless. */
-const MR_AV = "f89d54a29b9d";
+const MR_AV = "5057fcb7e3e0";
 const mrv = u => u + "?v=" + MR_AV;
 /* बोली जाने वाली पंक्तियाँ — assets/MatraRunner/voice/<id>.ogg */
 /* [r76] the lesson's आप register, as the recordings now speak it (the SME's round-3 rule: the
@@ -13840,7 +13863,9 @@ const G = {
   /* [r112] obstacles, Swifty's jump / slide / bump timers, and the tutorial */
   obs:[], jumpT:0, slideT:0, hitT:0, tut:null, tutDone:false, lastOb:"",
   /* [r113] the speed it is heading for (G.speed eases to it), and the stretch between two levels */
-  speedT:0, between:false
+  speedT:0, between:false,
+  /* [r115] the words caught (for the celebration), and the run-out before it */
+  caught:[], cel:false
 };
 
 /* storage */
@@ -14199,9 +14224,9 @@ const VOICE = {
   },
   /* [r78] `gate`: the portal pair this word belongs to. It is told when its word has been heard
      to the end (the world waits for that), and if the word is cut off it is asked for again. */
-  say(id, text, gate){                 // कतार में जोड़ो
+  say(id, text, gate, onStart){        // कतार में जोड़ो
     if(this.mode < 2){ if(gate) gate.heard = true; return; }
-    this.queue.push({id, text:text||LINES[id]||id, gate:gate||null});
+    this.queue.push({id, text:text||LINES[id]||id, gate:gate||null, onStart:onStart||null});
     this.pump();
   },
   clear(){
@@ -14229,7 +14254,9 @@ const VOICE = {
     this._pre = true;
     if(!this.bus){ this.bus = ac.createGain(); this.bus.gain.value = 1.1; this.bus.connect(MASTER); }
     if(LOCAL) return;                     /* [r78] refused as a file: every line plays as an element */
-    const ids = Object.keys(LINES).concat(POOL_U.map(w => w[1]), POOL_UU.map(w => w[1]));
+    const ids = Object.keys(LINES).concat(POOL_U.map(w => w[1]), POOL_UU.map(w => w[1]),
+                  /* [r115] the swapped-matra twins of the minimal pairs */
+                  ONLY_U.concat(ONLY_UU).filter(w => NO_TWIN.indexOf(w[1]) < 0).map(w => w[1] + "_x"));
     ids.forEach(id => {
       this.loading[id] = fetch(mrv(this.dir + id + ".ogg"))
         .then(r => { if(!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
@@ -14257,6 +14284,7 @@ const VOICE = {
     let started = false;
     const go = ()=>{
       if(started || tok !== this.tok) return; started = true;
+      if(it.onStart){ try{ it.onStart(); }catch(e){} }     /* [r115] e.g. light the orb being read */
       const buf = this.bufs[it.id];
       if(buf && AC){
         const src = AC.createBufferSource(); src.buffer = buf; src.connect(this.bus);
@@ -14330,12 +14358,16 @@ function makeGateWords(target){
 /* [r113] THE SAME WORD TWICE, ONE MATRA DIFFERENT: the right word (it carries the level's matra, and it
    is the one spoken) and that word with its first such matra swapped for the other - फूल / फुल,
    पुल / पूल. The swapped one is only ever shown, never spoken, so it needs no recording. */
+/* [r115] the twins the voice model would not say (made-up words it refused) - these words are not used
+   as minimal pairs until their twin is recorded: then take them out of this list */
+const NO_TWIN = ["jhooth", "chaakoo"];
 function makePairWords(target){
-  const r = pick(target===U ? ONLY_U : ONLY_UU, G.usedWords);
+  const r = pick((target===U ? ONLY_U : ONLY_UU).filter(w => NO_TWIN.indexOf(w[1]) < 0), G.usedWords);
   G.usedWords.push(r[1]); while(G.usedWords.length>14) G.usedWords.shift();
   const other = target===U ? UU : U;
   const twin = r[0].replace(target, other);
-  const set = [{t:r[0], id:r[1], ok:true},{t:twin, id:r[1], ok:false, twin:true}];
+  /* [r115] the twin has its own clip now (<id>_x) - it is read aloud after a first mistake */
+  const set = [{t:r[0], id:r[1], ok:true},{t:twin, id:r[1] + "_x", ok:false, twin:true}];
   if(Math.random()<0.5) set.reverse();
   return set;
 }
@@ -14466,6 +14498,8 @@ function startLevel(i, spoken){
   G.level=i; G.target = L.target || U;
   /* [r113] a (re)start is slow; the levels after it carry their speed on (nextLevel) */
   G.speedT = SPEED_START; G.speed = SPEED_START; G.between = false;
+  /* [r115] a (re)start keeps the words of the levels before it, and clears any celebration */
+  G.caught = G.caught.filter(c => c.lv < i); G.cel = false; celHide();
   G.gates=[]; G.coins=[]; G.parts=[]; G.pops=[]; G.obs=[];
   G.jumpT=0; G.slideT=0; G.hitT=0; tutHide();
   G.cleared=0; G.right=0; G.wrong=0; G.missedWords=[]; G.usedWords=[]; G.pips=[];
@@ -14534,8 +14568,9 @@ function spawnGate(z){
      lane (a reward for moving), and are all collected before the next word is spoken. */
   const o = spawnObstacle(z + OB_AT);
   const cl = o.k === "block" ? 1 - o.lane : Math.floor(Math.random()*LANES);
+  /* [r115] Yasir: "increase the space between the coins" - 0.06 -> 0.11 of the road apart */
   for(let i=0;i<4;i++){
-    G.coins.push({ z: z + OB_AT - 0.08 + i*0.06, lane: cl, got:false, spin: Math.random()*6 });
+    G.coins.push({ z: z + OB_AT - 0.12 + i*0.11, lane: cl, got:false, spin: Math.random()*6 });
   }
 }
 
@@ -14543,7 +14578,9 @@ function spawnGate(z){
    collected; when she is hit by an obstacle or takes a wrong word she slows down slightly". One speed
    for the whole game (the levels no longer reset it); a fall starts it slow again. It eases towards
    its target - down quickly, back up gently. */
-const SPEED_START = 0.11, SPEED_STEP = 0.009, SPEED_DROP = 0.014, SPEED_MIN = 0.10, SPEED_MAX = 0.20;
+/* [r115] Yasir: "currently it feels too slow - make it the normal pace it was earlier, and as she collects
+   words it increases". It starts at the old level-1 pace (0.155) and climbs to 0.22 over the 12 words. */
+const SPEED_START = 0.155, SPEED_STEP = 0.0055, SPEED_DROP = 0.012, SPEED_MIN = 0.14, SPEED_MAX = 0.22;
 function speedUp(){ G.speedT = Math.min(SPEED_MAX, G.speedT + SPEED_STEP); }
 function speedDown(){ G.speedT = Math.max(SPEED_MIN, G.speedT - SPEED_DROP); }
 /* [r113] the hanging matra: down on its rope, or back up out of sight */
@@ -14663,19 +14700,19 @@ function tutHide(){ const el = document.getElementById("tut"); if(el) el.classNa
 
 /* ======================= input ======================= */
 function move(dir){
-  if(G.mode!=="play") return;
+  if(G.mode!=="play" || G.cel) return;
   const n = Math.max(0, Math.min(LANES-1, G.targetLane + dir));
   if(n!==G.targetLane){ G.targetLane=n; whoosh({from:700,to:2200,dur:.13,vol:.05,q:2}); tutDid("lane"); }
 }
 /* [r112] JUMP AND SLIDE. `quiet` is the tutorial carrying out a move the child has already made */
 const JUMP_DUR = 0.78, SLIDE_DUR = 0.85;
 function jump(quiet){
-  if(G.mode!=="play" || G.jumpT > 0 || G.hitT > 0) return;
+  if(G.mode!=="play" || G.cel || G.jumpT > 0 || G.hitT > 0) return;
   G.slideT = 0; G.jumpT = 0.0001;
   if(!quiet){ whoosh({from:450,to:1700,dur:.24,vol:.07,q:1.4}); tutDid("jump"); }
 }
 function slide(quiet){
-  if(G.mode!=="play" || G.slideT > 0 || G.hitT > 0) return;
+  if(G.mode!=="play" || G.cel || G.slideT > 0 || G.hitT > 0) return;
   G.jumpT = 0; G.slideT = 0.0001;
   if(!quiet){ whoosh({from:1500,to:380,dur:.3,vol:.07,q:1.1}); tutDid("slide"); }
 }
@@ -14738,6 +14775,7 @@ function resolveGate(g){
   if(chosen && chosen.ok){ G.cleared++; G.pips.push(true); }
   if(chosen && chosen.ok){
     G.right++; G.score += 100 + G.right*10; speedUp();
+    G.caught.push({ t: chosen.t, lv: G.level, target: g.target });    /* [r115] for the celebration */
     G.flashCol="rgba(120,255,190,.22)"; G.flash=0.35;
     sparkle(laneX(G.lane,1), groundY()-235*S, 44);
     G.pops.push({text:"शाबाश!", sub:chosen.t, col:"#8ff0c6", life:1.25});
@@ -14748,9 +14786,10 @@ function resolveGate(g){
     G.missedWords.push(rightWord);
     G.shake = 0.30; G.flashCol="rgba(150,130,110,.18)"; G.flash=0.3;
     dust(laneX(G.lane,1), groundY()-95*S, 26);
-    G.pops.push({text:"सही शब्द: "+rightWord, sub:(g.target===U?"उ ( ु )":"ऊ ( ू )"), col:"#ffb0a0", life:1.7});
-    sfxGate(false); sfxWrong(); sfxBonk(); VOICE.clear(); VOICE.say("wrong");
-    VOICE.say("correct_is"); VOICE.say(g.words[g.okLane].id, rightWord); G.afterWrong = true;
+    /* [r115] the answer is no longer given away on the spot: «फिर से देखिए।», and the pair comes back -
+       read aloud (both words after a first mistake, the right one after a second) */
+    G.pops.push({text:"फिर से देखिए!", sub:(g.target===U?"उ ( ु )":"ऊ ( ू )"), col:"#ffd9a0", life:1.5});
+    sfxGate(false); sfxWrong(); sfxBonk(); VOICE.clear(); VOICE.say("wrong"); G.afterWrong = true;
     if(G.hearts<=0){ gameOver(); return; }
     repeatQuestion(g);
   }
@@ -14779,6 +14818,7 @@ function repeatQuestion(g){
   }
   nx.words = words; nx.target = g.target; nx.okLane = words.findIndex(w => w.ok);
   nx.spoken = false; nx.heard = false; nx.waitT = 0; nx.repeat = true;
+  nx.err = (g.err || 0) + 1;                       /* [r115] how many times this question was missed */
 }
 
 /* gold, rising, slow to fade - the reward for getting through */
@@ -14813,7 +14853,13 @@ function update(dt){
   if(G.frozen) return;
   G.t += dt;
   /* [r114] the run cycle's PHASE is accumulated, frame by frame (see below) */
-  if(G.mode!=="play"){ G.dashT += dt*0.3; G.runPh = (G.runPh || 0) + dt/2.2; return; }
+  if(G.mode!=="play"){ G.dashT += dt*0.3; G.runPh = (G.runPh || 0) + dt/2.2;
+    /* [r115] in the celebration she glides to the middle of the bridge */
+    if(G.mode === "win") G.laneF += (0.5 - G.laneF) * (1 - Math.exp(-dt * 3));
+    /* [r115] the celebration's sparkles still fly */
+    for(const p of G.parts){ p.life-=dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy += (p.grav === undefined ? 900*S : p.grav)*dt; }
+    G.parts = G.parts.filter(p=>p.life>0);
+    return; }
   G.dashT += dt*G.speed;
 
   // lane easing
@@ -14840,7 +14886,8 @@ function update(dt){
   void fg;
   G.waitF = 1;
   /* [r113] towards the target speed - down quickly, back up gently */
-  if(G.speedT){ G.speed += (G.speedT - G.speed) * (1 - Math.exp(-dt * (G.speedT < G.speed ? 3.0 : 0.8))); }
+  if(G.cel) G.speed *= Math.exp(-dt * 2.4);          /* [r115] the run-out before the celebration */
+  else if(G.speedT){ G.speed += (G.speedT - G.speed) * (1 - Math.exp(-dt * (G.speedT < G.speed ? 3.0 : 0.8))); }
   /* [r112] the tutorial runs the world at its own pace, and stops it in front of each obstacle */
   const tf = tutUpdate(dt);
   const v = G.speed * (G.hold ? 0.20 : 0.20 + 0.80*G.ramp) * dt * G.waitF * tf;
@@ -14883,9 +14930,22 @@ function update(dt){
     if(!g.spoken && !g.done && g.z<=0.62 && G.gates.find(x => !x.done) === g &&
        VOICE.quietFor() >= (G.afterWrong ? 600 : 700) && !document.body.classList.contains("vo-lock")){   /* [r102] 1500 -> 600: no slow-down to wait for it now */
       g.spoken = true; G.afterWrong = false;  /* after "सही शब्द है ..." a longer beat: a new word */
-      /* [r77] Yasir: only the TARGET word is spoken - the one to catch - not both portals' */
-      const tw = g.words.find(w => w.ok) || g.words[0];
-      VOICE.say(tw.id, tw.t, g);
+      /* [r115] Yasir: "before collecting words don't play any VO; after one error both options' VOs play;
+         after two errors the correct answer's VO plays". So a fresh pair is silent - the child reads it;
+         the pair that comes back after a first mistake reads both its words, left then right, each orb
+         lighting up as its word is said; after a second mistake only the right word is said. */
+      const err = g.err || 0;
+      if(err === 0) g.heard = true;
+      else if(err === 1){
+        g.words.forEach(function(w, li){
+          VOICE.say(w.id, w.t, li === g.words.length - 1 ? g : null,
+                    function(){ g.sayLane = li; g.sayT = performance.now(); });
+        });
+      }
+      else {
+        const tw = g.words.find(w => w.ok) || g.words[0];
+        VOICE.say(tw.id, tw.t, g);
+      }
     }
     if(!g.done && g.z<=0.035) resolveGate(g);
   }
@@ -15195,13 +15255,16 @@ function drawOrb(g, i, img, p, y){
     else if(w.ok){ sc = 1 + 0.14*Math.sin(t*Math.PI); alpha = 1 - t*t; }
     else alpha = 1 - t;
   }
+  /* [r115] the orb whose word is being read aloud swells and glows for that moment */
+  const reading = !g.done && g.sayLane === i && performance.now() - (g.sayT || 0) < 950;
+  if(reading) sc *= 1.12;
   const cx = cx0 + dx, cy = y - oh*0.5 - 66*S*p + bob;
   ctx.save();
   ctx.globalAlpha *= Math.max(0, alpha);
   /* its light on the stones below, and the glow round it */
   ctx.fillStyle = "rgba(255,200,80,.22)";
   ctx.beginPath(); ctx.ellipse(cx0, y - 3*S*p, ow*0.36, 9*S*p, 0, 0, 7); ctx.fill();
-  const lit = g.done && w.ok;
+  const lit = (g.done && w.ok) || reading;
   const R = ow*0.82*sc;
   const rg = ctx.createRadialGradient(cx, cy, ow*0.18, cx, cy, R);
   rg.addColorStop(0, lit ? "rgba(255,244,160,.85)" : "rgba(255,230,130,.50)");
@@ -15530,6 +15593,9 @@ function roundRect(x,y,w,h,r){
           "--mr-wood-ink2":   "#4a3520",          /* dark, for the badge's cream face */
           "--mr-wood-op":     "1",
           "--mr-badge-sz":    "3.3em",            /* the badge art is round: square its box */
+          /* [r116] Yasir's new board (ui_badge.webp, 380x262): a rectangle, so the box takes its shape */
+          "--mr-badge-w":     "4.9em",
+          "--mr-badge-h":     "3.38em",
           "--mr-badge-em":    "1.32em",           /* and the glyph has to sit inside it */
           "--mr-badge-sp":    "0.92em",
           "--mr-badge-pad":   "0",
@@ -15770,7 +15836,9 @@ function drawTigerImage(){
      THE ANCHOR: the sun's centre is at 0.525 of the frame's width and its lower edge - the
      horizon - at 0.40 of its height, measured off the first frame. That point is pinned to the
      game's vanishing point, so the bridge runs into the sun. */
-  var VALLEY_CX = 0.525, VALLEY_HY = 0.40;
+  /* [r116] Yasir's new valley video: the sun's centre at 0.504 of the width, its lower edge at 0.389 of
+     the height (measured on its first frame) */
+  var VALLEY_CX = 0.504, VALLEY_HY = 0.389;
   var vid = document.createElement("video");
   vid.muted = true; vid.defaultMuted = true; vid.loop = true; vid.playsInline = true;
   vid.preload = "auto";
@@ -16133,6 +16201,7 @@ function drawTigerImage(){
        and adding a sine on top of it gives two bounces at different rates. */
     var bob = (name === "run" && ART.frames("run") > 4) ? 0
             : Math.abs(Math.sin(G.t * 13)) * 5 * S;
+    if(G.mode === "win") bob = Math.abs(Math.sin(G.t * 4.2)) * 30 * S;   /* [r115] she hops as she cheers */
     var h = 170 * S * hScale, w = h * (r[2] / r[3]);
     if(name === "slide") w = Math.min(w, 150 * S);
     var shw = 1 - 0.45 * (lift / (165 * S));       /* her shadow stays on the ground and shrinks */
@@ -16442,7 +16511,60 @@ function nextLevel(i){
   spawnGate(far); spawnGate(far + GATE_GAP);
   hud();
 }
+/* [r115] THE CELEBRATION. Yasir: "when the game ends just a blurred screen does not feel appealing - make
+   it a celebration screen". So instead of the blur: the run slows to a stop (input off, the road clear),
+   the matra goes up; then Swifty turns round and cheers, hopping, under a warm sunburst; «शाबाश!» pops
+   in, and every word the child caught comes up as a golden orb, row by row under its matra, each with a
+   ding; confetti falls (the lesson's own, over the whole window); «शाबाश! आपने सारे शब्द पकड़ लिए!»; and a
+   beat later the lesson moves on, as before. */
+function celebrate(){
+  if(G.cel) return;
+  G.cel = true; VOICE.clear(); tutHide();
+  G.obs = []; G.coins = [];
+  chipOut(); sfxLevel();
+  clearTimeout(G.nextT);
+  G.nextT = setTimeout(function(){
+    G.mode = "win";
+    celShow();
+    const boom = () => { try{ if(typeof window.confettiCannon === "function") window.confettiCannon(); }catch(e){}
+                         sparkle(W/2, H*0.45, 40); };
+    boom(); setTimeout(boom, 1400);
+    setTimeout(function(){
+      VOICE.say("win");
+      whenVoiceDone(function(){
+        if(G.score > G.best){ G.best = G.score; saveBest(); }
+        setTimeout(function(){ show("scWin"); }, 1600);   /* no card - the lesson listens for this to move on */
+      }, 1800, 9000);
+    }, 900);
+  }, 1300);
+}
+function celShow(){
+  const el = document.getElementById("cel"), rows = document.getElementById("celRows");
+  if(!el || !rows) return;
+  rows.innerHTML = "";
+  let k = 0;
+  LEVELS.forEach(function(L, li){
+    const words = G.caught.filter(c => c.lv === li);
+    if(!words.length) return;
+    const row = document.createElement("div"); row.className = "cel-row";
+    const isU = L.target === U;
+    const chip = document.createElement("div"); chip.className = "matra " + (isU ? "u" : "uu");
+    chip.innerHTML = "<em>" + (isU ? "उ" : "ऊ") + "</em><span>" + (isU ? U : UU) + "</span>";
+    chip.style.animationDelay = (0.5 + k*0.16) + "s";
+    row.appendChild(chip);
+    words.forEach(function(c){
+      const o = document.createElement("div"); o.className = "cel-orb"; o.textContent = c.t;
+      const at = 0.7 + k*0.16; o.style.animationDelay = at + "s";
+      setTimeout(function(){ if(G.mode === "win") note({f:sc(24 + (k % 8)), dur:.22, vol:.12, open:12}); }, at*1000 + 120);
+      row.appendChild(o); k++;
+    });
+    rows.appendChild(row);
+  });
+  el.classList.add("on");
+}
+function celHide(){ const el = document.getElementById("cel"); if(el) el.classList.remove("on"); }
 function levelEnd(){
+  if(!LEVELS[G.level + 1]) return celebrate();     /* [r115] the end of the game is the celebration */
   /* [r77] Yasir: "We don't need instruction panel in the game, when the level ends the screen get
      blurred and only VO plays: वाह! अब इस लेवल को पार कीजिए। + the next target".
      [r79] ...and the voice has the stage to itself: the screen veils and the level-up chime plays
@@ -16550,7 +16672,8 @@ window.MR_DEBUG = function(){
            /* [r112] the temple-run state */
            lane: G.lane, jumpT: +G.jumpT.toFixed(2), slideT: +G.slideT.toFixed(2), hitT: +G.hitT.toFixed(2),
            tut: G.tut ? { step: G.tut.step, frozen: !!G.tut.frozen, done: !!G.tut.done, prompted: !!G.tut.prompted } : null,
-           runPh: G.runPh || 0, t: G.t,
+           runPh: G.runPh || 0, t: G.t, cel: G.cel, caught: G.caught.map(function(c){ return c.t; }),
+           errs: G.gates.filter(function(g){ return !g.done; }).map(function(g){ return g.err || 0; }),
            tutDone: G.tutDone, speed: +G.speed.toFixed(4), speedT: +G.speedT.toFixed(4), between: G.between,
            hang: (document.getElementById("hang") || {}).className || "",
            chip: (document.getElementById("matraChip") || {}).textContent || "",

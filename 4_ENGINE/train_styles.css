@@ -1828,7 +1828,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
        transform:scaleY(1.28)}.mr-root .matra{display:flex;align-items:var(--mr-badge-align, baseline);gap:.35em;
        background:var(--mr-ui-badge, var(--hud-bg)) center/100% 100% no-repeat;
        border:2px solid transparent;border-radius:999px;
-       width:var(--mr-badge-sz, auto);height:var(--mr-badge-sz, auto);
+       width:var(--mr-badge-w, var(--mr-badge-sz, auto));height:var(--mr-badge-h, var(--mr-badge-sz, auto));
        justify-content:center;color:var(--mr-wood-ink2, inherit);
        padding:var(--mr-badge-pad, .12em .75em)}.mr-root .matra em{font-style:normal;font-weight:800;font-size:var(--mr-badge-em, 1.9em);line-height:1.05}.mr-root .matra span{font-size:var(--mr-badge-sp, 1.35em);font-weight:700;opacity:.8}.mr-root .matra.u{border-color:rgba(67,184,255,.75);box-shadow:0 0 22px rgba(67,184,255,.3)}.mr-root .matra.uu{border-color:rgba(242,118,46,.75);box-shadow:0 0 22px rgba(242,118,46,.3)}.mr-root .mute{pointer-events:auto;background:var(--mr-ui-btn, var(--hud-bg)) center/100% 100% no-repeat;
        border:2px solid var(--mr-wood-line, var(--hud-line));
@@ -1843,10 +1843,33 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
      is pulled back up and comes down again with the new matra. */
   .hang{position:absolute;left:50%;top:0;z-index:3;pointer-events:none;font-size:min(2.6vh,2.1vw);
        transform:translate(-50%,-110%)}.mr-root .hang.in{animation:hangIn 1.05s cubic-bezier(.34,1.5,.55,1) both}.mr-root .hang.out{animation:hangOut .6s cubic-bezier(.55,0,.8,.2) both}.mr-root .hang-sw{transform-origin:50% 0;animation:hangSwing 3.4s ease-in-out infinite;
-       display:flex;flex-direction:column;align-items:center}.mr-root .rope{width:.46em;height:2.6em;border-radius:0 0 .2em .2em;
+       display:flex;flex-direction:column;align-items:center}.mr-root .rope{width:.5em;height:2.2em;border-radius:0 0 .2em .2em;
        background:repeating-linear-gradient(155deg,#e2b06a 0 .2em,#a46a2e .2em .4em);
        border:2px solid #5b3814;border-top:none;box-shadow:inset -.1em 0 0 rgba(0,0,0,.18)}.mr-root .rope-ring{width:1.05em;height:.8em;margin-top:-.2em;border:.22em solid #6b4318;border-radius:50%;
-       background:transparent;box-shadow:0 .1em .15em rgba(0,0,0,.35)}.mr-root .hang .matra{font-size:1.5em;margin-top:-.25em;filter:drop-shadow(0 .25em .3em rgba(0,0,0,.35))}
+       background:transparent;box-shadow:0 .1em .15em rgba(0,0,0,.35)}.mr-root /* [r115] Yasir: "increase the size of the matra" - 1.5em -> 2.2em */
+  /* [r116] on the board: no ring of colour round it - that belonged to the old round medallion */
+  .hang .matra, .mr-root .cel-row .matra{border-color:transparent;box-shadow:none}.mr-root .hang .matra{font-size:2.2em;margin-top:-.25em;filter:drop-shadow(0 .25em .3em rgba(0,0,0,.35))}.mr-root /* [r115] THE CELEBRATION at the end of the game - see celebrate() */
+  .cel{position:absolute;inset:0;z-index:6;pointer-events:none;display:none;overflow:hidden;
+       font-size:min(2.6vh,2.1vw)}.mr-root .cel.on{display:block}.mr-root .cel-wash{position:absolute;inset:0;background:radial-gradient(70% 60% at 50% 42%,rgba(255,236,170,.55),
+       rgba(255,190,90,.18) 55%,rgba(60,30,0,.25));animation:celFade .6s ease both}.mr-root .cel-burst{position:absolute;left:50%;top:40%;width:150vmax;height:150vmax;margin:-75vmax 0 0 -75vmax;
+       background:repeating-conic-gradient(rgba(255,240,170,.30) 0 9deg,rgba(255,240,170,0) 9deg 18deg);
+       -webkit-mask:radial-gradient(circle,#000 0,#000 18%,transparent 52%);
+       mask:radial-gradient(circle,#000 0,#000 18%,transparent 52%);
+       animation:celFade .8s ease both, celSpin 22s linear infinite}.mr-root .cel-title{position:absolute;left:50%;top:6%;transform:translateX(-50%);font-weight:800;font-size:4.6em;
+       line-height:1.1;color:#ffd447;white-space:nowrap;
+       -webkit-text-stroke:.09em #6b3d0c;paint-order:stroke fill;
+       text-shadow:0 .08em 0 #6b3d0c,0 .2em .35em rgba(0,0,0,.35);
+       animation:celPop .7s cubic-bezier(.34,1.6,.55,1) .15s both}.mr-root .cel-rows{position:absolute;left:50%;top:27%;transform:translateX(-50%);display:flex;flex-direction:column;
+       gap:.6em;align-items:center}.mr-root .cel-row{display:flex;align-items:center;gap:.45em}.mr-root .cel-row .matra{font-size:1.25em;margin-right:.3em;animation:celPop .5s cubic-bezier(.34,1.6,.55,1) both}.mr-root .cel-orb{width:4.6em;height:4.9em;background:url("assets/MatraRunner/orb.webp") center/contain no-repeat;
+       display:flex;align-items:center;justify-content:center;padding-top:.75em;box-sizing:border-box;
+       font-weight:800;font-size:1.15em;color:#4a2a06;
+       filter:drop-shadow(0 0 .5em rgba(255,214,90,.8));
+       animation:celPop .5s cubic-bezier(.34,1.7,.55,1) both}
+  @keyframes celFade{from{opacity:0}to{opacity:1}}
+  @keyframes celSpin{to{transform:rotate(360deg)}}
+  @keyframes celPop{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}.mr-root .cel-title{animation-name:celPopT}
+  @keyframes celPopT{0%{transform:translateX(-50%) scale(0);opacity:0}100%{transform:translateX(-50%) scale(1);opacity:1}}
+  @media (prefers-reduced-motion:reduce){.mr-root .cel-burst{animation:celFade .8s ease both} }
   @keyframes hangIn{from{transform:translate(-50%,-110%)}to{transform:translate(-50%,0)}}
   @keyframes hangOut{from{transform:translate(-50%,0)}to{transform:translate(-50%,-110%)}}
   @keyframes hangSwing{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}

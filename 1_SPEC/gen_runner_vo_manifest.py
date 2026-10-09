@@ -52,9 +52,9 @@ LINE_INFO = {
     "level_next": ("Transition",  "End of a level: screen blurs, level-up chime, then this line, "
                                   "followed by the next level's goal."),
     "right":      ("Feedback",    "Child runs into the orb with the correct word."),
-    "wrong":      ("Feedback",    "Child runs into the orb with the wrong word (1st of 3 lines)."),
-    "correct_is": ("Feedback",    "After «फिर से देखिए।» on a wrong orb, followed by the correct word "
-                                  "of that pair (2nd of 3 lines)."),
+    "wrong":      ("Feedback",    "Child runs into the orb with the wrong word. The pair then comes back."),
+    "correct_is": ("Feedback",    "NOT PLAYED since r115 - a wrong orb now says only «फिर से देखिए।»; the "
+                                  "words are read when the pair comes back."),
     "retry":      ("Feedback",    "All three hearts lost (wrong words and/or obstacles): after Swifty's fall, screen blurred, "
                                   "then the level restarts."),
     "win":        ("Transition",  "Last level finished: screen blurred, then the lesson moves on. New line (no portals "
@@ -63,7 +63,8 @@ LINE_INFO = {
 }
 ORDER = ["tut_lane", "tut_jump", "tut_slide", "tut_go", "goal_uu", "goal_u", "level_next", "right", "wrong",
          "correct_is", "hit", "retry", "win", "level_up"]
-WORD_WHEN = ("Target word: spoken once as its pair of word orbs comes near - only the word to catch, "
+WORD_WHEN = ("r115: NOT spoken before the pair is caught. When a pair comes back after ONE mistake, both its "
+             "words are read (left, then right); after TWO mistakes only the right word. (Was: target word: spoken once as its pair of word orbs comes near - only the word to catch, "
              "never both portals' words. Also said after «सही शब्द है» when the child misses it.")
 
 
@@ -80,11 +81,22 @@ rows = []
 for k in ORDER + [k for k in LINES if k not in ORDER]:
     cat, when = LINE_INFO.get(k, ("Line", ""))
     rows.append(dict(id=k, text=LINES[k], cat=cat, matra="", when=when,
-                     used=(k != "level_up")))
+                     used=(k not in ("level_up", "correct_is"))))
 for label, matra, words in (("Word - छोटी उ", "छोटी उ ( ु )", POOL_U),
                             ("Word - बड़ी ऊ", "बड़ी ऊ ( ू )", POOL_UU)):
     for hi, rid in words:
         rows.append(dict(id=rid, text=hi, cat=label, matra=matra, when=WORD_WHEN, used=True))
+
+# [r115] the swapped-matra twins of the last two pairs of each level (फूल -> फुल): read aloud with the
+# right word when that pair comes back after a first mistake. TTS placeholders - to be recorded.
+U_, UU_ = "ु", "ू"
+for label, tgt, oth, words in (("Twin - छोटी उ word, ू", U_, UU_, POOL_U), ("Twin - बड़ी ऊ word, ु", UU_, U_, POOL_UU)):
+    for hi, rid in words:
+        if tgt in hi and oth not in hi:
+            rows.append(dict(id=rid + "_x", text=hi.replace(tgt, oth, 1), cat="Twin (wrong option)",
+                             matra="the other matra", when="The WRONG option of a minimal pair (one matra swapped, «%s» -> «%s»). "
+                             "Read only when that pair comes back after a first mistake. TTS PLACEHOLDER - record." % (hi, hi.replace(tgt, oth, 1)),
+                             used=True))
 
 for r in rows:
     p = os.path.join(VOICE, r["id"] + ".ogg")
@@ -103,7 +115,8 @@ thin = Side(style="thin", color="C9CED6")
 box = Border(left=thin, right=thin, top=thin, bottom=thin)
 hfill = PatternFill("solid", fgColor="1F4E79")
 fills = {"Instruction": "E8F1FB", "Transition": "EEE8FB", "Feedback": "FDF1E4",
-         "Word - छोटी उ": "EAF6EC", "Word - बड़ी ऊ": "FFF8DC"}
+         "Word - छोटी उ": "EAF6EC", "Word - बड़ी ऊ": "FFF8DC", "Tutorial": "E6F4F1",
+         "Twin (wrong option)": "F4ECF7"}
 DEV = "Nirmala UI"          # ships with Windows and shapes Devanagari correctly
 
 ws.append(["मात्रा रनर (page 17) - voice-over manifest  ·  HI02H11_L02_S02"])
@@ -167,10 +180,10 @@ spec = [
     ("2. Tutorial (first time)", "tut_lane, tut_jump, tut_slide - each as the run stops in front of its "
                                  "obstacle - then tut_go"),
     ("3. Level 1 goal", "goal_uu - «%s»" % LINES.get("goal_uu", "")),
-    ("4. Each pair of word orbs", "Only the target word, as the pair comes near (after a clear pause)."),
+    ("4. Each pair of word orbs", "Nothing - the child reads the words (r115)."),
     ("5. Correct orb", "right - «%s»" % LINES.get("right", "")),
-    ("6. Wrong orb", "wrong + correct_is + the correct word - «%s %s <शब्द>»"
-                        % (LINES.get("wrong", ""), LINES.get("correct_is", ""))),
+    ("6. Wrong orb", "wrong - «%s»; the pair comes back: after 1 mistake both words are read, after 2 the right word"
+                        % LINES.get("wrong", "")),
     ("7. Obstacle hit", "hit - «%s»" % LINES.get("hit", "")),
     ("8. Level ends", "Screen blurs, chime, then level_next + next goal - «%s» «%s»"
                       % (LINES.get("level_next", ""), LINES.get("goal_u", ""))),
