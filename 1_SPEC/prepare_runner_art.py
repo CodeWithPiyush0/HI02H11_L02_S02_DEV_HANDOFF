@@ -123,6 +123,8 @@ GEN2_PLAN = [
     ("swifty_jump2.png", "swifty_jump.webp",  360, False, True),
     ("swifty_slide.png", "swifty_slide.webp", 360, False, True),
     ("swifty_bump.png",  "swifty_bump.webp",  360, False, True),
+    # [r118] the end-screen cheer, front view WITH her hands (replaces the winged swifty_happy.png)
+    ("swifty_happy2.png", "swifty_happy.webp", 360, False, True),
 ]
 
 

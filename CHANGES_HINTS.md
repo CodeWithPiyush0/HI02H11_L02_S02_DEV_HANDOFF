@@ -1114,3 +1114,30 @@ Measured (whole game, headless Chrome): the bridge, valley, board, star coins on
 board 196x136; tutorial, both levels, the celebration (12 words) and the lesson moving on; no console
 errors. (The test machine ran low on memory - other apps - and two runs crashed the headless tab on
 load; with leftover test browsers closed the runs pass. The new art decodes smaller than the old.)
+
+## r117 — bigger coins; phones: turn to landscape, and a transition that fits
+
+- **Coins** 25 -> 33 radius (runner), a little higher.
+- **Phones held upright** (Yasir: "on mobile force the user to rotate the screen"): a browser cannot
+  rotate the phone itself, so - on any touch device in portrait a full-screen card (`#rotGate`: a
+  turning phone and «कृपया फ़ोन को घुमाइए।») covers the lesson until it is turned; and on the play
+  button's tap, touch devices go fullscreen and lock to landscape where the browser allows it
+  (Android Chrome; iOS Safari refuses - the card covers that). Desktop is untouched.
+- **The transition on a phone** (Yasir: "the transition text gets cut and everything looks small"): the
+  title was a fixed 96 px line 271 px down and the bird at least 200 px tall - on a ~390 px-tall phone
+  the text ran off the sides and onto the bird. Now `top:min(271px,39vh)`, `font-size:min(96px,10vw,
+  14vh)`, a stroke of .104em, and the bird `clamp(110px,30vh,290px)`; min() keeps the old values on a
+  computer. Measured: desktop 96 px at 271 px, bird 209 px (as before); phone 844x390 - 54.6 px at
+  152 px, inside the width, above the bird (117 px); phone 390x844 - the card shows.
+
+## r118 — the runner's end screen: Swifty alone, with her hands
+
+Yasir: "in the last celebration screen of the game don't show every word she collected - only Swifty with
+the celebration; and in the current image her hand is not present".
+- The end screen keeps the warm wash, the turning sunburst, «शाबाश!», the confetti and the win line, and
+  drops the rows of caught words; Swifty, its only figure, is drawn 1.45x as big, hopping in the middle.
+- Her cheering pose is new: the old `swifty_happy` gave her feathered wings instead of arms. Generated
+  front-on from the cover's Swifty (`start_mascot.webp`, with her white mitten hands) by
+  `1_SPEC/gen_swifty_cheer.py` -> `gen2/swifty_happy2.png` -> `swifty_happy.webp` (both arms up, hands
+  open, a big smile).
+Measured: end screen on, 0 word rows, no blur, confetti, the win line, then the lesson's signal; no errors.

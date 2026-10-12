@@ -3974,6 +3974,24 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    File5's rule - the 140px button sits 28px lower (bottom 40 -> 12) so it clears the cover's track ties */
 .sg-btn, .sg-btn.sg-waiting{ bottom:12px; }
 
+/* [r117] PHONES. Yasir: "on mobile the transition text gets cut and everything looks small". The
+   transition's title was a fixed 96 px line 271 px down, and its bird at least 200 px tall - on a phone
+   held sideways (~360 px tall) the text ran off the sides and sat on the bird. Both now scale with a
+   short screen; on a computer screen they come out exactly as before (min() picks the old values). */
+.pg-title{ top:min(271px, 39vh); font-size:min(96px, 10vw, 14vh); -webkit-text-stroke:.104em #FFFFFF; }
+.phase-gate #phaseGateImg.pg-card, .phase-gate #phaseGateCv{ height:clamp(110px, 30vh, 290px); }
+/* ...and a phone or tablet held upright is asked to turn: this card covers the lesson until it is */
+.rot-gate{ display:none; position:fixed; inset:0; z-index:2147483000; flex-direction:column;
+  align-items:center; justify-content:center; gap:5vh; text-align:center; color:#fff;
+  background:linear-gradient(160deg,#5a8be0 0%,#2b4fa6 100%); font-family:var(--font-hi); }
+@media (orientation:portrait) and (pointer:coarse){ .rot-gate{ display:flex; } }
+.rot-phone{ width:min(46vw, 240px); height:auto; filter:drop-shadow(0 1.2vh 1.6vh rgba(0,0,0,.3));
+  animation:rotPhone 2.6s ease-in-out infinite; }
+@keyframes rotPhone{ 0%,18%{ transform:rotate(0deg); } 48%,82%{ transform:rotate(-90deg); } 100%{ transform:rotate(0deg); } }
+.rot-text{ font-size:min(7.5vw, 44px); font-weight:800; line-height:1.4; padding:0 8vw;
+  text-shadow:0 .1em .2em rgba(0,0,0,.25); }
+@media (prefers-reduced-motion:reduce){ .rot-phone{ animation:none; transform:rotate(-90deg); } }
+
 
 /* [r111] File5's confetti: the kit's styles (recipe 7) + File5's whole-window layer, copied unchanged */
 /* ===== FLN ANIMATION KIT: confetti BEGIN ===== */
@@ -4170,6 +4188,15 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 <!-- PHASE-TRANSITION PEEK GATE - [20a PT-3] BODY-LEVEL so position:fixed covers the FULL
      viewport (a transformed ancestor like the scaled .stage would hijack fixed positioning
      and shrink the gate with the stage - production pattern). -->
+<!-- [r117] a phone or tablet held upright is asked to turn it (see .rot-gate in the train styles) -->
+<div class="rot-gate" id="rotGate" role="alert">
+  <svg class="rot-phone" viewBox="0 0 120 120" aria-hidden="true">
+    <rect x="38" y="12" width="44" height="96" rx="9" fill="#ffffff" stroke="#1d3c86" stroke-width="5"/>
+    <rect x="45" y="24" width="30" height="70" rx="3" fill="#ffd447"/>
+    <circle cx="60" cy="101" r="3.2" fill="#1d3c86"/>
+  </svg>
+  <div class="rot-text">कृपया फ़ोन को घुमाइए।</div>
+</div>
 <div class="phase-gate" id="phaseGate">
     <div class="pg-title" id="phaseGateTitle"></div>
     <img id="phaseGateImg" src="assets/UI/peeking.webp" alt="">   <!-- [20a landing-fix] reunited with #phaseGate (was orphaned in .stage → full-bleed on landing once the gate went transparent) -->
@@ -13617,8 +13644,9 @@ function drawCoin(c){
   const x = laneX(c.lane,p);
   /* [r112] Yasir: "make the coins a little bigger so they are noticeable" - 15 -> 25, higher, a
      brighter glow, and the painted coin turns on its axis */
-  const r = 25*S*p, bob = Math.sin(G.t*4+c.spin)*6*S*p;
-  const cy = y - 78*S*p + bob;
+  /* [r117] Yasir: "make the coins a little bigger" - 25 -> 33 */
+  const r = 33*S*p, bob = Math.sin(G.t*4+c.spin)*6*S*p;
+  const cy = y - 90*S*p + bob;
   ctx.save();
   ctx.shadowColor="rgba(255,214,90,.95)"; ctx.shadowBlur=26*p;
   const _cf = window.MR_coinFrame && MR_coinFrame();
@@ -14720,6 +14748,7 @@ function drawTigerImage(){
     var bob = (name === "run" && ART.frames("run") > 4) ? 0
             : Math.abs(Math.sin(G.t * 13)) * 5 * S;
     if(G.mode === "win") bob = Math.abs(Math.sin(G.t * 4.2)) * 30 * S;   /* [r115] she hops as she cheers */
+    if(G.mode === "win") hScale = 1.45;          /* [r118] she is the whole end screen now: bigger */
     var h = 170 * S * hScale, w = h * (r[2] / r[3]);
     if(name === "slide") w = Math.min(w, 150 * S);
     var shw = 1 - 0.45 * (lift / (165 * S));       /* her shadow stays on the ground and shrinks */
@@ -15057,27 +15086,12 @@ function celebrate(){
   }, 1300);
 }
 function celShow(){
+  /* [r118] Yasir: "in the last celebration screen of the game don't show every word she collected - only
+     Swifty will appear with the celebration". So: the warm wash, the turning sunburst, «शाबाश!», the
+     confetti, and Swifty cheering in the middle, bigger - no rows of words. */
   const el = document.getElementById("cel"), rows = document.getElementById("celRows");
-  if(!el || !rows) return;
-  rows.innerHTML = "";
-  let k = 0;
-  LEVELS.forEach(function(L, li){
-    const words = G.caught.filter(c => c.lv === li);
-    if(!words.length) return;
-    const row = document.createElement("div"); row.className = "cel-row";
-    const isU = L.target === U;
-    const chip = document.createElement("div"); chip.className = "matra " + (isU ? "u" : "uu");
-    chip.innerHTML = "<em>" + (isU ? "उ" : "ऊ") + "</em><span>" + (isU ? U : UU) + "</span>";
-    chip.style.animationDelay = (0.5 + k*0.16) + "s";
-    row.appendChild(chip);
-    words.forEach(function(c){
-      const o = document.createElement("div"); o.className = "cel-orb"; o.textContent = c.t;
-      const at = 0.7 + k*0.16; o.style.animationDelay = at + "s";
-      setTimeout(function(){ if(G.mode === "win") note({f:sc(24 + (k % 8)), dur:.22, vol:.12, open:12}); }, at*1000 + 120);
-      row.appendChild(o); k++;
-    });
-    rows.appendChild(row);
-  });
+  if(!el) return;
+  if(rows) rows.innerHTML = "";
   el.classList.add("on");
 }
 function celHide(){ const el = document.getElementById("cel"); if(el) el.classList.remove("on"); }
@@ -17979,6 +17993,17 @@ function boot(){
       b.addEventListener("click", ()=>{ if(!b.disabled) playSfx(U.next); }, true); });
   })();
   $("sgBtn").onclick = async()=>{
+    /* [r117] on a phone or tablet the lesson goes fullscreen and holds landscape, where the browser
+       allows it (Android Chrome does; iOS Safari does not - there the turn-your-phone card does the job).
+       Only inside this tap, the one gesture a browser accepts it from; a refusal changes nothing. */
+    try{
+      if(window.matchMedia && matchMedia("(pointer:coarse)").matches && !document.fullscreenElement){
+        const de = document.documentElement, fs = de.requestFullscreen || de.webkitRequestFullscreen;
+        const lock = ()=>{ try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(()=>{}); }catch(e){} };
+        const pr = fs ? fs.call(de) : null;
+        if(pr && pr.then) pr.then(lock, ()=>{}); else lock();
+      }
+    }catch(e){}
     /* ADDITIVE: activity_launched — the child tapping शुरू करें. The only verb of the seven
        with no existing signal in this engine. One-shot inside _xapi, so a mashed start
        cannot double-report, and a game opened-and-abandoned reports nothing. */

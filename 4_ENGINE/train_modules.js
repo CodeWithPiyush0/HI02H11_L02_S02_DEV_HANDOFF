@@ -4221,8 +4221,9 @@ function drawCoin(c){
   const x = laneX(c.lane,p);
   /* [r112] Yasir: "make the coins a little bigger so they are noticeable" - 15 -> 25, higher, a
      brighter glow, and the painted coin turns on its axis */
-  const r = 25*S*p, bob = Math.sin(G.t*4+c.spin)*6*S*p;
-  const cy = y - 78*S*p + bob;
+  /* [r117] Yasir: "make the coins a little bigger" - 25 -> 33 */
+  const r = 33*S*p, bob = Math.sin(G.t*4+c.spin)*6*S*p;
+  const cy = y - 90*S*p + bob;
   ctx.save();
   ctx.shadowColor="rgba(255,214,90,.95)"; ctx.shadowBlur=26*p;
   const _cf = window.MR_coinFrame && MR_coinFrame();
@@ -5324,6 +5325,7 @@ function drawTigerImage(){
     var bob = (name === "run" && ART.frames("run") > 4) ? 0
             : Math.abs(Math.sin(G.t * 13)) * 5 * S;
     if(G.mode === "win") bob = Math.abs(Math.sin(G.t * 4.2)) * 30 * S;   /* [r115] she hops as she cheers */
+    if(G.mode === "win") hScale = 1.45;          /* [r118] she is the whole end screen now: bigger */
     var h = 170 * S * hScale, w = h * (r[2] / r[3]);
     if(name === "slide") w = Math.min(w, 150 * S);
     var shw = 1 - 0.45 * (lift / (165 * S));       /* her shadow stays on the ground and shrinks */
@@ -5661,27 +5663,12 @@ function celebrate(){
   }, 1300);
 }
 function celShow(){
+  /* [r118] Yasir: "in the last celebration screen of the game don't show every word she collected - only
+     Swifty will appear with the celebration". So: the warm wash, the turning sunburst, «शाबाश!», the
+     confetti, and Swifty cheering in the middle, bigger - no rows of words. */
   const el = document.getElementById("cel"), rows = document.getElementById("celRows");
-  if(!el || !rows) return;
-  rows.innerHTML = "";
-  let k = 0;
-  LEVELS.forEach(function(L, li){
-    const words = G.caught.filter(c => c.lv === li);
-    if(!words.length) return;
-    const row = document.createElement("div"); row.className = "cel-row";
-    const isU = L.target === U;
-    const chip = document.createElement("div"); chip.className = "matra " + (isU ? "u" : "uu");
-    chip.innerHTML = "<em>" + (isU ? "उ" : "ऊ") + "</em><span>" + (isU ? U : UU) + "</span>";
-    chip.style.animationDelay = (0.5 + k*0.16) + "s";
-    row.appendChild(chip);
-    words.forEach(function(c){
-      const o = document.createElement("div"); o.className = "cel-orb"; o.textContent = c.t;
-      const at = 0.7 + k*0.16; o.style.animationDelay = at + "s";
-      setTimeout(function(){ if(G.mode === "win") note({f:sc(24 + (k % 8)), dur:.22, vol:.12, open:12}); }, at*1000 + 120);
-      row.appendChild(o); k++;
-    });
-    rows.appendChild(row);
-  });
+  if(!el) return;
+  if(rows) rows.innerHTML = "";
   el.classList.add("on");
 }
 function celHide(){ const el = document.getElementById("cel"); if(el) el.classList.remove("on"); }
