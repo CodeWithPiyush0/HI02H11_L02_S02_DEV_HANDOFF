@@ -1141,3 +1141,21 @@ the celebration; and in the current image her hand is not present".
   `1_SPEC/gen_swifty_cheer.py` -> `gen2/swifty_happy2.png` -> `swifty_happy.webp` (both arms up, hands
   open, a big smile).
 Measured: end screen on, 0 word rows, no blur, confetti, the win line, then the lesson's signal; no errors.
+
+## r119 — the word on the orb sits on a card
+
+Yasir's sample (भूख on a cream card): the word on each orb is now drawn on a card - a cream face with a
+soft top-to-bottom shade, a rounded orange-tan frame with a thin dark edge and a soft drop shadow, the
+word in bold dark brown - laid on the orb's face, so the orb, its glow and its leaves still show round
+it. The card hugs the word (at least two-thirds of the orb wide) and scales with the orb, so the bursts,
+the shake of a wrong pick and the swell while a word is read carry it along. Measured: a run with no
+errors; screenshot of the cards on the orbs.
+
+## r120 — the words float on their cards alone (no fruit)
+
+Yasir: "remove the fruits from the words - the words should only be in the card". The golden orb is no
+longer drawn (and `orb.webp` no longer loaded): each word's card (r119) floats alone at chest height in
+its lane, a little larger, with a soft shadow on the stones and a warm glow round it. Everything the orb
+did, the card now does - the right one swells and fades in a shine, a wrong one shakes, dulls and
+shrinks, the one being read out swells and glows, and when she took the wrong one the right one pulses.
+Measured: a run with no errors; screenshot of the cards (चुप / तराजू).

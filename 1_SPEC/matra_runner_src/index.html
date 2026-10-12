@@ -1821,8 +1821,12 @@ function drawGateBurst(g, cx, y, gw, gh, ok){
    one bursts bigger and fades in a shine; a wrong one shakes, dulls and shrinks; and when she took the
    wrong one, the right one gives a gentle pulse so the child sees which it was. Never red. */
 function drawOrb(g, i, img, p, y){
+  /* [r120] Yasir: "remove the fruits - the words should only be in the card". The golden orb is gone: the
+     word's card alone floats at chest height in its lane, and everything the orb did, the card does - the
+     right one swells and fades in a shine, a wrong one shakes, dulls and shrinks, the one being read out
+     swells and glows, and when she took the wrong one the right one gives a pulse. */
   const w = g.words[i], cx0 = laneX(i, p);
-  const ow = LANE_W()*p*0.56, oh = ow*img.height/img.width;
+  const base = LANE_W()*p*0.56;                       /* the size the orb had - the card keeps its scale */
   const t = g.done ? Math.min(1, g.fx/0.36) : 0;
   const chosen = g.done && i === g.chosenLane;
   const bob = Math.sin(G.t*2.4 + i*1.7)*6*S*p;
@@ -1833,41 +1837,54 @@ function drawOrb(g, i, img, p, y){
     else if(w.ok){ sc = 1 + 0.14*Math.sin(t*Math.PI); alpha = 1 - t*t; }
     else alpha = 1 - t;
   }
-  /* [r115] the orb whose word is being read aloud swells and glows for that moment */
   const reading = !g.done && g.sayLane === i && performance.now() - (g.sayT || 0) < 950;
   if(reading) sc *= 1.12;
-  const cx = cx0 + dx, cy = y - oh*0.5 - 66*S*p + bob;
+  const lit = (g.done && w.ok) || reading;
   ctx.save();
   ctx.globalAlpha *= Math.max(0, alpha);
-  /* its light on the stones below, and the glow round it */
-  ctx.fillStyle = "rgba(255,200,80,.22)";
-  ctx.beginPath(); ctx.ellipse(cx0, y - 3*S*p, ow*0.36, 9*S*p, 0, 0, 7); ctx.fill();
-  const lit = (g.done && w.ok) || reading;
-  const R = ow*0.82*sc;
-  const rg = ctx.createRadialGradient(cx, cy, ow*0.18, cx, cy, R);
-  rg.addColorStop(0, lit ? "rgba(255,244,160,.85)" : "rgba(255,230,130,.50)");
+  /* the word, as big as the lane allows (the card is at most 0.9 of the old orb wide) */
+  let fs = Math.max(8, base*0.33*sc);
+  ctx.font = "800 " + fs + 'px "Baloo 2","Noto Sans Devanagari",sans-serif';
+  for(let k = 0; k < 14 && ctx.measureText(w.t).width + fs*0.95 > base*0.95*sc; k++){
+    fs *= 0.92; ctx.font = "800 " + fs + 'px "Baloo 2","Noto Sans Devanagari",sans-serif';
+  }
+  const tw = ctx.measureText(w.t).width;
+  const cw = Math.max(tw + fs*0.95, base*0.62*sc), ch = fs*1.6;
+  const ccx = cx0 + dx, ccy = y - 118*S*p + bob, bw = Math.max(1.5, ch*0.10), rr = ch*0.24;
+  /* its shadow on the stones below, and a warm glow round it */
+  ctx.fillStyle = "rgba(60,30,5,.20)";
+  ctx.beginPath(); ctx.ellipse(cx0, y - 3*S*p, cw*0.42, 8*S*p, 0, 0, 7); ctx.fill();
+  const R = Math.max(cw, ch)*0.85;
+  const rg = ctx.createRadialGradient(ccx, ccy, ch*0.3, ccx, ccy, R);
+  rg.addColorStop(0, lit ? "rgba(255,240,150,.80)" : "rgba(255,228,140,.35)");
   rg.addColorStop(1, "rgba(255,222,120,0)");
-  ctx.fillStyle = rg; ctx.fillRect(cx - R, cy - R, R*2, R*2);
-  const dw = ow*sc, dh = oh*sc;
-  ctx.drawImage(img, cx - dw/2, cy - dh/2, dw, dh);
+  ctx.fillStyle = rg; ctx.fillRect(ccx - R, ccy - R, R*2, R*2);
+  /* the card: an orange-tan frame with a thin dark edge round a cream face (Yasir's sample) */
+  ctx.save();
+  ctx.shadowColor = "rgba(70,35,5,.35)"; ctx.shadowBlur = ch*0.18; ctx.shadowOffsetY = ch*0.06;
+  roundRect(ccx - cw/2, ccy - ch/2, cw, ch, rr);
+  const fg = ctx.createLinearGradient(0, ccy - ch/2, 0, ccy + ch/2);
+  fg.addColorStop(0, "#f2a85a"); fg.addColorStop(1, "#d9823a");
+  ctx.fillStyle = fg; ctx.fill();
+  ctx.restore();
+  ctx.lineWidth = Math.max(1, bw*0.28); ctx.strokeStyle = "#8f4f1c";
+  roundRect(ccx - cw/2, ccy - ch/2, cw, ch, rr); ctx.stroke();
+  roundRect(ccx - cw/2 + bw, ccy - ch/2 + bw, cw - bw*2, ch - bw*2, rr*0.7);
+  const cg = ctx.createLinearGradient(0, ccy - ch/2, 0, ccy + ch/2);
+  cg.addColorStop(0, "#fff8e8"); cg.addColorStop(1, "#f6e6c6");
+  ctx.fillStyle = cg; ctx.fill();
+  ctx.lineWidth = Math.max(0.8, bw*0.22); ctx.strokeStyle = "rgba(160,92,36,.55)"; ctx.stroke();
+  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillStyle = "#5a2a08";
+  ctx.fillText(w.t, ccx, ccy + fs*0.05);
+  /* the wrong one she took goes dull */
   if(chosen && !w.ok){
     ctx.save(); ctx.globalCompositeOperation = "multiply";
     ctx.globalAlpha *= 0.45 * Math.min(1, g.fx/0.06);
-    ctx.drawImage(img, cx - dw/2, cy - dh/2, dw, dh);
+    ctx.fillStyle = "#8a8a8a";
+    roundRect(ccx - cw/2, ccy - ch/2, cw, ch, rr); ctx.fill();
     ctx.restore();
   }
-  /* the word, fitted inside the orb's face (below the leaves) */
-  let fs = Math.max(8, ow*0.26*sc);
-  ctx.font = "800 " + fs + 'px "Baloo 2","Noto Sans Devanagari",sans-serif';
-  for(let k = 0; k < 14 && ctx.measureText(w.t).width > dw*0.68; k++){
-    fs *= 0.92; ctx.font = "800 " + fs + 'px "Baloo 2","Noto Sans Devanagari",sans-serif';
-  }
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.lineJoin = "round"; ctx.lineWidth = Math.max(1, fs*0.10);
-  ctx.strokeStyle = "rgba(255,248,220,.85)";
-  ctx.strokeText(w.t, cx, cy + dh*0.07);
-  ctx.fillStyle = "#4a2a06";
-  ctx.fillText(w.t, cx, cy + dh*0.07);
   ctx.restore();
 }
 /* [r112] an obstacle, standing on the bridge in its lane; it fades as it passes her */
@@ -1898,7 +1915,7 @@ function drawGate(g){
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, fade));
 
-  const _orbImg = window.MR_ART && MR_ART.has("orb") ? MR_ART.img("orb") : null;
+  const _orbImg = true;                 /* [r120] the word card - needs no art */
   for(let i=0;i<LANES;i++){
     if(_orbImg){ drawOrb(g, i, _orbImg, p, y); continue; }   /* [r112] the orb replaces the portal */
     const cx = laneX(i,p);
@@ -2089,7 +2106,7 @@ function roundRect(x,y,w,h,r){
     post:     ["bridge_post.webp", 1],
     wall:     ["bridge_wall.webp", 1],
     /* [r112] the orb replaces the portal ring (portal_ring.webp is no longer loaded) */
-    orb:      ["orb.webp", 1],
+    /* [r120] orb.webp no longer loaded - the word sits on its card alone */
     obLog:    ["ob_log.webp", 1],    obThorns: ["ob_thorns.webp", 1],
     obBlock:  ["ob_block.webp", 1],  obBeam:   ["ob_beam.webp", 1],
     jump:     ["swifty_jump.webp", 1], slide:  ["swifty_slide.webp", 1],
@@ -2892,7 +2909,7 @@ let _curtain = null, _curtainUp = true, _curtainT0 = performance.now();
 function firstFrameReady(){
   const A = window.MR_ART;
   if(!A) return false;
-  return ["valley", "deck", "wall", "run", "orb"].every(k => A.has(k)) && !!window.MR_skinReady;
+  return ["valley", "deck", "wall", "run"].every(k => A.has(k)) && !!window.MR_skinReady;
 }
 function curtain(){
   if(!_curtainUp) return;
