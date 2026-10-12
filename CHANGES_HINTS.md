@@ -1233,3 +1233,30 @@ clips, cue times, screenshots; no console errors.
 - «don't add glow effect in the words, only matra will be highlighted»: the word no longer pulses
   (`mh-pulse` brightened the whole word with a drop-shadow) and the matra has no glow - the ु / ू
   simply turns orange. Measured on गुड़ / दूध: one highlight overlay, no glow class, word filter none.
+
+## r124 — the runner: hand-only tutorial, an obstacle that stays put, the word instead of «शाबाश», no text cards, and the old-version bug
+
+1. **Tutorial** — the big arrow is gone; only the hand shows, kept above Swifty's head every frame
+   (`tutPlace`, in CSS px of the stage) and making the swipe from there. The obstacle no longer follows
+   her: it used to be re-placed in her lane every frame until the hint appeared. Now it stays where it
+   was put; on the jump and slide steps left/right do nothing until it is passed, and on the lane step a
+   child who has already stepped out of its way has passed that step. Measured: pressing ← while the log
+   approached left both the log and Swifty in lane 1.
+2. **A right word** is answered with the word itself (its own clip) instead of «शाबाश!». Measured: फूल,
+   लट्टू, भूख, कबूतर, भालू, आलू after each catch, with the correct-answer chime.
+3. **No text cards** — neither «शाबाश! <word>» nor «फिर से देखिए! ऊ (ू)» is drawn any more (the voice
+   still says «फिर से देखिए।» on a wrong pick).
+4. **"It plays the very earlier version"** — the runner's art has been replaced several times under the
+   same filenames (coin, board, bridge, Swifty, the valley video), and `vercel.json` served `/assets/*`
+   as `immutable` for a year, so a device that had played an earlier build kept its old pictures. Fixed
+   both ways: every runner picture and the video are now requested with `?v=<hash of the art folder>`
+   (stamped by the build like the audio; measured 19 of 19 requests stamped), so a changed file gets a
+   new address and old caches are bypassed at once; and `vercel.json` now has assets, `.html` and
+   `card.json` re-checked (`max-age=0, must-revalidate`) instead of trusted for a year.
+
+## r125 — the runner's end screen moves on sooner
+
+Yasir: after its line the celebration stayed up too long. Two holds stacked after the win line: the game
+waited 1.6 s before signalling it had finished, and the lesson waited 2.6 s more before moving on. Now
+0.5 s and 0.6 s. Measured over a full played game: the lesson moves to the next page 2.0 s after the
+win line ends (it was about 5 s).

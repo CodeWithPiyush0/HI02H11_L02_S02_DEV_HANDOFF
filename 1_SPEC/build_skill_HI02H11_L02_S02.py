@@ -1810,6 +1810,18 @@ def main():
     _n_mr = html.count("__MR_AUDIO_V_STAMP__")
     html = html.replace("__MR_AUDIO_V_STAMP__", _mh.hexdigest()[:12])
     print("  OK  runner audio stamp %s (%d)" % (_mh.hexdigest()[:12], _n_mr))
+    # [r124] ...and for its pictures and video (every file directly in assets/MatraRunner/), which
+    # were requested with no version at all and so stayed in a device's cache across redeploys
+    _ah = hashlib.sha1()
+    for _f in sorted(os.listdir(_mr)):
+        _p = os.path.join(_mr, _f)
+        if os.path.isfile(_p):
+            _ah.update(_f.encode("utf-8")); _ah.update(open(_p, "rb").read())
+    _n_art = html.count("__MR_ART_V_STAMP__")
+    if not _n_art:
+        sys.exit("X  the runner's art stamp placeholder is missing - re-run embed_matra_runner.py")
+    html = html.replace("__MR_ART_V_STAMP__", _ah.hexdigest()[:12])
+    print("  OK  runner art stamp %s (%d)" % (_ah.hexdigest()[:12], _n_art))
     open(os.path.join(BUNDLE, CODE + ".html"), "w", encoding="utf-8").write(html)
     open(os.path.join(BUNDLE, "card.json"), "w", encoding="utf-8").write(payload + "\n")
 
