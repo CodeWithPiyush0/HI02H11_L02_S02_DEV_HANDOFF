@@ -169,13 +169,13 @@
   window.__stopLessonSfx = function(){
     _sfxLive.forEach(a => { try{ a.pause(); a.currentTime = 0; }catch(e){} }); _sfxLive.clear();
   };
-  function sfxFile(name, fallback){
+  function sfxFile(name, fallback, vol){
     try{
       /* [r17] versioned like every other clip - see _av() in the engine */
       const a = new Audio(typeof _av === "function"
         ? _av("assets/Audio/" + name + "." + AUDIO_EXT)
         : "assets/Audio/" + name + "." + AUDIO_EXT);
-      a.volume = 0.55;
+      a.volume = (vol != null) ? vol : 0.55;
       _sfxLive.add(a); a.addEventListener("ended", ()=> _sfxLive.delete(a), { once:true });
       if(window.__lessonBgm) window.__lessonBgm.track(a);      /* [r99] the music steps back */
       a.play().catch(()=> fallback && fallback());
@@ -193,6 +193,13 @@
   const sfxTrainMove    = ()=> sfxFile("sfx_train_move",   null);          // the chug bed
   const sfxPopSoft = ()=> _t([720], "sine", 0.10, 0.07);
   const sfxSparkle = ()=> _t([1180, 1560], "sine", 0.22, 0.055);
+  /* [r121] Yasir: «add a sfx when the title appear».
+     [r122] "it should be better and noticeable - try the pop": the lesson's own pop, at full
+     volume, as the title words slide out of the smoke cloud, and when they land a second pop with
+     a bright bell rising over it - so the title arrives with a sound and settles with one. */
+  const sfxTitle     = ()=> sfxFile("sfx_pop", ()=> _t([620, 980], "sine", 0.16, 0.12), 1.0);
+  const sfxTitleLand = ()=>{ sfxFile("sfx_pop", null, 1.0);
+                             _t([1047, 1319, 1568, 2093], "triangle", 0.62, 0.10); };
 
   /* ================================================================ matra highlight */
   /* Colour ONLY the matra inside a rendered word — the SME's most repeated teach-screen note
@@ -576,6 +583,9 @@
      plate over the yellow coach. Darkened a little from the raw fill so the border reads as a
      border against a cream plate. */
   const TRAIN_COACH_COLORS = ["#E9B400", "#37C425", "#F0559A", "#4EA3F0"];
+  /* [r121] the same four, light - Yasir: «the boxes will be of same color of coaches (in light
+     shade)». Plain hex rather than color-mix(), which older Android webviews do not have. */
+  const TRAIN_COACH_TINTS  = ["#FFEDB3", "#D3F3CD", "#FDD3E5", "#D3E8FC"];
 
   /* A BARE MATRA IS AN ORPHAN COMBINING MARK. Rendered alone it is font-dependent: a dotted
      placeholder on some platforms, a floating stroke on others. U+25CC is the standard carrier
@@ -763,6 +773,8 @@
         const pi = idx(i + 1), a = artPart(pi), pan = A.panel[pi];
         const c = document.createElement("div"); c.className = "train-coach";
         c.style.setProperty("--coach-c", TRAIN_COACH_COLORS[i % TRAIN_COACH_COLORS.length]);
+        /* [r121] the plate above the coach: the coach's own colour, light, with no stroke */
+        c.style.setProperty("--coach-l", TRAIN_COACH_TINTS[i % TRAIN_COACH_TINTS.length]);
 
         const lab = document.createElement("div"); lab.className = "coach-label";
         const labSpec = (cfg.coach_label || [])[i];
@@ -1254,7 +1266,19 @@
          started on top of the hint. Measured: 2.5-3.2s of two voices at once on all three tap
          screens. `armed` flips in the same tick that say() raises isPlaying, so it leaves no
          window of its own. */
-      train.whenParked(()=>{ armed = true; say(A(slide, "prompt"), ()=>{}); });
+      /* [r121] Yasir: «when instruction VO completed then play VO of each option so that user
+         know what each option is». Each coach is lit while its word is spoken, left to right -
+         no matra highlight, that stays rung 2's. Taps wait until the last word has been read
+         (hintBusy), so a tap cannot land between two words and be talked over. */
+      const readOptions = (done)=> hintHold((fin)=> hintSeq(train.coaches.map((c, i)=> (next)=>{
+        const src = coachList[i];
+        if(!src || !src.audio){ next(); return; }
+        c.el.classList.add("is-read");
+        say(clip(src.audio), ()=> setTimeout(()=>{ c.el.classList.remove("is-read"); next(); }, 220));
+      }), fin), done);
+      state.replayAudio = ()=>{ if(hintBusy) return; say(A(slide, "prompt"), ()=> readOptions(()=>{})); };
+      train.whenParked(()=>{ armed = true;
+        say(A(slide, "prompt"), ()=> setTimeout(()=> readOptions(()=>{}), 260)); });
     }
   };
 
@@ -1442,6 +1466,13 @@
         if(d.kind === "word"){
           const lbl = tile.querySelector(".tr-cardlbl");
           if(lbl) matraHLSoon(lbl, tile.dataset.bin, { glow:true });
+        } else if(d.kind === "picture" && tile.dataset.word && !tile.querySelector(".tr-cardlbl")){
+          /* [r121] Yasir, pages 9, 10 and 13: «when we drag and drop the option card, in the coach
+             only word will be dropped so that it's visible properly». The picture round's card has
+             no word of its own, so it is given one as it lands; the picture hides (CSS). */
+          const w = document.createElement("span");
+          w.className = "tr-cardlbl"; w.textContent = tile.dataset.word;
+          tile.appendChild(w);
         }
         placed++;
         train.correct(ci);
@@ -1622,7 +1653,7 @@
       newVoEpoch();          /* any chain still running from a previous mount is now stale */
       const train = buildTrain(host, {
         coaches: d.slots.length,
-        labels: d.slots.map(s => imgOrEmoji(s.img, s.emoji, "tr-slotpic", "tr-emoji")),
+        labels: d.slots.map(s => imgOrEmoji(s.img, s.emoji, "tr-slotpic tr-slot-" + (s.img || "x"), "tr-emoji")),   /* [r122] named, so one picture can be sized alone */
         bodies: d.slots.map((s, i) =>
           '<span class="tr-fill" data-i="' + i + '">' +
             '<span class="ink-glyph">' + s.pre + "</span>" +
@@ -1722,23 +1753,31 @@
      chime as प becomes पु, a small success sound as पुल completes. The sibling also chimes when
      the consonant lights; the note lists three and asks to "keep SFX subtle so the pronunciation
      remains clear", so that fourth one is left out. */
+  /* [r121] Yasir: «remove the middle section (equation part)». The screen is now two words of
+     the same size with an arrow between them:
+        «यह शब्द देखिए, पल।»                       -> पल and its picture, on the left
+        (a beat)                                    -> the arrow, in the centre
+        «प के साथ … की मात्रा लगाने पर पु बनता है।»  -> पल on the right; on «पु» the ु comes up from
+                                                       below, lands under प, and the word is पुल
+        «अब ल जुड़ने पर पुल बनता है।»               -> on «पुल», its picture
+        «प। पु। पुल।»                              -> प lifts on the left, the matra on the right,
+                                                       then the whole of पुल
+     With the centre panel gone the words and pictures grow into the room it leaves.
+     `drop_ms` / `pic_ms` are the starts of the last phrase in their clips, measured at build time. */
   SlideModules.MATRA_BUILD = {
     mount(host, slide){
       const d = slide.data || {};
       newVoEpoch();
       if(d.no_heading){ const _st = document.getElementById("stage"); if(_st) _st.classList.add("no-band"); }
 
-      const row = document.createElement("div"); row.className = "mb-row";
-
-      /* --- panel 1: the base word ------------------------------------------------------
-         पल / फल are bare consonant pairs with no combining marks, so splitting them per
-         character is safe — there is no cluster for the browser to shape. NEVER do this to a
-         word that carries a matra; that is what panel 3 is careful about. */
-      /* [r18] hidden until the opening line has played — see step 2 */
-      const p1 = document.createElement("div"); p1.className = "mb-panel mb-p1 mb-hidden";
-      const baseChars = [...(d.base_word || "")].map(ch =>
+      const row = document.createElement("div"); row.className = "mb-row mb-v2";
+      /* पल / फल are bare consonant pairs with no combining marks, so splitting them per character
+         is safe - there is no cluster for the browser to shape */
+      const chars = ()=> [...(d.base_word || "")].map(ch =>
         '<span class="mb-c" data-ch="' + ch + '">' + ch + "</span>").join("");
-      p1.innerHTML = '<div class="mb-word">' + baseChars + "</div>" +
+
+      const p1 = document.createElement("div"); p1.className = "mb-panel mb-p1 mb-hidden";
+      p1.innerHTML = '<div class="mb-word">' + chars() + "</div>" +
                      '<div class="mb-pic">' +
                        ((d.base_img || d.base_emoji)
                          ? imgOrEmoji(d.base_img, d.base_emoji, "mb-img", "mb-emoji") : "") +
@@ -1746,73 +1785,98 @@
       row.appendChild(p1);
 
       const a1 = document.createElement("div");
-      a1.className = "mb-arrow mb-panel mb-hidden"; a1.textContent = "→";
+      a1.className = "mb-arrow mb-panel mb-hidden"; a1.textContent = "\u2192";
       row.appendChild(a1);
 
-      /* --- panel 2: the equation  consonant + matra = syllable -------------------------- */
-      /* ONE DOTTED CIRCLE, NOT TWO. This was '<span class=mb-dot>◌</span><span
-         class=mb-mk>ु</span>' - two spans so the placeholder could be greyed and the matra
-         coloured. But ु is a COMBINING mark: alone in its own span it has no base to attach to,
-         so the renderer supplies a dotted circle OF ITS OWN. The result was the grey ◌ we asked
-         for, followed by a second, orange one carrying the matra.
-         One span, one cluster, one circle - and the colouring is done by matraHL, which clips the
-         below-baseline band and so paints the matra while leaving the placeholder alone. That is
-         also what the note asks for: "highlight only matra not any other letter". */
-      const chip = matraGlyph(d.matra || "");
-      const p2 = document.createElement("div"); p2.className = "mb-panel mb-p2 mb-hidden";
-      p2.innerHTML =
-        '<div class="mb-eq"><div class="mb-eq-line">' +
-          '<span class="mb-cons ink-glyph">' + (d.consonant || "") + "</span>" +
-          '<span class="mb-op">+</span>' +
-          '<span class="mb-m mb-slot"></span>' +
-          '<span class="mb-op">=</span>' +
-          '<span class="mb-syl ink-glyph"></span>' +
-        "</div></div>";
-      row.appendChild(p2);
-
-      const a2 = document.createElement("div");
-      a2.className = "mb-arrow mb-panel mb-hidden"; a2.textContent = "→";
-      row.appendChild(a2);
-
-      /* --- panel 3: the finished word + its picture ------------------------------------- */
+      /* the right-hand word starts as the SAME base word and becomes the result in place:
+         two layers in one box, the base on top until the matra lands */
       const p3 = document.createElement("div"); p3.className = "mb-panel mb-p3 mb-hidden";
-      p3.innerHTML = '<div class="mb-word"><span class="mb-result ink-glyph">' +
-                       (d.result_word || "") + "</span></div>" +
-                     '<div class="mb-pic">' +
+      /* no .ink-glyph on the result: ink-centring would lift पुल (its ु makes the ink taller) off
+         the baseline पल sits on, and the word would jump as the one layer hands over to the other */
+      p3.innerHTML = '<div class="mb-word mb-rword">' +
+                       '<span class="mb-rbase">' + chars() + "</span>" +
+                       '<span class="mb-result mb-rwait">' + (d.result_word || "") + "</span>" +
+                     "</div>" +
+                     '<div class="mb-pic mb-picwait">' +
                        imgOrEmoji(d.result_img, d.result_emoji, "mb-img", "mb-emoji") + "</div>";
       row.appendChild(p3);
-
       host.appendChild(row);
 
-      const consEl = p1.querySelector('.mb-c[data-ch="' + (d.consonant || "") + '"]');
-      const slot   = p2.querySelector(".mb-slot");
-      const sylEl  = p2.querySelector(".mb-syl");
-      const resEl  = p3.querySelector(".mb-result");
-      const show   = (el)=>{ el.classList.remove("mb-hidden"); el.classList.remove("mb-in");
-                             void el.offsetWidth; el.classList.add("mb-in"); };
+      const consEl  = p1.querySelector('.mb-c[data-ch="' + (d.consonant || "") + '"]');
+      const rword   = p3.querySelector(".mb-rword");
+      const rbase   = p3.querySelector(".mb-rbase");
+      const rcons   = rbase.querySelector('.mb-c[data-ch="' + (d.consonant || "") + '"]');
+      const resEl   = p3.querySelector(".mb-result");
+      const rpic    = p3.querySelector(".mb-pic");
+      const show    = (el)=>{ el.classList.remove("mb-hidden"); el.classList.remove("mb-in");
+                              void el.offsetWidth; el.classList.add("mb-in"); };
 
       state.ownsAudio = true; state.demoRunning = true;
       if(typeof setSwMood === "function") setSwMood("teach");
       setNavActive(false);
       state.replayAudio = null;
 
-      /* PAINT THE SETTLED STATE AT MOUNT TOO. Live, panels 2 and 3 are `mb-hidden` until the
-         chain reveals them, so the child never sees the highlight early. But the review capture
-         strips the staging classes and freezes before any audio runs, so a highlight applied
-         only in a callback photographs missing — which is how the round-3b deck shipped «पुल»
-         with no orange ु while the running game coloured it. matraHL is idempotent. */
-      matraHLSoon(resEl, d.matra, { glow:true });
+      const myGen = _voGen;
+      const alive = ()=> CARD.slides[state.idx] === slide && myGen === _voGen;
+
+      /* the matra joins: the base layer gives way to the result, whose ु is highlighted */
+      let formed = false;
+      const form = ()=>{
+        if(formed) return; formed = true;
+        rbase.classList.add("mb-rgone");
+        resEl.classList.remove("mb-rwait");
+        matraHLSoon(resEl, d.matra, { glow:true, pulse:true });
+        rword.classList.remove("mb-settle"); void rword.offsetWidth; rword.classList.add("mb-settle");
+      };
+      const showPic = ()=>{
+        if(!rpic.classList.contains("mb-picwait")) return false;
+        rpic.classList.remove("mb-picwait"); return true;
+      };
+      /* ु / ू hang under the consonant, so the mark comes up from BELOW.
+         [r122] THE MARK ALONE, NO DOTTED CIRCLE. Yasir: the flier "comes with that dotted circle
+         ... overlapping the letter प". A combining mark can only be drawn on a base, so the flier
+         is the real syllable «पु» in orange, CLIPPED AT ITS BASELINE: the consonant sits above the
+         baseline and is cut away, the ु hangs below it and is all that shows. Its baseline and
+         left edge are matched to the प in the word, so the mark lands exactly where the word's
+         own ु then fades up. */
+      const baseOf = (box)=>{                     /* the baseline's y inside `box`, in CSS px */
+        const st = document.createElement("span");
+        st.style.cssText = "display:inline-block;width:0;height:0";
+        box.appendChild(st); const y = st.offsetTop; st.remove(); return y;
+      };
+      const flyIn = ()=>{
+        if(formed || !rcons){ form(); return; }
+        const fly = document.createElement("span");
+        fly.className = "mb-fly mb-fly-mark";
+        fly.textContent = (d.consonant || "") + (d.matra || "");
+        fly.style.fontSize = getComputedStyle(rword).fontSize;
+        rword.appendChild(fly);
+        requestAnimationFrame(()=>{
+          /* offsets, not rects (the stage carries a --scale transform); both are relative to
+             .mb-rword, the positioned box the flier lives in */
+          const yWord = baseOf(rbase), yFly = baseOf(fly);
+          const fs = parseFloat(fly.style.fontSize) || 100;
+          fly.style.left = rcons.offsetLeft + "px";
+          fly.style.top  = (yWord - yFly) + "px";
+          fly.style.clipPath = "inset(" + (yFly + fs * 0.02) + "px -60% -80% -60%)";
+          fly.style.setProperty("--mb-fx", "0px");
+          fly.style.setProperty("--mb-fy", "130px");
+          fly.classList.add("mb-fly-go");
+          sfxPopSoft();
+        });
+        setTimeout(()=>{
+          fly.classList.add("mb-fly-done");
+          setTimeout(()=> fly.remove(), 300);
+          if(alive()) form();
+        }, 640);
+      };
 
       let finished = false;
       const finish = ()=>{
         if(finished) return; finished = true;
         state.demoRunning = false;
-        [p1, a1, p2, a2, p3].forEach(e => e.classList.remove("mb-hidden"));
-        if(consEl) consEl.classList.add("lit");
-        slot.innerHTML = chip;
-        slot.classList.remove("mb-slot-wait"); slot.classList.add("mb-slot-in");
-        sylEl.textContent = d.syllable || "";
-        matraHLSoon(sylEl, d.matra, { glow:true });
+        [p1, a1, p3].forEach(e => e.classList.remove("mb-hidden"));
+        form(); showPic();
         matraHLSoon(resEl, d.matra, { glow:true });
         state.replayAudio = ()=> sayAll(
           [A(slide,"base"), A(slide,"onset"), A(slide,"result"), A(slide,"sounds")].filter(Boolean), ()=>{});
@@ -1820,133 +1884,58 @@
         setNavActive(true);
       };
 
-      /* Each step waits for the PREVIOUS CLIP TO END and then holds a short beat — the note asks
-         for "a short pause between each sound so the child can hear how the sound changes". */
       const steps = [
         // 1 · «आइए, देखें कि छोटी उ की मात्रा लगने से शब्द की आवाज़ कैसे बदलती है।»
         (next)=> say(A(slide, "prompt"), ()=> setTimeout(next, 420)),
-        // 2 · «यह शब्द देखिए — पल।»
-        /* [r18] पल AND ITS PICTURE arrive first, and only then the line that names them.
-           They were on screen from mount, so «आइए, देखें कि …» played over a screen with
-           nothing left to reveal — the same fault as page 3, and why that line read as absent. */
+        // 2 · «यह शब्द देखिए, पल।» - पल and its picture, on the left
         (next)=>{ show(p1); sfxPopSoft();
-                  setTimeout(()=> say(A(slide, "base"), ()=> setTimeout(next, 520)), 260); },
-        // 3 · the consonant lights inside the base word ("Highlight प")
-        (next)=>{ if(consEl) consEl.classList.add("lit"); setTimeout(next, 620); },
-        /* 4 · the matra flies to its place BELOW the consonant and hands over to the slot.
-           It is parked over the slot's MEASURED centre first and the keyframes then describe
-           only the travel, so it lands where the slot actually is. offsetLeft/offsetTop, never
-           getBoundingClientRect: the stage carries a --scale transform, so rects come back in
-           screen px while style.left is written in CSS px. */
+                  setTimeout(()=> say(A(slide, "base"), ()=> setTimeout(next, 420)), 260); },
+        // 3 · the arrow, in the centre
+        (next)=>{ show(a1); setTimeout(next, 520); },
+        // 4 · «प के साथ … लगाने पर पु बनता है।» - पल on the right, the matra lands on «पु»
         (next)=>{
-          show(a1); show(p2);
-          const eq = p2.querySelector(".mb-eq");
-          /* fill the slot NOW but hold it invisible, so the equation's layout is already final
-             when the flier is parked — otherwise the slot grows as it fills and the matra lands
-             a few px off the mark it was aimed at */
-          slot.innerHTML = chip;
-          slot.classList.add("mb-slot-wait");
-          const fly = document.createElement("span");
-          fly.className = "mb-fly"; fly.innerHTML = chip;
-          eq.appendChild(fly);
-          requestAnimationFrame(()=>{
-            fly.style.left = (slot.offsetLeft + (slot.offsetWidth  - fly.offsetWidth)  / 2) + "px";
-            fly.style.top  = (slot.offsetTop  + (slot.offsetHeight - fly.offsetHeight) / 2) + "px";
-            /* ु and ू hang UNDER the consonant, so they arrive from below — the note's own
-               words. A side entry is for the spacing matras the sibling teaches. */
-            const down = (d.travel || "down") === "down";
-            fly.style.setProperty("--mb-fx", down ? "0px"
-              : (RIGHT_SPACING_MATRAS.has(d.matra) ? "118px" : "-118px"));
-            fly.style.setProperty("--mb-fy", down ? "96px" : "-38px");
-            fly.classList.add("mb-fly-go");
-            sfxPopSoft();                    // note: "a soft pop when ु appears"
-          });
-          setTimeout(()=>{                   // cross-fade: the slot fades up as the flier fades out
-            slot.classList.remove("mb-slot-wait");
-            slot.classList.add("mb-slot-in");
-            fly.classList.add("mb-fly-done");
-            setTimeout(()=> fly.remove(), 300);
-            say(A(slide, "matra_name"), ()=> setTimeout(next, 300));
-          }, 760);
+          show(p3); sfxPopSoft();
+          if(consEl) consEl.classList.add("lit");
+          if(rcons) rcons.classList.add("lit");
+          const drop = Math.max(0, d.drop_ms || d.syl_ms || 2400);
+          /* the flight is ~640 ms, so it leaves early enough to LAND on «पु» */
+          const t1 = setTimeout(()=>{ if(alive()) flyIn(); }, Math.max(0, drop - 700));
+          say(A(slide, "onset"), ()=>{ clearTimeout(t1);
+            if(!alive()) return;
+            if(!formed) form();                  /* never leave the word half made */
+            setTimeout(next, 480); });
         },
-        /* 5 · प becomes पु. A bare textContent swap made the old glyph vanish and the new one
-           appear between two frames; it dissolves up now, and the equation gives a small nod so
-           the eye follows the change. */
+        // 5 · «अब ल जुड़ने पर पुल बनता है।» - its picture, on «पुल»
         (next)=>{
-          /* [r18] प BECOMES पु ON THE WORDS THAT SAY SO — the clip starts first and the
-             syllable forms at «बनता», instead of being written and then described. */
-          const eq = p2.querySelector(".mb-eq");
-          const _formSyl = ()=>{
-            sylEl.textContent = d.syllable || "";
-            sylEl.classList.remove("mb-syl-in"); void sylEl.offsetWidth; sylEl.classList.add("mb-syl-in");
-            matraHLSoon(sylEl, d.matra, { glow:true });
-            if(eq){ eq.classList.remove("mb-settle"); void eq.offsetWidth; eq.classList.add("mb-settle"); }
-          };
-          const _t1 = setTimeout(()=>{
-            if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
-            _formSyl();
-            sfxSparkle();                    // note: "a light chime when प changes to पु"
-          }, Math.max(0, d.syl_ms || 340));
-          say(A(slide, "onset"), ()=>{ clearTimeout(_t1);
-            if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
-            _formSyl();                      // never leave the equation half written
-            setTimeout(next, 560); });
-        },
-        // 6 · ल joins, the finished word and its bridge picture arrive
-        /* [r18] ल JOINS ON «जुड़ने», inside its own line — the finished word and its picture
-           used to arrive a whole step BEFORE the sentence that announces them. */
-        (next)=>{
-          const _t2 = setTimeout(()=>{
-            if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
-            show(a2); show(p3);
-            fbCorrect();   // "a small success sound"
-            matraHLSoon(resEl, d.matra, { glow:true, pulse:true });
-          }, Math.max(0, d.join_ms || 320));
-          say(A(slide, "result"), ()=>{ clearTimeout(_t2);
-            if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
-            [a2, p3].forEach(e => e.classList.remove("mb-hidden"));
-            matraHLSoon(resEl, d.matra, { glow:true });
+          const t2 = setTimeout(()=>{ if(alive() && showPic()) fbCorrect(); },
+                                Math.max(0, d.pic_ms || d.join_ms || 1800));
+          say(A(slide, "result"), ()=>{ clearTimeout(t2);
+            if(!alive()) return;
+            if(showPic()) fbCorrect();
             setTimeout(next, 420); });
         },
-        /* 7 · the matra is highlighted inside the finished word while that word is spoken —
-           «अब 'ल' जुड़ने पर 'पुल' बनता है।» The note: "In पुल, highlight the ु मात्रा again so
-           the child clearly notices where the matra is placed." */
-
-        /* 8 · the three sounds contrasted — «प। पु। पुल।» One clip, because three clips back to
-           back lose the deliberate pause the note asks for. */
+        /* 6 · «प। पु। पुल।» - EACH SOUND LIFTS THE THING IT IS: प in पल, the matra in पुल, then the
+           whole of पुल. `sound_ms` is measured from the silence between the three sounds. */
         (next)=>{ const src = A(slide, "sounds");
                   if(!src){ next(); return; }
-                  const eq = p2.querySelector(".mb-eq");
-                  /* EACH SOUND LIFTS THE THING IT IS. «प» -> the consonant in पल, «पु» -> the
-                     equation's syllable, «पुल» -> the finished word. `sound_ms` is measured at
-                     build time from the SILENCE BETWEEN THE SOUNDS in this very clip, so the
-                     three cues follow a re-record instead of drifting off it. With no cues
-                     (an older card, or a clip that would not segment) the equation glows once,
-                     as it used to - a weaker beat, never a wrong one. */
-                  const cues = d.sound_ms, marks = [consEl, sylEl, resEl];
-                  const timers = [];
+                  const cues = d.sound_ms, timers = [];
+                  const lift = (el, cls)=>{ if(!el) return;
+                    [consEl, resEl].forEach(m => m && m.classList.remove("mb-now", "mb-mnow"));
+                    void el.offsetWidth; el.classList.add(cls); };
                   if(cues && cues.length === 3){
-                    cues.forEach((ms, i)=>{
-                      const el = marks[i];
-                      if(!el) return;
-                      timers.push(setTimeout(()=>{
-                        if(CARD.slides[state.idx] !== slide || myGen !== _voGen) return;
-                        marks.forEach(m => m && m.classList.remove("mb-now"));
-                        void el.offsetWidth; el.classList.add("mb-now");
-                      }, Math.max(0, ms)));
-                    });
-                  } else if(eq){ eq.classList.add("mb-say"); }
+                    const acts = [()=> lift(consEl, "mb-now"), ()=> lift(resEl, "mb-mnow"),
+                                  ()=> lift(resEl, "mb-now")];
+                    cues.forEach((ms, i)=> timers.push(setTimeout(()=>{ if(alive()) acts[i](); },
+                                                                  Math.max(0, ms))));
+                  } else lift(resEl, "mb-now");
                   say(src, ()=>{ timers.forEach(clearTimeout);
-                                 marks.forEach(m => m && m.classList.remove("mb-now"));
-                                 if(eq) eq.classList.remove("mb-say");
+                                 [consEl, resEl].forEach(m => m && m.classList.remove("mb-now", "mb-mnow"));
                                  setTimeout(next, 300); }); }
       ];
 
       let si = 0;
-      const myGen = _voGen;
       const run = ()=>{
-        if(CARD.slides[state.idx] !== slide) return;   // navigated away -> abort
-        if(myGen !== _voGen) return;                   // a newer mount owns the audio now
+        if(!alive()) return;                           /* navigated away / a newer mount owns the audio */
         if(si >= steps.length){ finish(); return; }
         steps[si++](run);
       };
@@ -1997,17 +1986,36 @@
       setNavActive(false);
       state.replayAudio = null;
 
+      /* [r121] Yasir's layout (his reference image): the picture BIG on top, the word below it,
+         large, with a blue mic button to its left. After each word's line the child gets 3 s to
+         say it - the mic is greyed while the voice plays and lights up and pulses for those 3 s.
+         The mic is a cue to speak; nothing is recorded. */
+      col.classList.add("mx-v2");
       /* one example, staged: the word is there, the picture is held back a beat */
       const render = (ex)=>{
         wrap.innerHTML =
-          '<div class="meet-letter-box">' +
-            '<span class="glyph ink-glyph mp-word" style="font-size:120px">' + ex.word + "</span>" +
-          "</div>" +
-          '<div class="meet-pic-box mex-pic mp-wait">' +
-            imgOrEmoji(ex.img, ex.emoji, "pic-img", "pic-emoji") + "</div>";
-        return { card: wrap.querySelector(".meet-letter-box"),
+          '<div class="meet-pic-box mex-pic mx-pic mp-wait">' +
+            imgOrEmoji(ex.img, ex.emoji, "pic-img", "pic-emoji") + "</div>" +
+          '<div class="mx-wordrow">' +
+            /* [r122] Yasir's own mic button (assets/UI/mic.svg) */
+            '<button type="button" class="mx-mic" disabled aria-label="बोलिए">' +
+              '<img src="assets/UI/mic.svg" alt="" draggable="false"></button>' +
+            '<div class="meet-letter-box mx-wordbox">' +
+              '<span class="glyph ink-glyph mp-word mx-word">' + ex.word + "</span>" +
+            "</div>" +
+          "</div>";
+        const mic = wrap.querySelector(".mx-mic");
+        mic.onclick = ()=>{ mic.classList.remove("mx-press"); void mic.offsetWidth; mic.classList.add("mx-press"); };
+        return { card: wrap.querySelector(".mx-wordrow"),
                  word: wrap.querySelector(".mp-word"),
-                 pic:  wrap.querySelector(".mex-pic") };
+                 pic:  wrap.querySelector(".mex-pic"),
+                 mic };
+      };
+      /* the child's turn: mic on and pulsing for 3 s, then off again */
+      const micTurn = (mic, after)=>{
+        if(!mic){ after(); return; }
+        mic.disabled = false; mic.classList.add("mx-live");
+        setTimeout(()=>{ mic.disabled = true; mic.classList.remove("mx-live"); after(); }, 3000);
       };
 
       const myGen = _voGen;
@@ -2024,7 +2032,7 @@
       const runOne = (after)=>{
         const ex = exs[i];
         if(!ex){ after(); return; }
-        const { card, word, pic } = render(ex);
+        const { card, word, pic, mic } = render(ex);
 
         /* [r15] THE VOICE DRIVES THE PICTURE AND THE GLOW, not a pair of fixed delays.
            Before this the word, the picture and the mark all arrived inside ~950ms and THEN the
@@ -2056,7 +2064,9 @@
           timers.push(setTimeout(()=>{        // 4 · «इसमें … मात्रा लगी है।» -> the mark
             if(!alive()) return;
             pic.classList.remove("mp-wait");   // never strand it if the cue overran the clip
-            matraHLSoon(word, ex.matra, { glow:true, pulse:true });
+            /* [r122] Yasir: «don't add glow effect in the words, only matra will be highlighted» -
+               no pulse (it brightened the whole word) and no glow: the matra turns orange, nothing else */
+            matraHLSoon(word, ex.matra);
             sfxSparkle();                     // note: "soft highlight chime when matra glows"
           }, Math.max(0, ex.matra_ms || 900)));
           say(clip(ex.audio_line), ()=>{
@@ -2064,9 +2074,10 @@
             if(!alive()) return;
             /* whatever the cues did, the example ends fully shown */
             pic.classList.remove("mp-wait");
-            matraHLSoon(word, ex.matra, { glow:true });
+            matraHLSoon(word, ex.matra);
             word.classList.remove("mh-pulse");
-            sayOpt(clip(ex.matra_audio), ()=> setTimeout(after, 520));
+            /* [r121] then 3 s for the child to say it, mic live */
+            sayOpt(clip(ex.matra_audio), ()=> micTurn(mic, ()=>{ if(alive()) setTimeout(after, 420); }));
           });
         }, 260));
       };
@@ -2089,8 +2100,8 @@
 
       // «आइए, छोटी उ की मात्रा वाले कुछ शब्द देखें।» then the examples, one by one
       say(A(slide, "prompt"), ()=> setTimeout(step, 320));
-      /* FAIL-SAFE: आगे never stays dead if a clip blocks or is missing */
-      setTimeout(()=>{ if(CARD.slides[state.idx] === slide) finish(); }, 42000);
+      /* FAIL-SAFE: आगे never stays dead if a clip blocks or is missing (+7 s for the two turns) */
+      setTimeout(()=>{ if(CARD.slides[state.idx] === slide) finish(); }, 49000);
     }
   };
 
@@ -2279,23 +2290,23 @@
       /* the SME asks for no heading on this screen; the band is hidden per-slide rather than
          globally, so an ACCIDENTALLY empty heading anywhere else still fails the build */
       if(d.no_heading){ const st = document.getElementById("stage");
-        if(st){ st.classList.add("no-band");
-                /* r7: this screen is two cards and a lot of air, so it centres on the
-                   MAIN BOX rather than on the content box the nav-button clearance
-                   leaves behind. Scoped to a class this module owns and newVoEpoch
-                   drops, so no other screen loses that clearance. */
-                st.classList.add("mp-center"); } }
+        if(st){ st.classList.add("no-band"); st.classList.add("mp-center"); } }
 
-      const row = document.createElement("div"); row.className = "mp-row";
+      /* [r121] Yasir's new layout (his reference image): the two pairs STACKED, each a big navy
+         letter, a light-blue arrow, and a white card with a yellow border holding the matra in
+         orange on its dotted circle. New class names (mq-*) - the old mp-* ones are shared with
+         MEET_PAIR's stylesheet. */
+      const col = document.createElement("div"); col.className = "mq-col";
       const els = pairs.map(p => {
-        const el = document.createElement("div"); el.className = "mp-pair";
-        el.innerHTML = '<span class="mp-letter">' + p.letter + "</span>" +
-                       '<span class="mp-arrow">\u2192</span>' +
-                       '<span class="mp-matra">' + matraGlyph(p.matra) + "</span>";
-        row.appendChild(el);
+        const el = document.createElement("div"); el.className = "mq-row";
+        el.innerHTML = '<span class="mq-letter">' + p.letter + "</span>" +
+                       '<span class="mq-arrow">\u2192</span>' +
+                       '<span class="mq-card"><span class="mq-matra">' + matraGlyph(p.matra) +
+                       "</span></span>";
+        col.appendChild(el);
         return el;
       });
-      host.appendChild(row);
+      host.appendChild(col);
 
       /* "Keep the Next button disabled during the sequence. Activate it only after both pairs
          have been shown and spoken." */
@@ -2304,52 +2315,42 @@
       setNavActive(false);
       $("navBtn").onclick = ()=> completeSlide(true);
 
+      const myGen = _voGen;
+      const alive = ()=> CARD.slides[state.idx] === slide && myGen === _voGen;
+      const showPart = (el, sel)=>{ const x = el.querySelector(sel);
+        if(x && !x.classList.contains("mq-in")){ x.classList.add("mq-in"); return true; } return false; };
+      const showLetter = (el)=>{ if(showPart(el, ".mq-letter")) sfxPopSoft(); };
+      const showArrow  = (el)=> showPart(el, ".mq-arrow");
+      const showMatra  = (el)=>{ showArrow(el);
+        if(showPart(el, ".mq-card")){ sfxPopSoft(); el.classList.add("mq-hl"); } };
+
       let i = 0, finished = false;
-      /* [r97] Yasir: "when the VO is finished both the letters should be enabled - currently when
-         the first letter's VO finishes and the second's starts, the first gets disabled". So at the
-         end BOTH pairs are lit (r-earlier: only the last, the first faded to 42 %). */
       const finish = ()=>{
         if(finished) return; finished = true;
         state.demoRunning = false;
-        els.forEach((e, k) => {
-          e.classList.add("active"); e.classList.remove("shown");
-          e.querySelectorAll(".mp-arrow, .mp-matra").forEach(x => x.classList.add("mp-in"));
-          const mm = e.querySelector(".mp-matra");
-          if(mm) mm.classList.add("mp-hl");
-        });
+        els.forEach(e => { showPart(e, ".mq-letter"); showPart(e, ".mq-arrow"); showPart(e, ".mq-card"); });
         setNavActive(true);
       };
 
+      /* [r121] EACH PART ARRIVES ON THE WORDS THAT NAME IT. The line is «यह है उ। इसकी मात्रा है — ु।»
+         and Yasir's ask is: the letter appears when the VO says «यह है उ», the matra when it says
+         «इसकी मात्रा है — ु». `letter_ms` / `arrow_ms` / `matra_ms` are where «उ», «इसकी मात्रा है» and
+         «ु» start inside the clip, measured off its pauses at build time. */
       const step = ()=>{
-        if(CARD.slides[state.idx] !== slide) return;      // navigated away -> drop the chain
+        if(!alive()) return;
         if(i >= els.length){ finish(); return; }
-        const k = i, el = els[k], p = pairs[k]; i++;
-        /* [r97] a pair already taught STAYS lit - it no longer fades when the next one arrives */
-
-        /* 1 · the LETTER arrives on its own */
-        el.classList.add("active");
-        const arrow = el.querySelector(".mp-arrow"), m = el.querySelector(".mp-matra");
-
-        /* 2 · then the matra lands beside it with the soft glow and a subtle chime */
-        setTimeout(()=>{
-          if(CARD.slides[state.idx] !== slide) return;
-          arrow.classList.add("mp-in");
-          m.classList.remove("mp-in"); void m.offsetWidth; m.classList.add("mp-in");
-          sfxPopSoft();                                    // kept subtle so the VO stays clear
-          /* 3 · the pair is lit, so now its line plays — "light up when its VO plays" */
-          say(clip(p.audio), ()=> setTimeout(step, 560));
-          /* 4 · AND THE MATRA LIGHTS UP ON THE WORDS THAT NAME IT. The line is «यह है उ। इसकी
-             मात्रा है — ु।»: the first half names the LETTER, and lighting the matra there would
-             point at the wrong mark while the right one is being spoken. `cue_ms` is where
-             «इसकी» starts, measured off the clip itself at build time, so the two clips (4.13s
-             and 3.85s) each get their own moment rather than sharing a guess. */
-          const cue = Math.max(0, p.cue_ms || 1300);
-          setTimeout(()=>{
-            if(CARD.slides[state.idx] !== slide) return;   // navigated away mid-line
-            if(!el.classList.contains("active")) return;   // a later pair already took the light
-            m.classList.add("mp-hl");
-          }, cue);
-        }, 480);
+        const el = els[i], p = pairs[i]; i++;
+        const timers = [
+          setTimeout(()=>{ if(alive()) showLetter(el); }, Math.max(0, p.letter_ms || 900)),
+          setTimeout(()=>{ if(alive()) showArrow(el); },  Math.max(0, p.arrow_ms || p.cue_ms || 2200)),
+          setTimeout(()=>{ if(alive()) showMatra(el); },  Math.max(0, p.matra_ms || 3600))
+        ];
+        say(clip(p.audio), ()=>{
+          timers.forEach(clearTimeout);
+          if(!alive()) return;
+          showLetter(el); showMatra(el);               /* never leave a pair half drawn */
+          setTimeout(step, 560);
+        });
       };
 
       state.replayAudio = ()=> sayAll(
@@ -2646,7 +2647,7 @@
         coaches: d.slots.length,
         /* SME: "Show related pictures above each coach" — the picture IS the question here, so
            it takes the label slot the other screens use for a matra name. */
-        labels: d.slots.map(s => imgOrEmoji(s.img, s.emoji, "tr-slotpic", "tr-emoji")),
+        labels: d.slots.map(s => imgOrEmoji(s.img, s.emoji, "tr-slotpic tr-slot-" + (s.img || "x"), "tr-emoji")),   /* [r122] named, so one picture can be sized alone */
         bodies: d.slots.map((s, i) =>
           '<span class="tr-fill wb-fill" data-i="' + i + '">' +
             '<span class="tr-blank wb-blank dd-zone" data-idx="' + i + '"></span>' +
@@ -5972,7 +5973,9 @@ if(document.fonts && document.fonts.load){
         if(o.audio) b.dataset.audio = o.audio;
         /* the whole sentence with THIS word standing in the blank - rung 2 plays all three */
         if(o.sentence_audio) b.dataset.sentence = o.sentence_audio;
-        b.innerHTML = imgOrEmoji(o.img, o.emoji, "sc-optimg", "sc-optemoji") +
+        /* [r121] Yasir, pages 16 and 17: «remove image from the options card keep only text» */
+        if(d.opts_text_only) b.classList.add("sc-textonly");
+        b.innerHTML = (d.opts_text_only ? "" : imgOrEmoji(o.img, o.emoji, "sc-optimg", "sc-optemoji")) +
                       '<span class="ink-box"><span class="sc-optlbl ink-glyph">' + o.word + "</span></span>";
         optsW.appendChild(b);
       });
@@ -6121,9 +6124,21 @@ if(document.fonts && document.fonts.load){
           first_try: tries === 0, attempts: tries + 1,
           latency_ms: Date.now() - state.slideStart
         });
-        const unlock = ()=>{ setNavActive(true);
+        const unlock = ()=>{ sent.classList.remove("sc-reading"); setNavActive(true);
           $("navBtn").onclick = ()=> completeSlide(tries === 0); };
-        if(silent) setTimeout(unlock, 900); else say(A(slide, "correct"), unlock);
+        /* [r121] Yasir: «when we drag & drop correct option then it should read the complete
+           sentence as well». The finished sentence glows while it is read. Where the praise line
+           already reads the sentence back (P3, P5, P6), it is played once, not twice - the build
+           leaves `sentence_on_correct` empty there. On a 3rd-attempt win, which has no praise
+           line, the sentence alone is read. */
+        const ansOpt = (d.options || []).find(o => o.word === d.answer) || {};
+        const sentClip = silent ? ansOpt.sentence_audio : d.sentence_on_correct;
+        const praise = silent ? null : A(slide, "correct");
+        setTimeout(()=>{
+          if(CARD.slides[state.idx] !== slide) return;
+          sent.classList.add("sc-reading");
+          sayOpt(sentClip, ()=> praise ? say(praise, unlock) : setTimeout(unlock, 400));
+        }, 480);
       }
 
       /* [r32] BOUNCE THE CARD HOME FROM THE BLANK. makeDraggable clears the tile's transform
@@ -6529,9 +6544,11 @@ if(document.fonts && document.fonts.load){
          them "one by one" AFTER the arrival, so they land on a coach that is standing still */
       /* r7: «उ (ु)» — the letter with its matra in brackets, the same form the G4 bins use,
          so the cover names the pair exactly as the sorting screens later will. */
+      /* [r121] Yasir: «remove bracket from the matra and put an arrow» -> «उ → ◌ु» */
       coach_body: ms.map((m, i) => ({ html: '<span class="lt-matra lt-pending">' +
-        ((hero.letters && hero.letters[i]) ? hero.letters[i] + ' <span class="lt-br">(' +
-          matraGlyph(m) + ')</span>' : matraGlyph(m)) + "</span>" })),
+        ((hero.letters && hero.letters[i]) ? hero.letters[i] +
+          '<span class="lt-arr">→</span><span class="lt-br">' +
+          matraGlyph(m) + '</span>' : matraGlyph(m)) + "</span>" })),
       drop_zone: false,
       /* the sibling's landing train is 634px wide for a locomotive and THREE coaches, i.e. a
          per-part scale of 634/2155 = 0.294. Matching that scale rather than a width budget is
@@ -6626,6 +6643,8 @@ if(document.fonts && document.fonts.load){
       const finishWords = ()=>{
         if(_fin) return; _fin = true;
         ttl.classList.add("lt-written", "lt-written-done");      /* a marker only - no style change */
+        { const g = document.getElementById("startGate");        /* [r122] the title lands */
+          if(!g || !g.classList.contains("hidden")) sfxTitleLand(); }
         if(done) setTimeout(done, 300);   /* the greeting a beat later, clear of the writing */
       };
       const sc = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--scale")) || 1;
@@ -6701,6 +6720,9 @@ if(document.fonts && document.fonts.load){
       ltArcTitle();
       const tw = win ? Math.round(win.getBoundingClientRect().width / sc) : 600;
       setTimeout(()=>{
+        /* [r121] the title's own sound - only while the cover is still the thing on screen */
+        { const g = document.getElementById("startGate");
+          if(!g || !g.classList.contains("hidden")) sfxTitle(); }
         if(!win || !word){ finishWords(); return; }
         const ease = "cubic-bezier(.42,0,.32,1)";
         win.animate([{ transform:"translate3d(" + (-tw) + "px,0,0)" }, { transform:"translate3d(0,0,0)" }],

@@ -340,6 +340,44 @@ def _sound_cues_ms(audio_id, n):
     return [int(r * 0.01 * 1000) for r in runs]
 
 
+def _voice_runs_ms(audio_id, quiet_s=0.30):
+    """[r121] Where each spoken PHRASE in a clip starts, in ms - the runs of sound between pauses.
+
+    Same reading as `_sound_cues_ms`, but it returns every run instead of insisting on `n`, with a
+    longer pause (300 ms) closing a phrase, so the short gaps inside a phrase do not split it.
+    Page 1's two lines are four phrases each - «यह है» · «उ» · «इसकी मात्रा है» · «ु» - and the ask
+    is that the letter appears on the 2nd and the matra on the 4th. Returns [] if the clip is not
+    readable, and the caller falls back to its proportional estimate.
+    """
+    path = os.path.join(AUD_DIR, audio_id + ".ogg")
+    try:
+        with contextlib.closing(wave.open(path)) as w:
+            if w.getsampwidth() != 2 or w.getnchannels() != 1:
+                return []
+            sr = float(w.getframerate())
+            a = array.array("h"); a.frombytes(w.readframes(w.getnframes()))
+    except Exception:
+        return []
+    if not len(a):
+        return []
+    hop  = max(1, int(sr * 0.01))
+    peak = max(1, max(abs(v) for v in a))
+    loud = [max(abs(v) for v in a[i:i + hop]) > peak * 0.10
+            for i in range(0, len(a) - hop, hop)]
+    runs, i, minq = [], 0, int(quiet_s / 0.01)
+    while i < len(loud):
+        if loud[i]:
+            j, q = i, 0
+            while j < len(loud) and q < minq:
+                j += 1
+                q = 0 if (j < len(loud) and loud[j]) else q + 1
+            runs.append(int(i * 10))
+            i = j
+        else:
+            i += 1
+    return runs
+
+
 def s_intro(sid):
     """Screen 1. «उ → ◌ु», one pair at a time — matched to the sibling lesson's page 1.
 
@@ -368,14 +406,20 @@ def s_intro(sid):
     # rather than when it pops in - the ask is that the glow lands on the words that name it.
     _u_line  = "यह है उ। इसकी मात्रा है — ु।"
     _uu_line = "यह है ऊ। इसकी मात्रा है — ू।"
-    pairs = [
-        {"letter": "उ", "matra": U,
-         "audio": vo("vo_pair_u", _u_line),
-         "cue_ms": _matra_cue_ms("vo_pair_u", _u_line)},
-        {"letter": "ऊ", "matra": UU,
-         "audio": vo("vo_pair_uu", _uu_line),
-         "cue_ms": _matra_cue_ms("vo_pair_uu", _uu_line)},
-    ]
+    # [r121] Yasir: «when VO says "यह है उ" the letter appears, then it says "इसकी मात्रा है" and
+    # the matra appears - all in sync with the VO». Each clip is four phrases with clear pauses
+    # (measured: vo_pair_u 30 · 1260 · 2320 · 3970 ms), so the letter lands on the 2nd and the
+    # matra on the 4th. A clip that does not read as 3+ phrases falls back to the old estimates.
+    def _pair(letter, m, aid, line):
+        r = _voice_runs_ms(aid)
+        cue = _matra_cue_ms(aid, line)
+        ok = len(r) >= 3
+        return {"letter": letter, "matra": m, "audio": vo(aid, line), "cue_ms": cue,
+                "letter_ms": r[1] if ok else 900,
+                "arrow_ms": r[-2] if ok else cue,
+                "matra_ms": r[-1] if ok else cue + 1100}
+    pairs = [_pair("उ", U, "vo_pair_u", _u_line),
+             _pair("ऊ", UU, "vo_pair_uu", _uu_line)]
     # HEADING OFF AGAIN (r7). It went on in r6 because the screenshot that came with that ask
     # had one; it comes off now because the ask is explicit. The sentence is still SPOKEN - it is
     # `p` below, the SME's own VO line - so nothing is lost from the lesson, only from the screen.
@@ -422,6 +466,7 @@ def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, 
     bk = key_of_opt(base_word)
     ONSET_LINE  = AUDIO_TEXT.get(a["onset"], "")
     RESULT_LINE = AUDIO_TEXT.get(a["result"], "")
+    ON_RUNS, RE_RUNS = _voice_runs_ms(a["onset"]), _voice_runs_ms(a["result"])
     return {"id": sid, "phase": "tutorial", "eis": "symbolic", "type": "MATRA_BUILD",
             # NO HEADING. The deck gives this screen no "Heading" section — unlike the tap
             # screens, which say "Keep the heading at the top: …" — and tells it to "keep the
@@ -441,6 +486,13 @@ def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, 
                      # «प। पु। पुल।» — which of the three is being said, at each moment.
                      # SME: "Make the pronunciation difference very clear."
                      "sound_ms": _sound_cues_ms(a.get("sounds"), 3),
+                     # [r121] the equation panel is gone: the right-hand word takes the matra on
+                     # «पु» (the onset line's last phrase) and its picture arrives on «पुल» (the
+                     # result line's last phrase). Measured runs, so a re-record moves them too.
+                     "drop_ms": (ON_RUNS[-1] if len(ON_RUNS) >= 2
+                                 else _matra_cue_ms(a["onset"], ONSET_LINE, syllable)),
+                     "pic_ms": (RE_RUNS[-1] if len(RE_RUNS) >= 2
+                                else _matra_cue_ms(a["result"], RESULT_LINE, result_word)),
                      "base_img": (pic(bk) if bk else None),
                      "base_emoji": (BASE_OBJ[base_word][1] if base_word in BASE_OBJ
                                    else (OBJ[bk][1] if bk else None)),
@@ -608,7 +660,12 @@ def s_word_build(sid):
 SC_HEADING = "सही शब्द चुनकर वाक्य पूरा कीजिए।"
 
 
-def s_sentence(sid, scene, pre, post, answer, options, correct_line, ask):
+def _full(pre, word, post):
+    """the sentence with `word` in its blank - the exact text its `_try_` clip was recorded from"""
+    return (pre + word + post).replace("  ", " ").strip()
+
+
+def s_sentence(sid, scene, pre, post, answer, options, correct_line, ask, text_only=False):
     """Screens 13–16 — the new module, four instances.
 
     The three instruction lines are identical on all four screens, so `once` gives them one
@@ -642,6 +699,18 @@ def s_sentence(sid, scene, pre, post, answer, options, correct_line, ask):
             "data": {"scene_img": pic(scene), "scene_emoji": SCENE[scene],
                      "sentence_pre": pre, "sentence_post": post,
                      "answer": answer, "options": o,
+                     # [r121] Yasir: pages 16 and 17 - «remove image from the options card, keep
+                     # only text»
+                     "opts_text_only": bool(text_only),
+                     # [r121] Yasir: «when we drag & drop the correct option it should read the
+                     # complete sentence as well». The answer's own sentence clip plays first -
+                     # unless the praise line already reads the sentence back (P3, P5, P6 do:
+                     # «शाबाश! सीमा आज बहुत खुश है।»), where playing both would say it twice.
+                     "sentence_on_correct": (
+                         None if _full(pre, answer, post).rstrip("।") in correct_line
+                         else vo("vo_%s_try_%s" % (sid.lower(), slug(key_of(answer))),
+                                 _full(pre, answer, post))),
+                     "sentence_full": _full(pre, answer, post),
                      "scene_glow": SCENE_GLOW.get(scene, [])}}
 
 
@@ -787,10 +856,12 @@ def build_slides():
                         "शाबाश! सही शब्द चुनकर वाक्य पूरा किया।", "बच्चा कब उठ रहा है"))
     S.append(s_sentence("P5", "scn_bageecha",                                  # deck slide 16
                         "बगीचे में सुंदर ", " खिले हैं।", "फूल", ["फूल", "तरबूज", "सुबह"],
-                        "शाबाश! बगीचे में सुंदर फूल खिले हैं।", "बगीचे में क्या खिले हैं"))
+                        "शाबाश! बगीचे में सुंदर फूल खिले हैं।", "बगीचे में क्या खिले हैं",
+                        text_only=True))
     S.append(s_sentence("P6", "scn_tarbooj_khana",                             # deck slide 17
                         "मीठा ", " खाना अच्छा लगता है।", "तरबूज", ["तरबूज", "फूल", "खुश"],
-                        "शाबाश! मीठा तरबूज खाना अच्छा लगता है।", "बच्चा क्या खा रहा है"))
+                        "शाबाश! मीठा तरबूज खाना अच्छा लगता है।", "बच्चा क्या खा रहा है",
+                        text_only=True))
 
     # ---- screen 17 · MINI GAME (मात्रा रनर) -------------------------------------------
     # [r36] A second, whole game, added at Yasir's request as the last thing before the

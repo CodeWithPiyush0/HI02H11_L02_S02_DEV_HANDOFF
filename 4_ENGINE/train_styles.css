@@ -1949,3 +1949,117 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 .rot-text{ font-size:min(7.5vw, 44px); font-weight:800; line-height:1.4; padding:0 8vw;
   text-shadow:0 .1em .2em rgba(0,0,0,.25); }
 @media (prefers-reduced-motion:reduce){ .rot-phone{ animation:none; transform:rotate(-90deg); } }
+
+
+/* ==========================================================================================
+   [r121] Yasir's round of nine
+   ========================================================================================== */
+
+/* ---- cover: «उ → ◌ु», the brackets gone ---- */
+.lt-arr{ display:inline-block; font-size:.62em; color:#7FA8D9; margin:0 .16em; vertical-align:.14em; }
+
+/* ---- page 1: two stacked rows - letter · arrow · a white card with a yellow border ---- */
+.mq-col{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px;
+  width:100%; flex:1 1 auto; min-height:0; padding-bottom:64px; box-sizing:border-box; }
+.stage.no-band.mp-center .mq-col{ position:absolute; inset:0; margin:0; width:auto; flex:none; }
+.mq-row{ display:grid; grid-template-columns:150px 110px 190px; align-items:center; justify-items:center;
+  column-gap:24px; }
+.mq-letter{ font-family:var(--font-hi); font-size:132px; font-weight:800; color:var(--navy,#0B3D8C);
+  line-height:1.1; opacity:0; transform:scale(.6);
+  transition:opacity .35s ease, transform .45s cubic-bezier(.34,1.5,.6,1); }
+.mq-arrow{ font-size:92px; font-weight:800; color:#8EC5F5; line-height:1; opacity:0; transform:translateX(-16px);
+  transition:opacity .35s ease, transform .4s ease; }
+.mq-card{ width:190px; height:158px; border-radius:28px; background:#FFFFFF; border:5px solid #F7C948;
+  box-shadow:0 8px 20px rgba(11,61,140,.12); display:flex; align-items:center; justify-content:center;
+  opacity:0; transform:scale(.6); transition:opacity .35s ease, transform .45s cubic-bezier(.34,1.5,.6,1); }
+.mq-matra{ font-family:var(--font-hi); font-size:112px; font-weight:800; color:#FF8A00; line-height:1.1;
+  transform:translateY(-.13em); }   /* the ink of «◌ु» hangs low in its em box */
+.mq-letter.mq-in, .mq-arrow.mq-in, .mq-card.mq-in{ opacity:1; transform:none; }
+.mq-row.mq-hl .mq-matra{ animation:mpGlow 1200ms ease-in-out 3; }
+@media (prefers-reduced-motion:reduce){ .mq-row.mq-hl .mq-matra{ animation:none; } }
+
+/* ---- pages 2 and 4: no equation - पल → पुल, same size, grown into the freed room ---- */
+.mb-row.mb-v2{ gap:40px; }
+.mb-v2 .mb-panel{ min-width:290px; gap:14px; }
+.mb-v2 .mb-word{ height:140px; font-size:110px; }
+.mb-v2 .mb-pic{ width:270px; height:210px;
+  transition:opacity .4s ease, transform .45s cubic-bezier(.34,1.4,.6,1); }
+.mb-v2 .mb-pic .mb-emoji{ font-size:130px; }
+.mb-v2 .mb-pic.mb-picwait{ opacity:0; transform:scale(.82); }
+.mb-v2 .mb-arrow{ font-size:96px; min-width:0; }
+.mb-v2 .mb-rword{ position:relative; display:grid; place-items:center; }
+.mb-v2 .mb-rword > .mb-rbase, .mb-v2 .mb-rword > .mb-result{ grid-area:1 / 1; white-space:nowrap;
+  transition:opacity .3s ease; }
+.mb-v2 .mb-rbase.mb-rgone, .mb-v2 .mb-result.mb-rwait{ opacity:0; }
+.mb-v2 .mb-fly{ line-height:normal; white-space:nowrap; }
+.mb-v2 .mb-rword.mb-settle{ animation:mbSettle 420ms ease-out; }
+/* «पु» - the matra alone lifts inside पुल */
+.mb-mnow .mh-ov{ animation:mbMNow 700ms ease-in-out; }
+@keyframes mbMNow{ 0%,100%{ filter:none; }
+  40%{ filter:brightness(1.3) drop-shadow(0 0 10px rgba(255,138,0,.95)) drop-shadow(0 0 4px rgba(255,138,0,.9)); } }
+@media (prefers-reduced-motion:reduce){ .mb-v2 .mb-rword.mb-settle, .mb-mnow .mh-ov{ animation:none; } }
+
+/* ---- pages 3 and 5: picture on top, then the mic and the word ---- */
+.mx-v2{ padding-bottom:92px; }          /* clear of the आगे button under the word */
+.mx-v2 .meet-stage{ flex-direction:column; gap:6px; }
+.mx-v2 .mx-pic{ width:auto; height:auto; background:transparent; border:none; box-shadow:none;
+  transition:opacity .35s ease; }
+.mx-v2 .mx-pic.mp-wait{ opacity:0; }
+.mx-v2 .meet-pic-box.mex-pic .pic-img{ width:220px; height:220px; }
+.mx-v2 .meet-pic-box.mex-pic .pic-emoji{ font-size:170px; }
+.mx-wordrow{ display:flex; align-items:center; justify-content:center; gap:26px; }
+.mx-wordrow.mp-in{ animation:mxIn .42s cubic-bezier(.34,1.4,.6,1) both; }
+@keyframes mxIn{ from{ opacity:0; transform:scale(.8); } to{ opacity:1; transform:none; } }
+.mx-v2 .mx-wordbox{ min-width:0; max-width:none; height:auto; padding:0 12px; background:transparent;
+  border:none; box-shadow:none; cursor:default; }
+.mx-v2 .mx-wordbox .glyph.mx-word{ font-size:96px; }
+/* [r122] smaller, and its turn is shown by the PULSE alone - no ring, no colour change: the same
+   blue throughout, only faded while the voice is speaking */
+.mx-mic{ position:relative; flex:0 0 auto; width:80px; height:83px; border:none; padding:0;
+  background:none; box-shadow:none; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:opacity .25s ease; -webkit-tap-highlight-color:transparent; }
+.mx-mic img{ width:100%; height:100%; object-fit:contain; pointer-events:none; }   /* the art: 58x60 */
+.mx-mic:disabled{ opacity:.45; cursor:default; }
+.mx-mic.mx-live{ animation:mxPulse 1s ease-in-out infinite; }
+.mx-mic.mx-press{ animation:mxPress .3s ease; }
+@keyframes mxPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.09); } }
+@keyframes mxRing{ from{ transform:scale(1); opacity:.95; } to{ transform:scale(1.65); opacity:0; } }
+@keyframes mxPress{ 50%{ transform:scale(.9); } }
+@media (prefers-reduced-motion:reduce){ .mx-wordrow.mp-in, .mx-mic.mx-live, .mx-mic.mx-live::after{ animation:none; } }
+
+/* ---- pages 9-13: the plate above each coach - its coach's colour, light, no stroke ---- */
+.coach-label{ background:var(--coach-l,#FFF8E7); border:none; box-shadow:0 3px 8px rgba(11,61,140,.10); }
+
+/* ---- pages 9, 10, 13: bigger option cards, bigger words, smaller pictures ---- */
+.tr-tray .tr-card.k-word, .tr-tray .tr-card.k-picture{ width:150px; min-height:146px; gap:8px; padding:12px 14px; }
+.tr-tray .tr-card.k-word .tr-pic{ width:54px; height:54px; }
+.tr-tray .tr-card.k-word .tr-emoji{ font-size:40px; }
+.tr-tray .tr-card.k-word .tr-cardlbl{ font-size:32px; }
+.tr-tray .tr-card.k-picture .tr-pic{ width:100px; height:100px; }
+/* ...and in the coach, only the word - the two words stack, so each can be big */
+.coach-face .tr-card.snapped .tr-pic, .coach-face .tr-card.snapped .tr-emoji{ display:none; }
+.coach-face .tr-card.k-word.snapped .tr-cardlbl,
+.coach-face .tr-card.k-picture.snapped .tr-cardlbl{ font-size:31px; line-height:1.38; white-space:nowrap; }
+/* a word alone in its coach gets the whole panel */
+.coach-face .tr-card.k-word.snapped:only-child .tr-cardlbl,
+.coach-face .tr-card.k-picture.snapped:only-child .tr-cardlbl{ font-size:40px; }
+.coach-body.tr-has-card .coach-face.multi{ flex-direction:column; flex-wrap:nowrap; gap:0; }
+.coach-face.multi .tr-card.k-word.snapped,
+.coach-face.multi .tr-card.k-picture.snapped{ width:auto !important; flex:0 0 auto; }
+
+/* ---- pages 14-17: the finished sentence glows while it is read; 16-17 cards are words only ---- */
+.sc-sentence.sc-reading{ animation:scRead 1.3s ease-in-out infinite; }
+@keyframes scRead{ 0%,100%{ filter:none; } 50%{ filter:drop-shadow(0 0 10px rgba(76,175,125,.55)); } }
+.sc-opt.sc-textonly{ min-height:110px; justify-content:center; }
+.sc-opt.sc-textonly .sc-optlbl{ font-size:36px; }
+@media (prefers-reduced-motion:reduce){ .sc-sentence.sc-reading{ animation:none; } }
+
+
+/* ==========================================================================================
+   [r122]
+   ========================================================================================== */
+/* page 12: the bridge «पुल» read small beside the flower and the needle - its art is a wide, low
+   scene, so at the plate's 56 px cap it came out about half their size. It gets more room; the
+   plate grows with it, and the other two plates are given the same height so the row stays level. */
+.coach-label .tr-slotpic.tr-slot-obj_pul{ width:96px; height:84px; max-width:96px; max-height:84px; }
+.coach-label:has(.tr-slotpic){ height:96px; box-sizing:border-box; }

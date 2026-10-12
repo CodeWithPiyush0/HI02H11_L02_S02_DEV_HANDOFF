@@ -517,13 +517,19 @@
       "letter": "उ",
       "matra": "ु",
       "audio": "vo_pair_u",
-      "cue_ms": 1403
+      "cue_ms": 1403,
+      "letter_ms": 1260,
+      "arrow_ms": 2320,
+      "matra_ms": 3970
      },
      {
       "letter": "ऊ",
       "matra": "ू",
       "audio": "vo_pair_uu",
-      "cue_ms": 1336
+      "cue_ms": 1336,
+      "letter_ms": 1140,
+      "arrow_ms": 2260,
+      "matra_ms": 4010
      }
     ],
     "phonemes": {
@@ -564,6 +570,8 @@
      1280,
      2570
     ],
+    "drop_ms": 3400,
+    "pic_ms": 2010,
     "base_img": "obj_pal",
     "base_emoji": "🕑",
     "cap_base": null,
@@ -637,6 +645,8 @@
      1140,
      2440
     ],
+    "drop_ms": 3090,
+    "pic_ms": 1870,
     "base_img": "obj_phal",
     "base_emoji": "🍎",
     "cap_base": null,
@@ -1141,6 +1151,9 @@
       "sentence_audio": "vo_p3_try_tarbooj"
      }
     ],
+    "opts_text_only": false,
+    "sentence_on_correct": null,
+    "sentence_full": "सीमा आज बहुत खुश है।",
     "scene_glow": [
      [
       0.505,
@@ -1193,6 +1206,9 @@
       "sentence_audio": "vo_p4_try_mukut"
      }
     ],
+    "opts_text_only": false,
+    "sentence_on_correct": "vo_p4_try_subah",
+    "sentence_full": "मैं सुबह जल्दी उठता हूँ।",
     "scene_glow": [
      [
       0.575,
@@ -1251,6 +1267,9 @@
       "sentence_audio": "vo_p5_try_subah"
      }
     ],
+    "opts_text_only": true,
+    "sentence_on_correct": null,
+    "sentence_full": "बगीचे में सुंदर फूल खिले हैं।",
     "scene_glow": [
      [
       0.5,
@@ -1303,6 +1322,9 @@
       "sentence_audio": "vo_p6_try_khush"
      }
     ],
+    "opts_text_only": true,
+    "sentence_on_correct": null,
+    "sentence_full": "मीठा तरबूज खाना अच्छा लगता है।",
     "scene_glow": [
      [
       0.505,

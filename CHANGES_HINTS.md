@@ -1159,3 +1159,77 @@ its lane, a little larger, with a soft shadow on the stones and a warm glow roun
 did, the card now does - the right one swells and fades in a shine, a wrong one shakes, dulls and
 shrinks, the one being read out swells and glows, and when she took the wrong one the right one pulses.
 Measured: a run with no errors; screenshot of the cards (चुप / तराजू).
+
+## r121 — Yasir's round of nine (cover, pages 1-5, 6-8, 9-13, 14-17)
+
+1. **Cover** — the coach labels read «उ → ◌ु» / «ऊ → ◌ू» (arrow, no brackets), and a soft rising shimmer
+   (`sfxTitle`, synthesised) plays as the title words slide out of the smoke cloud - only while the cover
+   is on screen. Before the first tap a browser may keep it silent (autoplay rule).
+2. **Page 1** — new layout (Yasir's image): two stacked rows, big navy letter · light-blue arrow · white
+   card with a yellow border holding the orange matra on its dotted circle (`.mq-*`). Each part arrives
+   ON ITS WORDS: the letter on «उ», the arrow on «इसकी मात्रा है», the matra (with its glow) on «ु».
+   The cues (`letter_ms`, `arrow_ms`, `matra_ms`) are the starts of the clip's phrases, read off its
+   pauses at build time by `_voice_runs_ms` (vo_pair_u 1260 · 2320 · 3970 ms; vo_pair_uu 1140 · 2260 ·
+   4010). Measured in the browser: 1275 · 2366 · 4002 and 1154 · 2273 · 4039.
+3. **Pages 2 and 4** — the equation panel is gone. «यह शब्द देखिए, पल» -> पल + picture on the left;
+   then the arrow in the centre; «प के साथ … लगाने पर पु …» -> पल on the right, and on «पु» the ु rises
+   from below, lands under प and the word becomes पुल with its matra highlighted; «अब ल जुड़ने पर पुल …»
+   -> on «पुल» its picture. Both words 128 px, pictures 320x250. «प। पु। पुल।» lifts प, then the
+   matra in पुल, then पुल. Cues `drop_ms` (T2 3400 / T4 3090) and `pic_ms` (2010 / 1870) are the last
+   phrase of each clip.
+4. **Pages 3 and 5** — picture on top, the word below (116 px, matra highlighted) with a blue mic
+   button on its left. After each word's line the mic lights and pulses for 3 s (the child's turn),
+   then the next word; while the voice plays it is greyed and disabled. Measured: 3.0 s on all four
+   words. The mic is a cue only - nothing is recorded.
+5. **Pages 6-8** — after the instruction, each coach's word is read in order with that coach lit
+   (no matra highlight - that stays hint rung 2's). Taps wait until the last word. The replay / idle
+   repeat plays the instruction and then the words again.
+6. **Pages 9-13** — the plate above each coach has no stroke; it is its coach's colour, light
+   (`--coach-l`: #FFEDB3 / #D3F3CD / #FDD3E5 / #D3E8FC) with a soft shadow.
+7. **Pages 9, 10, 13** — tray cards 150x146; word 32 px, picture 54 px (word cards) / 100 px (page 13's
+   picture cards). In the coach only the WORD shows: 40 px alone, 31 px when two share a coach (stacked).
+   Page 13's picture cards get their word as they land (not matra-highlighted, as page 13's other
+   readings are not).
+8. **Pages 14-17** — a correct answer reads the complete sentence, the sentence glowing while it is
+   read. Page 15's praise («शाबाश! सही शब्द चुनकर वाक्य पूरा किया।») does not contain it, so the
+   sentence (`vo_p4_try_subah`) plays first; pages 14, 16, 17's praise lines already read the sentence
+   back («शाबाश! सीमा आज बहुत खुश है।»), so they play once rather than twice (`sentence_on_correct`
+   null). A 3rd-attempt win (no praise) reads the sentence alone.
+9. **Pages 16, 17** — options are text only (`opts_text_only`), word 36 px.
+No new audio or art. Measured: every page above in headless Chrome with real (muted) audio - order of
+clips, cue times, screenshots; no console errors.
+
+## r122 — page 12's bridge, the cover's title sound, the matra alone, a smaller mic, sound on the cover
+
+1. **Page 12** — the bridge «पुल» above the first coach was capped at the plate's 56 px and read half
+   the size of the flower and the needle; it is 96x84 now. The pictures carry their own name as a class
+   (`tr-slot-obj_pul`) so it is sized alone, and all three plates are one height (96) so the row is level.
+2. **Cover title sound** — the lesson's own pop (`sfx_pop`, full volume) as the title slides out of the
+   cloud, and when it lands a second pop with a bright four-note bell over it (`sfxTitleLand`).
+   `sfxFile` takes an optional volume for this.
+3. **Pages 2 and 4** — the flying matra is now the matra alone, no dotted circle over प: the flier is
+   the real syllable «पु» / «फू» in orange, clipped at its baseline so only the mark below shows, and
+   placed on the word's own baseline and consonant (measured: flier and प at the same x, y, size), so
+   the mark lands where the word's ु then fades up. Words 128 -> 110 px, pictures 320x250 -> 270x210,
+   arrow 110 -> 96.
+4. **Pages 3 and 5** — the mic only pulses: no ring, no colour change (the same blue, faded while the
+   voice speaks). Mic 100 -> 80 px, word 116 -> 96 px, picture 260 -> 220 px. The mic is still drawn in
+   CSS/SVG - no mic asset was found in this repo or the sibling projects (asked Yasir for the file).
+5. **Sound on the cover in the live version** — a browser keeps a page silent until its first tap, so
+   the cover's train, title sounds and greeting played unheard, and only the greeting came back on the
+   first tap. When sound is being held back, the loading screen now stays up with a pulsing tap hand;
+   the tap unlocks the audio and the cover then plays from the start with all of its sound. Where sound
+   is already allowed (an app webview, a trusted site, a later visit in the same tab) there is no extra
+   tap. Measured: with Chrome's normal autoplay rule the train waits behind the hand, and after the tap
+   whistle, chug, sparkles, both title pops, the bell and the greeting all play; with autoplay allowed
+   the cover starts straight away, as before. The gate listens for `click` (a touch only unlocks audio
+   when the finger lifts).
+
+## r123 — pages 3 and 5: Yasir's mic, and only the matra is highlighted
+
+- The mic is now Yasir's own button, `3_CURRENT_BUILD/assets/UI/mic.svg` (80x83 on screen), in place
+  of the CSS-drawn one. Behaviour unchanged: faded and disabled while the voice plays, full and
+  pulsing for the child's 3 s turn.
+- «don't add glow effect in the words, only matra will be highlighted»: the word no longer pulses
+  (`mh-pulse` brightened the whole word with a drop-shadow) and the matra has no glow - the ु / ू
+  simply turns orange. Measured on गुड़ / दूध: one highlight overlay, no glow class, word filter none.
