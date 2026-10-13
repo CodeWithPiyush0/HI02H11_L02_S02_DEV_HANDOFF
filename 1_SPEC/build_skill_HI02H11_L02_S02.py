@@ -211,7 +211,7 @@ def pic(key):
     script is re-run. What is still missing is printed at the end of the build and written into
     `_art_manifest.json`, so the art run has a work list.
     """
-    if os.path.isfile(os.path.join(IMG_DIR, key + ".png")):
+    if os.path.isfile(os.path.join(IMG_DIR, key + ".webp")):   # [r126] every picture is WebP
         return key
     if key not in PENDING_ART:
         PENDING_ART.append(key)
@@ -900,7 +900,7 @@ def build_card(slides):
     audio = {v: "assets/Audio/%s.ogg" % v for v in sorted(AUDIO_TEXT)}
     for v in COPY_AUDIO:
         audio.setdefault(v, "assets/Audio/%s.ogg" % v)
-    image = {k: "assets/Images/%s.png" % k for k in sorted(used_images(slides))}
+    image = {k: "assets/Images/%s.webp" % k for k in sorted(used_images(slides))}
 
     return {
         "version": "0.1", "skill_code": CODE, "lo_code": "HI02H11_L02",
@@ -987,7 +987,7 @@ def build_card(slides):
                                 + [(v[0], v[1]) for v in BASE_OBJ.values()]
                                 + list(SCENE.items())),
         "assets": {"audio": audio, "audio_text": AUDIO_TEXT, "image": image,
-                   "audio_ext": "ogg", "img_ext": "png"},
+                   "audio_ext": "ogg", "img_ext": "webp"},
         "slides": slides,
     }
 
@@ -1728,6 +1728,10 @@ def inject_celebration(html, card):
 
 def main():
     argparse.ArgumentParser().parse_args()
+    # [r126] pictures -> WebP, videos -> WebM, before anything reads the asset folders (see the script)
+    import subprocess
+    subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                 "normalize_assets.py")], check=True)
     if not os.path.isfile(ENGINE):
         sys.exit("X  no engine at %s" % ENGINE)
     src = open(ENGINE, encoding="utf-8").read()
@@ -1768,15 +1772,18 @@ def main():
     html = CARD_TAG.sub(lambda m: m.group(1) + payload + m.group(3), src, count=1)
 
     first = [k for k in ("obj_pul", "obj_phool") if k in card["assets"]["image"]]
-    links = "".join('<link rel="preload" as="image" fetchpriority="high" '
-                    'href="assets/Images/%s.png">' % k for k in first)
+    # [r126] the head's high-priority preloads are the COVER's train pictures - the first thing the child
+    # sees, and on a slow line the thing that went missing. The page-2 pictures load with the rest.
+    del first
+    links = "".join('<link rel="preload" as="image" fetchpriority="high" href="assets/UI/%s">' % f
+                    for f in ("train_still.webp", "train_spritesheet.webp"))
     html, n_pre = re.subn(r'(?:<link rel="preload" as="image"[^>]*>)+', links, html, count=1)
     declared = set(card["assets"]["image"])
     bad = sorted(set(re.findall(r'<link rel="preload"[^>]*href="assets/Images/([^".]+)\.\w+"',
                                 html)) - declared)
     if bad:
         sys.exit("X  preload points at missing art: %s" % bad)
-    print("  OK  preload retargeted to %s (%d block rewritten)" % (first, n_pre))
+    print("  OK  preload: the cover's train pictures (%d block rewritten)" % n_pre)
 
     if 'id="bundleLetterGlow"' not in html:
         html, n = re.subn(r"</head>", LETTER_GLOW_CSS + "</head>", html, count=1)
@@ -1821,6 +1828,17 @@ def main():
     if not _n_art:
         sys.exit("X  the runner's art stamp placeholder is missing - re-run embed_matra_runner.py")
     html = html.replace("__MR_ART_V_STAMP__", _ah.hexdigest()[:12])
+    # [r126] ...and the list of the game's pictures, for the lesson to fetch ahead (warmRunner): read
+    # from the game's own art table, so it is exactly what the game will ask for
+    _rs = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "matra_runner_src", "index.html"),
+               encoding="utf-8").read()
+    _art = sorted(set(re.findall(r'\[\s*"([\w.-]+\.webp)"\s*,\s*\d+\s*\]', _rs) +
+                      re.findall(r'"--mr-ui-[\w-]+"\s*:\s*"([\w.-]+\.webp)"', _rs) + ["panel3.webp"]))
+    _art = [f for f in _art if os.path.isfile(os.path.join(_mr, f))] + ["coin.svg"]
+    if html.count("__MR_ART_LIST__") != 1 or len(_art) < 20:
+        sys.exit("X  runner warm-up list: placeholder %d, %d files" % (html.count("__MR_ART_LIST__"), len(_art)))
+    html = html.replace("__MR_ART_LIST__", ",".join(_art))
+    print("  OK  runner warm-up list: %d pictures" % len(_art))
     print("  OK  runner art stamp %s (%d)" % (_ah.hexdigest()[:12], _n_art))
     open(os.path.join(BUNDLE, CODE + ".html"), "w", encoding="utf-8").write(html)
     open(os.path.join(BUNDLE, "card.json"), "w", encoding="utf-8").write(payload + "\n")

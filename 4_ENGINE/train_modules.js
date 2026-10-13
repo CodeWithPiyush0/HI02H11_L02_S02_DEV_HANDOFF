@@ -165,11 +165,46 @@
      ever missing, so a stripped bundle still makes a noise rather than going silent. */
   /* [r77] every sound started here is remembered until it ends, so arriving on a new page can stop
      them - they are fire-and-forget <audio> elements, and nothing else ever did */
-  const _sfxLive = new Set();
+  const _sfxLive = new Set(), _sfxSrcs = new Set();
   window.__stopLessonSfx = function(){
     _sfxLive.forEach(a => { try{ a.pause(); a.currentTime = 0; }catch(e){} }); _sfxLive.clear();
+    _sfxSrcs.forEach(n => { try{ n.stop(); }catch(e){} }); _sfxSrcs.clear();
   };
+  /* [r126] SOUND EFFECTS PLAY FROM MEMORY. Yasir, on the live site: "sometimes the train and other sfx
+     do not play ... sometimes sfx or VO get delayed". Each effect used to be a NEW <audio> element,
+     i.e. a download started at the very moment the sound was wanted - late on a slow connection, and
+     on an iPhone not at all for the whistle and the chug, which are WAV files inside an .ogg name (an
+     <audio> element trusts the name; decoding trusts the bytes). Every effect is now fetched and
+     decoded once, ahead of time, into the same Web Audio context the voice uses, and played from
+     there: instant, and format-proof. The <audio> path stays as the fallback for a sound that has not
+     arrived yet, or a browser without Web Audio. */
+  const _sfxUrl = (name)=> (typeof _av === "function")
+    ? _av("assets/Audio/" + name + "." + AUDIO_EXT) : "assets/Audio/" + name + "." + AUDIO_EXT;
+  function sfxWarm(name){
+    try{ if(typeof _loadVoiceBuffer === "function") return _loadVoiceBuffer(_sfxUrl(name)).catch(()=> null); }
+    catch(e){}
+    return Promise.resolve(null);
+  }
+  /* the cover's sounds - the engine's loading screen waits for these (see boot in the template) */
+  window.__coverSfx = ["sfx_whistle", "sfx_train_move", "sfx_pop"];
+  window.__lessonSfx = ["sfx_whistle", "sfx_train_move", "sfx_pop", "sfx_fb_correct", "sfx_fb_incorrect"];
+  window.__warmLessonSfx = ()=> Promise.all(window.__lessonSfx.map(sfxWarm));
   function sfxFile(name, fallback, vol){
+    try{
+      const url = _sfxUrl(name);
+      const buf = (typeof _voiceBuffers !== "undefined") ? _voiceBuffers.get(url) : null;
+      const c = (typeof _resumeVoiceAudio === "function") ? _resumeVoiceAudio() : null;
+      if(buf && c && c.state === "running"){
+        const src = c.createBufferSource(), g = c.createGain();
+        src.buffer = buf; g.gain.value = (vol != null) ? vol : 0.55;
+        src.connect(g); g.connect(c.destination);
+        _sfxSrcs.add(src); src.onended = ()=> _sfxSrcs.delete(src);
+        if(window.__lessonBgm && window.__lessonBgm.duckFor) window.__lessonBgm.duckFor(buf.duration);   /* [r99] the music steps back */
+        src.start();
+        return;
+      }
+      sfxWarm(name);                                  /* not in memory yet: it will be next time */
+    }catch(e){}
     try{
       /* [r17] versioned like every other clip - see _av() in the engine */
       const a = new Audio(typeof _av === "function"
@@ -4656,6 +4691,10 @@ function roundRect(x,y,w,h,r){
   "use strict";
   var DIR = "assets/MatraRunner/";
   var A = {};                       // name -> HTMLImageElement, only once it has really loaded
+  /* [r126] how many of the game's pictures have answered (loaded OR failed) - the curtain waits for
+     all of them, not just the first four, so the child never sees the code-drawn stand-ins */
+  window.MR_artSettled = 0; window.MR_artTotal = 0;
+  var settle = function(){ window.MR_artSettled++; };
 
   /* name: [file, framesAcross] */
   var SHEET = {
@@ -4740,6 +4779,8 @@ function roundRect(x,y,w,h,r){
          row looked like three lives already spent. */
       if((name === "heart" || name === "heartOff") && typeof hud === "function") hud();
     };
+    window.MR_artTotal++;
+    im.addEventListener("load", settle, { once:true }); im.addEventListener("error", settle, { once:true });
     im.src = mri(DIR + SHEET[name][0]);
   });
 
@@ -4798,6 +4839,8 @@ function roundRect(x,y,w,h,r){
         Object.keys(WOOD).forEach(function(k){ root.style.setProperty(k, WOOD[k]); });
       }
     };
+    window.MR_artTotal++;
+    im.addEventListener("load", settle, { once:true }); im.addEventListener("error", settle, { once:true });
     im.src = mri(DIR + UI[prop]);
   });
 })();
@@ -5011,7 +5054,8 @@ function drawTigerImage(){
   vid.muted = true; vid.defaultMuted = true; vid.loop = true; vid.playsInline = true;
   vid.preload = "auto";
   vid.setAttribute("muted", ""); vid.setAttribute("playsinline", ""); vid.setAttribute("webkit-playsinline", "");
-  vid.src = mri("assets/MatraRunner/bg_valley.mp4");   /* this closure has no DIR; same folder as the art */
+  /* [r126] WebM where the browser plays it, the MP4 where it does not (older iPhones) */
+  vid.src = mri("assets/MatraRunner/" + (vid.canPlayType('video/webm; codecs="vp9"') ? "bg_valley.webm" : "bg_valley.mp4"));   /* this closure has no DIR; same folder as the art */
   var vidAsked = 0;
   function valleyFrame(){
     /* ask to play at most once a second while paused: play() returns a promise that rejects if
@@ -5478,11 +5522,19 @@ function drawFX(){
    then the art popped in piece by piece. A curtain in the valley's own colours covers the game
    until the pieces the first frame is made of have arrived (capped, so a slow file cannot hold it),
    then lifts. Inline styles: the embed scopes every stylesheet rule under .mr-root. */
-let _curtain = null, _curtainUp = true, _curtainT0 = performance.now();
+/* [r126] Yasir: "when the running game starts it still shows the previous version for 2-3 seconds
+   and then it gets replaced with the newer version". That "previous version" is this game's code-drawn
+   stand-in art, and it showed because the curtain lifted after 3.5 s whatever had arrived - on a live
+   connection the art (several MB) takes longer than that. The curtain now waits for EVERY picture to
+   answer (loaded or failed), shows a spinner so the wait reads as loading, and gives up only after
+   30 s. The game does not move and nothing is spoken while it is up (see loop() and whenLessonQuiet). */
+var _curtain = null, _curtainUp = true, _curtainT0 = performance.now();
+var CURTAIN_CAP = 30000;           /* only a game opened before the lesson has fetched its art ever comes near this */
 function firstFrameReady(){
   const A = window.MR_ART;
   if(!A) return false;
-  return ["valley", "deck", "wall", "run"].every(k => A.has(k)) && !!window.MR_skinReady;
+  const all = window.MR_artTotal > 0 && window.MR_artSettled >= window.MR_artTotal;
+  return all && ["valley", "deck", "wall", "run"].every(k => A.has(k)) && !!window.MR_skinReady;
 }
 function curtain(){
   if(!_curtainUp) return;
@@ -5493,8 +5545,14 @@ function curtain(){
       "background:linear-gradient(180deg,#7c5bb4 0%,#f08a6a 42%,#f6c27a 62%,#4f86b8 100%);" +
       "transition:opacity .45s ease;opacity:1";
     host.appendChild(_curtain);
+    const sp = document.createElement("div");
+    sp.style.cssText = "position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;" +
+      "border-radius:50%;border:7px solid rgba(255,255,255,.35);border-top-color:#fff";
+    _curtain.appendChild(sp);
+    try{ sp.animate([{ transform:"rotate(0deg)" }, { transform:"rotate(360deg)" }],
+                    { duration:900, iterations:Infinity }); }catch(e){}
   }
-  if(firstFrameReady() || performance.now() - _curtainT0 > 3500){
+  if(firstFrameReady() || performance.now() - _curtainT0 > CURTAIN_CAP){
     _curtainUp = false;
     MR_RAF(() => { _curtain.style.opacity = "0";
       setTimeout(() => { if(_curtain){ _curtain.remove(); _curtain = null; } }, 600); });
@@ -5606,8 +5664,10 @@ function whenVoiceDone(cb, minMs, capMs){
 }
 /* ...and the lesson's: its instruction for this page is spoken by the engine outside the game */
 function whenLessonQuiet(cb, capMs){
-  const t0 = Date.now(); let quietSince = 0;
+  let t0 = Date.now(); let quietSince = 0;
   (function poll(){
+    /* [r126] the game's first words wait for its pictures too: the cap counts from the curtain's lift */
+    if(typeof _curtainUp !== "undefined" && _curtainUp){ t0 = Date.now(); quietSince = 0; setTimeout(poll, 100); return; }
     const busy = !!(document.body && document.body.classList.contains("vo-lock"));
     const now = Date.now();
     if(busy) quietSince = 0; else if(!quietSince) quietSince = now;
@@ -5777,7 +5837,8 @@ function fullReset(){ G.score=0; G.hearts=3; clearTimeout(G.nextT); hud(); }
 let last=0;
 function loop(ts){
   const dt = Math.min(0.05, (ts-last)/1000 || 0.016); last=ts;
-  update(dt); render(); watchLessonVO();
+  if(!_curtainUp) update(dt);          /* [r126] nothing moves under the curtain */
+  render(); watchLessonVO();
   MR_RAF(loop);
 }
 function boot(){
@@ -6529,7 +6590,9 @@ if(document.fonts && document.fonts.load){
     if(!window.__ltGo){
       if(!window.__ltArt){
         window.__ltArtImgs = [TRAIN_ART.src, TRAIN_SPR.src].map(u => {
-          const im = new Image(); im.decoding = "async"; im.src = u; return im; });
+          /* [r126] the cover's train comes before anything else on the line */
+          const im = new Image(); im.decoding = "async"; try{ im.fetchPriority = "high"; }catch(e){}
+          im.src = u; return im; });
         window.__ltArt = Promise.all(window.__ltArtImgs.map(im => new Promise(r => {
             /* loaded and decoded - or loaded and 400 ms on, whichever is first */
             const fin = ()=> r();
@@ -6542,7 +6605,10 @@ if(document.fonts && document.fonts.load){
       const isLoaded = ()=> !document.getElementById("bootLoader") || document.body.classList.contains("loaded");
       window.__ltKick = ()=>{
         if(window.__ltGo || !isLoaded()) return;
-        if(!window.__ltCapT) window.__ltCapT = setTimeout(()=>{ window.__ltCap = true; window.__ltKick(); }, 2000);
+        /* [r126] 2 s -> 12 s. With a 2 s cap a slow connection sent the train off before its pictures
+           had arrived - "sometimes the train does not appear, just its smoke". The loading screen now
+           holds until they are in (see boot in the template), so this is only a last resort. */
+        if(!window.__ltCapT) window.__ltCapT = setTimeout(()=>{ window.__ltCap = true; window.__ltKick(); }, 12000);
         if(window.__ltArtOk || window.__ltCap){
           window.__ltGo = true; clearTimeout(window.__ltCapT);
           /* [r92] a beat after the cover appears: the loading screen's fade and removal and the
@@ -6780,18 +6846,34 @@ if(document.fonts && document.fonts.load){
      files landed. Ten seconds after this page has loaded, the files the game's first frame is made
      of - plus its music and voice - are fetched quietly, one after another, into the browser cache. */
   (function warmRunner(){
+    /* [r126] AT THE GAME'S OWN ADDRESSES, AND ALL OF IT. r124 gave the game's pictures a version
+       (`?v=`) so a device cannot keep old art - but this warm-up still fetched the plain names, a
+       different address, so it warmed nothing and the game downloaded everything as it opened
+       (Yasir: "it still shows the previous version for 2-3 seconds"). It now asks for exactly what
+       the game asks for: every picture it loads (the list is written in by the build from the game's
+       own art table), the video it will play, and its music - one file at a time, low priority, so
+       it never competes with the lesson's own voice. The pictures are kept, decoded, until the game
+       has started. */
     const D = "assets/MatraRunner/";
-    const imgs = ["bg_valley.webp", "bridge_deck.webp", "bridge_wall.webp", "portal_ring.webp",
-                  "swifty_run.webp", "swifty_fall.webp", "ui_banner.webp", "ui_badge.webp", "ui_btn.webp",
-                  "heart_full.webp", "heart_empty.webp", "coin.webp"];
-    const files = ["bg_valley.mp4", "bgm_game.ogg"];
+    const ART_V = "__MR_ART_V_STAMP__", AUD_V = "__MR_AUDIO_V_STAMP__";
+    const imgs = "__MR_ART_LIST__".split(",").filter(Boolean);
+    const vid = (()=>{ try{ const v = document.createElement("video");
+                       return v.canPlayType('video/webm; codecs="vp9"') ? "bg_valley.webm" : "bg_valley.mp4"; }
+                     catch(e){ return "bg_valley.mp4"; } })();
+    window.__mrWarm = [];
     const start = ()=>{
-      imgs.forEach(f => { const im = new Image(); im.decoding = "async"; im.src = D + f; });
+      const q = imgs.map(f => ({ img:true, url: D + f + "?v=" + ART_V }))
+        .concat([{ url: D + vid + "?v=" + ART_V }, { url: D + "bgm_game.ogg?v=" + AUD_V }]);
       let i = 0;
-      (function next(){ if(i >= files.length) return;
-        fetch(D + files[i++]).then(r => r.blob()).catch(()=>{}).then(()=> setTimeout(next, 200)); })();
+      (function next(){ if(i >= q.length) return;
+        const it = q[i++];
+        if(it.img){ const im = new Image(); im.decoding = "async"; window.__mrWarm.push(im);
+                    const go = ()=> setTimeout(next, 30);
+                    im.onload = im.onerror = go; im.src = it.url; return; }
+        fetch(it.url, { priority:"low" }).then(r => r.blob()).catch(()=>{}).then(()=> setTimeout(next, 60)); })();
     };
-    const arm = ()=> setTimeout(start, 10000);
+    /* [r126] after the cover, and after the lesson's own first clips have had a head start */
+    const arm = ()=> (window.__afterCover || (f => f()))(()=> setTimeout(start, 6000));
     if(document.readyState === "complete") arm(); else window.addEventListener("load", arm);
   })();
 

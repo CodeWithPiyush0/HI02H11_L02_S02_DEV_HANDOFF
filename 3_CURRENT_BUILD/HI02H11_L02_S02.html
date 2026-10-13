@@ -4202,7 +4202,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 
 /* == TRAIN STYLES :: END == */
 </style>
-<link rel="preload" as="image" fetchpriority="high" href="assets/Images/obj_pul.png"><link rel="preload" as="image" fetchpriority="high" href="assets/Images/obj_phool.png">
+<link rel="preload" as="image" fetchpriority="high" href="assets/UI/train_still.webp"><link rel="preload" as="image" fetchpriority="high" href="assets/UI/train_spritesheet.webp">
 <style id="bundleLetterGlow">
 /* Landing letter-strip glow. concept_strip returns before the engine adds show/hint-glow, so
    every such landing in the fleet misses it; raised as a dev ask. Base rule, not keyframes-only:
@@ -4243,7 +4243,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 
 <!-- BOOT LOADER — [template] r4/P2: white boot screen, no-tap auto-dismiss (see boot()) -->
 <div class="boot-loader" id="bootLoader">
-  <img src="assets/UI/loader.gif" alt="">
+  <img src="assets/UI/loader.webp" alt="">
 </div>
 
 
@@ -4289,7 +4289,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
   <!-- FEEDBACK OVERLAY — kit-style card + clean Swiftee large -->
   <div class="hint-overlay" id="hintOverlay">
     <div class="hint-box" id="hintBox">
-      <img class="hint-mascot" id="hintMascot" src="assets/UI/sw_anim_rest.png" alt=""
+      <img class="hint-mascot" id="hintMascot" src="assets/UI/sw_anim_rest.webp" alt=""
            onerror="this.style.display='none'">
       <div class="hint-body">
         <div class="hint-text" id="hintText"></div>
@@ -4300,7 +4300,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
   <!-- TAP-TO-START — uses provided title-screen art -->
   <div class="start-gate" id="startGate">
     <div class="sg-card">
-      <img class="sg-mascot" src="assets/UI/new_landing_swiftee_anim.webp" alt="Swiftee"
+      <img class="sg-mascot" fetchpriority="low" src="assets/UI/new_landing_swiftee_anim.webp" alt="Swiftee"
            onerror="this.style.display='none'">
       <div class="sg-content">
         <div class="sg-title" id="sgTitle">क्रम में लगाओ</div>
@@ -4321,7 +4321,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
     <div class="confetti" id="confetti"></div>
     <div class="end-title" id="endTitle"></div>
     <div class="end-subtitle" id="endSubtitle"></div>
-    <img class="end-mascot" src="assets/UI/sw_lg_celebrating_anim.webp" alt="Swiftee"
+    <img class="end-mascot" data-src="assets/UI/sw_lg_celebrating_anim.webp" alt="Swiftee"
          onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'end-mascot',textContent:'🎉'}))">
     <!-- [r5] the arrow is drawn by .end-btn::after now, exactly as .nav-btn draws its own.
          [r82] Yasir: the same button as HI02H11_L01_S01's celebration - the arrow alone, the
@@ -4352,7 +4352,7 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 </div>
 <div class="phase-gate" id="phaseGate">
     <div class="pg-title" id="phaseGateTitle"></div>
-    <img id="phaseGateImg" src="assets/UI/peeking.webp" alt="">   <!-- [20a landing-fix] reunited with #phaseGate (was orphaned in .stage → full-bleed on landing once the gate went transparent) -->
+    <img id="phaseGateImg" data-src="assets/UI/peeking.webp" alt="">   <!-- [20a landing-fix] reunited with #phaseGate (was orphaned in .stage → full-bleed on landing once the gate went transparent) -->
 </div>
 
 <!-- ============ CARD DATA (embedded; in prod the compiler does this) ============ -->
@@ -4836,28 +4836,28 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    "vo_try_again": "एक बार फिर सुनिए।"
   },
   "image": {
-   "obj_aaloo": "assets/Images/obj_aaloo.png",
-   "obj_dhanush": "assets/Images/obj_dhanush.png",
-   "obj_doodh": "assets/Images/obj_doodh.png",
-   "obj_gud": "assets/Images/obj_gud.png",
-   "obj_kabootar": "assets/Images/obj_kabootar.png",
-   "obj_khush": "assets/Images/obj_khush.png",
-   "obj_mukut": "assets/Images/obj_mukut.png",
-   "obj_pal": "assets/Images/obj_pal.png",
-   "obj_phal": "assets/Images/obj_phal.png",
-   "obj_phool": "assets/Images/obj_phool.png",
-   "obj_pul": "assets/Images/obj_pul.png",
-   "obj_sooraj": "assets/Images/obj_sooraj.png",
-   "obj_subah": "assets/Images/obj_subah.png",
-   "obj_sui": "assets/Images/obj_sui.png",
-   "obj_tarbooj": "assets/Images/obj_tarbooj.png",
-   "scn_bageecha": "assets/Images/scn_bageecha.png",
-   "scn_seema_khush": "assets/Images/scn_seema_khush.png",
-   "scn_subah_uthna": "assets/Images/scn_subah_uthna.png",
-   "scn_tarbooj_khana": "assets/Images/scn_tarbooj_khana.png"
+   "obj_aaloo": "assets/Images/obj_aaloo.webp",
+   "obj_dhanush": "assets/Images/obj_dhanush.webp",
+   "obj_doodh": "assets/Images/obj_doodh.webp",
+   "obj_gud": "assets/Images/obj_gud.webp",
+   "obj_kabootar": "assets/Images/obj_kabootar.webp",
+   "obj_khush": "assets/Images/obj_khush.webp",
+   "obj_mukut": "assets/Images/obj_mukut.webp",
+   "obj_pal": "assets/Images/obj_pal.webp",
+   "obj_phal": "assets/Images/obj_phal.webp",
+   "obj_phool": "assets/Images/obj_phool.webp",
+   "obj_pul": "assets/Images/obj_pul.webp",
+   "obj_sooraj": "assets/Images/obj_sooraj.webp",
+   "obj_subah": "assets/Images/obj_subah.webp",
+   "obj_sui": "assets/Images/obj_sui.webp",
+   "obj_tarbooj": "assets/Images/obj_tarbooj.webp",
+   "scn_bageecha": "assets/Images/scn_bageecha.webp",
+   "scn_seema_khush": "assets/Images/scn_seema_khush.webp",
+   "scn_subah_uthna": "assets/Images/scn_subah_uthna.webp",
+   "scn_tarbooj_khana": "assets/Images/scn_tarbooj_khana.webp"
   },
   "audio_ext": "ogg",
-  "img_ext": "png"
+  "img_ext": "webp"
  },
  "slides": [
   {
@@ -6341,7 +6341,7 @@ let swMood = "point";
    the still closed-mouth frame. Driven off isPlaying (toggled by setPlaying at every clip start/end). */
 function swApplyPose(){ /* [20a] retired: heads no longer couple to isPlaying (setSwMood drives them). */ }
 function _swApplyPose_dead(){ const img = document.getElementById("swBuddyImg"); if(!img) return;
-  img.src = "assets/UI/" + (isPlaying ? (SW_POSE[swMood] || SW_POSE.talk) + ".gif" : SW_REST + ".png");
+  img.src = "assets/UI/" + (isPlaying ? (SW_POSE[swMood] || SW_POSE.talk) + ".gif" : SW_REST + ".webp");
   img.style.display = ""; }
 function setSwMood(m){ swMood = m;
   const img = document.getElementById("swBuddyImg"), w = document.getElementById("swBuddy");
@@ -11213,11 +11213,46 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
      ever missing, so a stripped bundle still makes a noise rather than going silent. */
   /* [r77] every sound started here is remembered until it ends, so arriving on a new page can stop
      them - they are fire-and-forget <audio> elements, and nothing else ever did */
-  const _sfxLive = new Set();
+  const _sfxLive = new Set(), _sfxSrcs = new Set();
   window.__stopLessonSfx = function(){
     _sfxLive.forEach(a => { try{ a.pause(); a.currentTime = 0; }catch(e){} }); _sfxLive.clear();
+    _sfxSrcs.forEach(n => { try{ n.stop(); }catch(e){} }); _sfxSrcs.clear();
   };
+  /* [r126] SOUND EFFECTS PLAY FROM MEMORY. Yasir, on the live site: "sometimes the train and other sfx
+     do not play ... sometimes sfx or VO get delayed". Each effect used to be a NEW <audio> element,
+     i.e. a download started at the very moment the sound was wanted - late on a slow connection, and
+     on an iPhone not at all for the whistle and the chug, which are WAV files inside an .ogg name (an
+     <audio> element trusts the name; decoding trusts the bytes). Every effect is now fetched and
+     decoded once, ahead of time, into the same Web Audio context the voice uses, and played from
+     there: instant, and format-proof. The <audio> path stays as the fallback for a sound that has not
+     arrived yet, or a browser without Web Audio. */
+  const _sfxUrl = (name)=> (typeof _av === "function")
+    ? _av("assets/Audio/" + name + "." + AUDIO_EXT) : "assets/Audio/" + name + "." + AUDIO_EXT;
+  function sfxWarm(name){
+    try{ if(typeof _loadVoiceBuffer === "function") return _loadVoiceBuffer(_sfxUrl(name)).catch(()=> null); }
+    catch(e){}
+    return Promise.resolve(null);
+  }
+  /* the cover's sounds - the engine's loading screen waits for these (see boot in the template) */
+  window.__coverSfx = ["sfx_whistle", "sfx_train_move", "sfx_pop"];
+  window.__lessonSfx = ["sfx_whistle", "sfx_train_move", "sfx_pop", "sfx_fb_correct", "sfx_fb_incorrect"];
+  window.__warmLessonSfx = ()=> Promise.all(window.__lessonSfx.map(sfxWarm));
   function sfxFile(name, fallback, vol){
+    try{
+      const url = _sfxUrl(name);
+      const buf = (typeof _voiceBuffers !== "undefined") ? _voiceBuffers.get(url) : null;
+      const c = (typeof _resumeVoiceAudio === "function") ? _resumeVoiceAudio() : null;
+      if(buf && c && c.state === "running"){
+        const src = c.createBufferSource(), g = c.createGain();
+        src.buffer = buf; g.gain.value = (vol != null) ? vol : 0.55;
+        src.connect(g); g.connect(c.destination);
+        _sfxSrcs.add(src); src.onended = ()=> _sfxSrcs.delete(src);
+        if(window.__lessonBgm && window.__lessonBgm.duckFor) window.__lessonBgm.duckFor(buf.duration);   /* [r99] the music steps back */
+        src.start();
+        return;
+      }
+      sfxWarm(name);                                  /* not in memory yet: it will be next time */
+    }catch(e){}
     try{
       /* [r17] versioned like every other clip - see _av() in the engine */
       const a = new Audio(typeof _av === "function"
@@ -13957,7 +13992,7 @@ const mrv = u => u + "?v=" + MR_AV;
    immutable for a year, so a device that had played an earlier build kept drawing the old pictures.
    Stamped from the CONTENT of the art folder by the lesson build, so a changed file gets a new
    address and every device fetches it; unchanged, the address stays and the cache still works. */
-const MR_IV = "968a7c5df253";
+const MR_IV = "ec1dbc45c217";
 const mri = u => u + "?v=" + MR_IV;
 /* बोली जाने वाली पंक्तियाँ — assets/MatraRunner/voice/<id>.ogg */
 /* [r76] the lesson's आप register, as the recordings now speak it (the SME's round-3 rule: the
@@ -15704,6 +15739,10 @@ function roundRect(x,y,w,h,r){
   "use strict";
   var DIR = "assets/MatraRunner/";
   var A = {};                       // name -> HTMLImageElement, only once it has really loaded
+  /* [r126] how many of the game's pictures have answered (loaded OR failed) - the curtain waits for
+     all of them, not just the first four, so the child never sees the code-drawn stand-ins */
+  window.MR_artSettled = 0; window.MR_artTotal = 0;
+  var settle = function(){ window.MR_artSettled++; };
 
   /* name: [file, framesAcross] */
   var SHEET = {
@@ -15788,6 +15827,8 @@ function roundRect(x,y,w,h,r){
          row looked like three lives already spent. */
       if((name === "heart" || name === "heartOff") && typeof hud === "function") hud();
     };
+    window.MR_artTotal++;
+    im.addEventListener("load", settle, { once:true }); im.addEventListener("error", settle, { once:true });
     im.src = mri(DIR + SHEET[name][0]);
   });
 
@@ -15846,6 +15887,8 @@ function roundRect(x,y,w,h,r){
         Object.keys(WOOD).forEach(function(k){ root.style.setProperty(k, WOOD[k]); });
       }
     };
+    window.MR_artTotal++;
+    im.addEventListener("load", settle, { once:true }); im.addEventListener("error", settle, { once:true });
     im.src = mri(DIR + UI[prop]);
   });
 })();
@@ -16059,7 +16102,8 @@ function drawTigerImage(){
   vid.muted = true; vid.defaultMuted = true; vid.loop = true; vid.playsInline = true;
   vid.preload = "auto";
   vid.setAttribute("muted", ""); vid.setAttribute("playsinline", ""); vid.setAttribute("webkit-playsinline", "");
-  vid.src = mri("assets/MatraRunner/bg_valley.mp4");   /* this closure has no DIR; same folder as the art */
+  /* [r126] WebM where the browser plays it, the MP4 where it does not (older iPhones) */
+  vid.src = mri("assets/MatraRunner/" + (vid.canPlayType('video/webm; codecs="vp9"') ? "bg_valley.webm" : "bg_valley.mp4"));   /* this closure has no DIR; same folder as the art */
   var vidAsked = 0;
   function valleyFrame(){
     /* ask to play at most once a second while paused: play() returns a promise that rejects if
@@ -16526,11 +16570,19 @@ function drawFX(){
    then the art popped in piece by piece. A curtain in the valley's own colours covers the game
    until the pieces the first frame is made of have arrived (capped, so a slow file cannot hold it),
    then lifts. Inline styles: the embed scopes every stylesheet rule under .mr-root. */
-let _curtain = null, _curtainUp = true, _curtainT0 = performance.now();
+/* [r126] Yasir: "when the running game starts it still shows the previous version for 2-3 seconds
+   and then it gets replaced with the newer version". That "previous version" is this game's code-drawn
+   stand-in art, and it showed because the curtain lifted after 3.5 s whatever had arrived - on a live
+   connection the art (several MB) takes longer than that. The curtain now waits for EVERY picture to
+   answer (loaded or failed), shows a spinner so the wait reads as loading, and gives up only after
+   30 s. The game does not move and nothing is spoken while it is up (see loop() and whenLessonQuiet). */
+var _curtain = null, _curtainUp = true, _curtainT0 = performance.now();
+var CURTAIN_CAP = 30000;           /* only a game opened before the lesson has fetched its art ever comes near this */
 function firstFrameReady(){
   const A = window.MR_ART;
   if(!A) return false;
-  return ["valley", "deck", "wall", "run"].every(k => A.has(k)) && !!window.MR_skinReady;
+  const all = window.MR_artTotal > 0 && window.MR_artSettled >= window.MR_artTotal;
+  return all && ["valley", "deck", "wall", "run"].every(k => A.has(k)) && !!window.MR_skinReady;
 }
 function curtain(){
   if(!_curtainUp) return;
@@ -16541,8 +16593,14 @@ function curtain(){
       "background:linear-gradient(180deg,#7c5bb4 0%,#f08a6a 42%,#f6c27a 62%,#4f86b8 100%);" +
       "transition:opacity .45s ease;opacity:1";
     host.appendChild(_curtain);
+    const sp = document.createElement("div");
+    sp.style.cssText = "position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;" +
+      "border-radius:50%;border:7px solid rgba(255,255,255,.35);border-top-color:#fff";
+    _curtain.appendChild(sp);
+    try{ sp.animate([{ transform:"rotate(0deg)" }, { transform:"rotate(360deg)" }],
+                    { duration:900, iterations:Infinity }); }catch(e){}
   }
-  if(firstFrameReady() || performance.now() - _curtainT0 > 3500){
+  if(firstFrameReady() || performance.now() - _curtainT0 > CURTAIN_CAP){
     _curtainUp = false;
     MR_RAF(() => { _curtain.style.opacity = "0";
       setTimeout(() => { if(_curtain){ _curtain.remove(); _curtain = null; } }, 600); });
@@ -16654,8 +16712,10 @@ function whenVoiceDone(cb, minMs, capMs){
 }
 /* ...and the lesson's: its instruction for this page is spoken by the engine outside the game */
 function whenLessonQuiet(cb, capMs){
-  const t0 = Date.now(); let quietSince = 0;
+  let t0 = Date.now(); let quietSince = 0;
   (function poll(){
+    /* [r126] the game's first words wait for its pictures too: the cap counts from the curtain's lift */
+    if(typeof _curtainUp !== "undefined" && _curtainUp){ t0 = Date.now(); quietSince = 0; setTimeout(poll, 100); return; }
     const busy = !!(document.body && document.body.classList.contains("vo-lock"));
     const now = Date.now();
     if(busy) quietSince = 0; else if(!quietSince) quietSince = now;
@@ -16825,7 +16885,8 @@ function fullReset(){ G.score=0; G.hearts=3; clearTimeout(G.nextT); hud(); }
 let last=0;
 function loop(ts){
   const dt = Math.min(0.05, (ts-last)/1000 || 0.016); last=ts;
-  update(dt); render(); watchLessonVO();
+  if(!_curtainUp) update(dt);          /* [r126] nothing moves under the curtain */
+  render(); watchLessonVO();
   MR_RAF(loop);
 }
 function boot(){
@@ -17577,7 +17638,9 @@ if(document.fonts && document.fonts.load){
     if(!window.__ltGo){
       if(!window.__ltArt){
         window.__ltArtImgs = [TRAIN_ART.src, TRAIN_SPR.src].map(u => {
-          const im = new Image(); im.decoding = "async"; im.src = u; return im; });
+          /* [r126] the cover's train comes before anything else on the line */
+          const im = new Image(); im.decoding = "async"; try{ im.fetchPriority = "high"; }catch(e){}
+          im.src = u; return im; });
         window.__ltArt = Promise.all(window.__ltArtImgs.map(im => new Promise(r => {
             /* loaded and decoded - or loaded and 400 ms on, whichever is first */
             const fin = ()=> r();
@@ -17590,7 +17653,10 @@ if(document.fonts && document.fonts.load){
       const isLoaded = ()=> !document.getElementById("bootLoader") || document.body.classList.contains("loaded");
       window.__ltKick = ()=>{
         if(window.__ltGo || !isLoaded()) return;
-        if(!window.__ltCapT) window.__ltCapT = setTimeout(()=>{ window.__ltCap = true; window.__ltKick(); }, 2000);
+        /* [r126] 2 s -> 12 s. With a 2 s cap a slow connection sent the train off before its pictures
+           had arrived - "sometimes the train does not appear, just its smoke". The loading screen now
+           holds until they are in (see boot in the template), so this is only a last resort. */
+        if(!window.__ltCapT) window.__ltCapT = setTimeout(()=>{ window.__ltCap = true; window.__ltKick(); }, 12000);
         if(window.__ltArtOk || window.__ltCap){
           window.__ltGo = true; clearTimeout(window.__ltCapT);
           /* [r92] a beat after the cover appears: the loading screen's fade and removal and the
@@ -17828,18 +17894,34 @@ if(document.fonts && document.fonts.load){
      files landed. Ten seconds after this page has loaded, the files the game's first frame is made
      of - plus its music and voice - are fetched quietly, one after another, into the browser cache. */
   (function warmRunner(){
+    /* [r126] AT THE GAME'S OWN ADDRESSES, AND ALL OF IT. r124 gave the game's pictures a version
+       (`?v=`) so a device cannot keep old art - but this warm-up still fetched the plain names, a
+       different address, so it warmed nothing and the game downloaded everything as it opened
+       (Yasir: "it still shows the previous version for 2-3 seconds"). It now asks for exactly what
+       the game asks for: every picture it loads (the list is written in by the build from the game's
+       own art table), the video it will play, and its music - one file at a time, low priority, so
+       it never competes with the lesson's own voice. The pictures are kept, decoded, until the game
+       has started. */
     const D = "assets/MatraRunner/";
-    const imgs = ["bg_valley.webp", "bridge_deck.webp", "bridge_wall.webp", "portal_ring.webp",
-                  "swifty_run.webp", "swifty_fall.webp", "ui_banner.webp", "ui_badge.webp", "ui_btn.webp",
-                  "heart_full.webp", "heart_empty.webp", "coin.webp"];
-    const files = ["bg_valley.mp4", "bgm_game.ogg"];
+    const ART_V = "ec1dbc45c217", AUD_V = "5057fcb7e3e0";
+    const imgs = "bg_hills.webp,bg_mountains.webp,bg_sky.webp,bg_valley.webp,bridge_deck.webp,bridge_post.webp,bridge_wall.webp,bush_1.webp,bush_2.webp,coin.webp,gate_correct.webp,gate_neutral.webp,gate_wrong.webp,heart_empty.webp,heart_full.webp,hedge.webp,lantern.webp,ob_beam.webp,ob_block.webp,ob_log.webp,ob_thorns.webp,panel3.webp,pillar_1.webp,pillar_2.webp,plate.webp,rail.webp,star_empty.webp,star_full.webp,swifty_bump.webp,swifty_cheer.webp,swifty_fall.webp,swifty_happy.webp,swifty_hit.webp,swifty_jump.webp,swifty_lean_left.webp,swifty_lean_right.webp,swifty_run.webp,swifty_slide.webp,swifty_stumble.webp,tex_grass.webp,tex_path.webp,tree_1.webp,tree_2.webp,tree_3.webp,ui_badge.webp,ui_banner.webp,ui_btn.webp,coin.svg".split(",").filter(Boolean);
+    const vid = (()=>{ try{ const v = document.createElement("video");
+                       return v.canPlayType('video/webm; codecs="vp9"') ? "bg_valley.webm" : "bg_valley.mp4"; }
+                     catch(e){ return "bg_valley.mp4"; } })();
+    window.__mrWarm = [];
     const start = ()=>{
-      imgs.forEach(f => { const im = new Image(); im.decoding = "async"; im.src = D + f; });
+      const q = imgs.map(f => ({ img:true, url: D + f + "?v=" + ART_V }))
+        .concat([{ url: D + vid + "?v=" + ART_V }, { url: D + "bgm_game.ogg?v=" + AUD_V }]);
       let i = 0;
-      (function next(){ if(i >= files.length) return;
-        fetch(D + files[i++]).then(r => r.blob()).catch(()=>{}).then(()=> setTimeout(next, 200)); })();
+      (function next(){ if(i >= q.length) return;
+        const it = q[i++];
+        if(it.img){ const im = new Image(); im.decoding = "async"; window.__mrWarm.push(im);
+                    const go = ()=> setTimeout(next, 30);
+                    im.onload = im.onerror = go; im.src = it.url; return; }
+        fetch(it.url, { priority:"low" }).then(r => r.blob()).catch(()=>{}).then(()=> setTimeout(next, 60)); })();
     };
-    const arm = ()=> setTimeout(start, 10000);
+    /* [r126] after the cover, and after the lesson's own first clips have had a head start */
+    const arm = ()=> (window.__afterCover || (f => f()))(()=> setTimeout(start, 6000));
     if(document.readyState === "complete") arm(); else window.addEventListener("load", arm);
   })();
 
@@ -19470,12 +19552,32 @@ function warmUiChrome(){
     });
   }catch(e){}
 }
+/* [r126] THE COVER DOWNLOADS FIRST. Measured on a 2 Mbit/s connection with an empty cache: the page
+   started fetching EVERY voice clip in the lesson (~145 files, 23 MB, six at a time), every picture, and
+   ~3.5 MB of Swifty animations for screens far ahead - all at the same moment as the cover's train. The
+   train's two pictures never got through: the cover played its smoke and its labels with no train,
+   which is exactly what Yasir saw on the live site. So the lesson's warm-up now waits until the cover
+   has fully played in (train parked, title written - `__ltReady`), and only then fetches the rest. Capped
+   at 45 s so a cover that never completes cannot hold the lesson's downloads back for good. */
+window.__afterCover = function(fn){
+  const t0 = Date.now();
+  const train = !!(CARD.landing_hero && CARD.landing_hero.kind === "matra_train");
+  (function poll(){
+    const done = train ? !!window.__ltReady : document.body.classList.contains("loaded");
+    if(done || Date.now() - t0 > 45000){ setTimeout(fn, 400); return; }
+    setTimeout(poll, 200);
+  })();
+};
 function boot(){
   // god-mode visual theme (opt-in via CARD.theme) — warms the whole stage; scoped CSS under .thm-*
   if(CARD.theme) $("stage").classList.add("thm-" + CARD.theme);
-  warmCardImages();     // [31q] fetch+decode all art now, while the landing screen is up
-  warmUiChrome();       // [31q-ui] mascot/gate chrome from assets/UI — NOT in CARD
-  warmCardAudio();      // [31x] fetch+DECODE every clip into memory; first-slide clips prioritised
+  window.__afterCover(()=>{
+    warmCardAudio();      // [31x] fetch+DECODE every clip into memory; first-slide clips prioritised
+    warmCardImages();     // [31q] fetch+decode all art now, while the landing screen is up
+    warmUiChrome();       // [31q-ui] mascot/gate chrome from assets/UI — NOT in CARD
+    /* [r126] the big animations of later screens (the phase gate's Swifty, the end screen's) wait too */
+    document.querySelectorAll("img[data-src]").forEach(im => { im.src = im.dataset.src; im.removeAttribute("data-src"); });
+  });
   // banner title = skill name only (strip "(भाग…)" and the ": letters" list)
   $("sgTitle").textContent = (CARD.title.hi || "").split(/[:：(]/)[0].trim();
   // 16j: landing subtitle line (r4 dropped it) + fix the stale document <title> (was hardcoded to
@@ -19658,11 +19760,33 @@ function boot(){
       bl.addEventListener("click", open, true);   /* click, not pointerdown: a touch only counts as the unlocking gesture once the finger lifts */
       bl.addEventListener("keydown", open, true);
     };
+    /* [r126] THE COVER'S OWN FILES, BEFORE THE COVER. Yasir, on the live site: "sometimes the train
+       and other sfx do not play, sometimes the train does not appear, just its smoke, sometimes sfx or
+       VO get delayed". The loading screen used to clear on the page's load event or after 2.5 s, and
+       the cover then started straight away - while its train pictures, its sound effects and its
+       greeting were still downloading. They are what the cover is made of, so the loading screen now
+       waits for them: the two train pictures decoded, the greeting and the cover's sound effects
+       decoded into memory (so they start the instant they are wanted), and the fonts. Capped at 15 s,
+       so a file that never arrives cannot hold the child on the loading screen. */
+    const coverKit = ()=>{
+      const jobs = [];
+      const aud = id => _av((CARD.assets && CARD.assets.audio && CARD.assets.audio[id]) || ("assets/Audio/" + id + "." + AUDIO_EXT));
+      const sfx = window.__coverSfx || ["sfx_whistle", "sfx_train_move", "sfx_pop"];
+      ["vo_landing"].concat(sfx).forEach(id => { try{ jobs.push(_loadVoiceBuffer(aud(id)).catch(()=>{})); }catch(e){} });
+      jobs.push(new Promise(r => { const t0 = Date.now();
+        (function poll(){ if(window.__ltArt){ window.__ltArt.then(r, r); return; }
+                          if(Date.now() - t0 > 4000){ r(); return; } setTimeout(poll, 50); })(); }));
+      if(document.fonts && document.fonts.ready) jobs.push(document.fonts.ready.catch(()=>{}));
+      return Promise.race([Promise.all(jobs), new Promise(r => setTimeout(r, 25000))]);
+    };
     const ready = ()=>{
       if(fired) return;   // load event + watchdog both land here → dedup
       fired = true;
-      setTimeout(()=> audioOpen(ok => ok ? go() : tapGate()),
-                 Math.max(0, MIN_MS - (performance.now() - T0)));
+      coverKit().then(()=>{
+        if(typeof window.__warmLessonSfx === "function") window.__warmLessonSfx();   // the rest, quietly
+        setTimeout(()=> audioOpen(ok => ok ? go() : tapGate()),
+                   Math.max(0, MIN_MS - (performance.now() - T0)));
+      });
     };
     if(document.readyState === "complete") ready();
     else window.addEventListener("load", ready);

@@ -478,28 +478,28 @@
    "vo_try_again": "एक बार फिर सुनिए।"
   },
   "image": {
-   "obj_aaloo": "assets/Images/obj_aaloo.png",
-   "obj_dhanush": "assets/Images/obj_dhanush.png",
-   "obj_doodh": "assets/Images/obj_doodh.png",
-   "obj_gud": "assets/Images/obj_gud.png",
-   "obj_kabootar": "assets/Images/obj_kabootar.png",
-   "obj_khush": "assets/Images/obj_khush.png",
-   "obj_mukut": "assets/Images/obj_mukut.png",
-   "obj_pal": "assets/Images/obj_pal.png",
-   "obj_phal": "assets/Images/obj_phal.png",
-   "obj_phool": "assets/Images/obj_phool.png",
-   "obj_pul": "assets/Images/obj_pul.png",
-   "obj_sooraj": "assets/Images/obj_sooraj.png",
-   "obj_subah": "assets/Images/obj_subah.png",
-   "obj_sui": "assets/Images/obj_sui.png",
-   "obj_tarbooj": "assets/Images/obj_tarbooj.png",
-   "scn_bageecha": "assets/Images/scn_bageecha.png",
-   "scn_seema_khush": "assets/Images/scn_seema_khush.png",
-   "scn_subah_uthna": "assets/Images/scn_subah_uthna.png",
-   "scn_tarbooj_khana": "assets/Images/scn_tarbooj_khana.png"
+   "obj_aaloo": "assets/Images/obj_aaloo.webp",
+   "obj_dhanush": "assets/Images/obj_dhanush.webp",
+   "obj_doodh": "assets/Images/obj_doodh.webp",
+   "obj_gud": "assets/Images/obj_gud.webp",
+   "obj_kabootar": "assets/Images/obj_kabootar.webp",
+   "obj_khush": "assets/Images/obj_khush.webp",
+   "obj_mukut": "assets/Images/obj_mukut.webp",
+   "obj_pal": "assets/Images/obj_pal.webp",
+   "obj_phal": "assets/Images/obj_phal.webp",
+   "obj_phool": "assets/Images/obj_phool.webp",
+   "obj_pul": "assets/Images/obj_pul.webp",
+   "obj_sooraj": "assets/Images/obj_sooraj.webp",
+   "obj_subah": "assets/Images/obj_subah.webp",
+   "obj_sui": "assets/Images/obj_sui.webp",
+   "obj_tarbooj": "assets/Images/obj_tarbooj.webp",
+   "scn_bageecha": "assets/Images/scn_bageecha.webp",
+   "scn_seema_khush": "assets/Images/scn_seema_khush.webp",
+   "scn_subah_uthna": "assets/Images/scn_subah_uthna.webp",
+   "scn_tarbooj_khana": "assets/Images/scn_tarbooj_khana.webp"
   },
   "audio_ext": "ogg",
-  "img_ext": "png"
+  "img_ext": "webp"
  },
  "slides": [
   {

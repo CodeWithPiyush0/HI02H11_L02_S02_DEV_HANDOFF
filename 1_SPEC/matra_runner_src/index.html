@@ -2102,6 +2102,10 @@ function roundRect(x,y,w,h,r){
   "use strict";
   var DIR = "assets/MatraRunner/";
   var A = {};                       // name -> HTMLImageElement, only once it has really loaded
+  /* [r126] how many of the game's pictures have answered (loaded OR failed) - the curtain waits for
+     all of them, not just the first four, so the child never sees the code-drawn stand-ins */
+  window.MR_artSettled = 0; window.MR_artTotal = 0;
+  var settle = function(){ window.MR_artSettled++; };
 
   /* name: [file, framesAcross] */
   var SHEET = {
@@ -2186,6 +2190,8 @@ function roundRect(x,y,w,h,r){
          row looked like three lives already spent. */
       if((name === "heart" || name === "heartOff") && typeof hud === "function") hud();
     };
+    window.MR_artTotal++;
+    im.addEventListener("load", settle, { once:true }); im.addEventListener("error", settle, { once:true });
     im.src = mri(DIR + SHEET[name][0]);
   });
 
@@ -2244,6 +2250,8 @@ function roundRect(x,y,w,h,r){
         Object.keys(WOOD).forEach(function(k){ root.style.setProperty(k, WOOD[k]); });
       }
     };
+    window.MR_artTotal++;
+    im.addEventListener("load", settle, { once:true }); im.addEventListener("error", settle, { once:true });
     im.src = mri(DIR + UI[prop]);
   });
 })();
@@ -2457,7 +2465,8 @@ function drawTigerImage(){
   vid.muted = true; vid.defaultMuted = true; vid.loop = true; vid.playsInline = true;
   vid.preload = "auto";
   vid.setAttribute("muted", ""); vid.setAttribute("playsinline", ""); vid.setAttribute("webkit-playsinline", "");
-  vid.src = mri("assets/MatraRunner/bg_valley.mp4");   /* this closure has no DIR; same folder as the art */
+  /* [r126] WebM where the browser plays it, the MP4 where it does not (older iPhones) */
+  vid.src = mri("assets/MatraRunner/" + (vid.canPlayType('video/webm; codecs="vp9"') ? "bg_valley.webm" : "bg_valley.mp4"));   /* this closure has no DIR; same folder as the art */
   var vidAsked = 0;
   function valleyFrame(){
     /* ask to play at most once a second while paused: play() returns a promise that rejects if
@@ -2924,11 +2933,19 @@ function drawFX(){
    then the art popped in piece by piece. A curtain in the valley's own colours covers the game
    until the pieces the first frame is made of have arrived (capped, so a slow file cannot hold it),
    then lifts. Inline styles: the embed scopes every stylesheet rule under .mr-root. */
-let _curtain = null, _curtainUp = true, _curtainT0 = performance.now();
+/* [r126] Yasir: "when the running game starts it still shows the previous version for 2-3 seconds
+   and then it gets replaced with the newer version". That "previous version" is this game's code-drawn
+   stand-in art, and it showed because the curtain lifted after 3.5 s whatever had arrived - on a live
+   connection the art (several MB) takes longer than that. The curtain now waits for EVERY picture to
+   answer (loaded or failed), shows a spinner so the wait reads as loading, and gives up only after
+   30 s. The game does not move and nothing is spoken while it is up (see loop() and whenLessonQuiet). */
+var _curtain = null, _curtainUp = true, _curtainT0 = performance.now();
+var CURTAIN_CAP = 30000;           /* only a game opened before the lesson has fetched its art ever comes near this */
 function firstFrameReady(){
   const A = window.MR_ART;
   if(!A) return false;
-  return ["valley", "deck", "wall", "run"].every(k => A.has(k)) && !!window.MR_skinReady;
+  const all = window.MR_artTotal > 0 && window.MR_artSettled >= window.MR_artTotal;
+  return all && ["valley", "deck", "wall", "run"].every(k => A.has(k)) && !!window.MR_skinReady;
 }
 function curtain(){
   if(!_curtainUp) return;
@@ -2939,8 +2956,14 @@ function curtain(){
       "background:linear-gradient(180deg,#7c5bb4 0%,#f08a6a 42%,#f6c27a 62%,#4f86b8 100%);" +
       "transition:opacity .45s ease;opacity:1";
     host.appendChild(_curtain);
+    const sp = document.createElement("div");
+    sp.style.cssText = "position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;" +
+      "border-radius:50%;border:7px solid rgba(255,255,255,.35);border-top-color:#fff";
+    _curtain.appendChild(sp);
+    try{ sp.animate([{ transform:"rotate(0deg)" }, { transform:"rotate(360deg)" }],
+                    { duration:900, iterations:Infinity }); }catch(e){}
   }
-  if(firstFrameReady() || performance.now() - _curtainT0 > 3500){
+  if(firstFrameReady() || performance.now() - _curtainT0 > CURTAIN_CAP){
     _curtainUp = false;
     requestAnimationFrame(() => { _curtain.style.opacity = "0";
       setTimeout(() => { if(_curtain){ _curtain.remove(); _curtain = null; } }, 600); });
@@ -3052,8 +3075,10 @@ function whenVoiceDone(cb, minMs, capMs){
 }
 /* ...and the lesson's: its instruction for this page is spoken by the engine outside the game */
 function whenLessonQuiet(cb, capMs){
-  const t0 = Date.now(); let quietSince = 0;
+  let t0 = Date.now(); let quietSince = 0;
   (function poll(){
+    /* [r126] the game's first words wait for its pictures too: the cap counts from the curtain's lift */
+    if(typeof _curtainUp !== "undefined" && _curtainUp){ t0 = Date.now(); quietSince = 0; setTimeout(poll, 100); return; }
     const busy = !!(document.body && document.body.classList.contains("vo-lock"));
     const now = Date.now();
     if(busy) quietSince = 0; else if(!quietSince) quietSince = now;
@@ -3223,7 +3248,8 @@ function fullReset(){ G.score=0; G.hearts=3; clearTimeout(G.nextT); hud(); }
 let last=0;
 function loop(ts){
   const dt = Math.min(0.05, (ts-last)/1000 || 0.016); last=ts;
-  update(dt); render(); watchLessonVO();
+  if(!_curtainUp) update(dt);          /* [r126] nothing moves under the curtain */
+  render(); watchLessonVO();
   requestAnimationFrame(loop);
 }
 function boot(){

@@ -1260,3 +1260,41 @@ Yasir: after its line the celebration stayed up too long. Two holds stacked afte
 waited 1.6 s before signalling it had finished, and the lesson waited 2.6 s more before moving on. Now
 0.5 s and 0.6 s. Measured over a full played game: the lesson moves to the next page 2.0 s after the
 win line ends (it was about 5 s).
+
+## r126 — the cover and the game load properly on a live connection; pictures WebP, video WebM
+
+Measured on a throttled connection (2 Mbit/s, empty cache) before changing anything: the page fetched
+every voice clip in the lesson (~145, 23 MB, six at a time), every picture and ~3.5 MB of Swifty animations
+for later screens all at once with the cover's train; the train pictures never got through, and the cover
+played its smoke and labels with no train - Yasir's report exactly.
+
+1. **Cover**
+   - The loading screen holds until the cover's own files are in: both train pictures (preloaded in the
+     head at high priority), the greeting and the cover's sound effects decoded into memory, the fonts
+     (cap 25 s). The train's own wait went from 2 s to 12 s (a last resort now).
+   - Everything else waits for the cover to finish (`window.__afterCover`: train parked, title written;
+     45 s cap): the lesson's voice and picture warm-ups, the UI mascots, and the phase-gate and end-screen
+     Swifty animations (`data-src`, set then).
+   - Sound effects play from memory (Web Audio buffers, the same context as the voice) instead of a new
+     `<audio>` download each time: instant, and the whistle and chug - WAV files with an .ogg name, which an
+     `<audio>` element on an iPhone refuses - decode by their content. The `<audio>` path remains the
+     fallback for a sound not yet in memory.
+   - Measured after: loading screen clears at 26 s on 2 Mbit/s, the train sets off WITH its art, whistle
+     and chug at departure, both title pops, the greeting the moment the cover completes; same with the
+     tap gate.
+2. **The game's "previous version"** - the runner's code-drawn stand-in art, shown because (a) the
+   lesson's warm-up fetched the game's pictures at their plain names while the game (since r124) asks
+   for versioned ones, so nothing was ever warm, and (b) the game's curtain lifted after 3.5 s whatever
+   had arrived. Now the warm-up fetches exactly what the game asks for (the 48-file list is written in
+   by the build from the game's art table, plus the video and music, one at a time, low priority, after
+   the cover); the curtain waits for every picture to answer (loaded or failed), shows a spinner, and
+   gives up only after 30 s; nothing moves or speaks under it. Measured: after the warm-up the game
+   opens with 46/46 pictures from cache and the curtain lifts in ~1 s; opened cold on 6 Mbit/s it stays
+   up while the art arrives instead of showing the stand-ins.
+   `vercel.json`: `/assets/MatraRunner/*` and `/assets/Audio/*` are always requested with a content
+   version, so they are cached as immutable again; everything else is re-checked.
+3. **Formats** - every picture is WebP (17 card pictures, 2 scene sources, the loader - still animated -
+   and the hint mascot), the valley video is WebM (VP9, 434 KB) with the MP4 kept for browsers that
+   cannot play WebM (older iPhones). SVGs stay SVG. Audio left as delivered (Yasir's call).
+   `1_SPEC/normalize_assets.py` does the conversion and the build runs it first, so any picture or video
+   dropped in later is converted at the next build.
