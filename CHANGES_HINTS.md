@@ -1298,3 +1298,60 @@ played its smoke and labels with no train - Yasir's report exactly.
    cannot play WebM (older iPhones). SVGs stay SVG. Audio left as delivered (Yasir's call).
    `1_SPEC/normalize_assets.py` does the conversion and the build runs it first, so any picture or video
    dropped in later is converted at the next build.
+
+## r127 — Yasir's pedagogical sequence for the question screens
+
+From `Grade2_U_UU_Matra_Pedagogical_Sequence.pptx` (11 screens + rationale: पहचान → भेद → शब्द निर्माण →
+बिना लिखित सहारे पहचान → वाक्य में प्रयोग). New order of pages 6-17:
+
+| page | screen | was page |
+|---|---|---|
+| 6 | G1 tap — पुल | 6 |
+| 7 | G3 tap — सुई | 8 |
+| 8 | G2 tap — मुकुट / गुड़ | 7 |
+| 9 | **G5D demo** (watch-only) | 9 (was G4D) |
+| 10 | G5 matra-sign sort | 11 |
+| 11 | G4 picture + word sort | 10 |
+| 12 | P1 word build | 12 |
+| 13 | P2 picture-only sort | 13 |
+| 14 | P3 sentence — खुश | 14 |
+| 15 | P5 sentence — फूल | 16 |
+| 16 | P4 sentence — सुबह | 15 |
+| 17 | P6 sentence — तरबूज | 17 |
+
+- The deck does not place the drag demo. Yasir: "since in the demo page we're teaching how to drag and
+  drop, it should be before the page where we have to drag (before G5), and this page will be similar to
+  G5". So the demo is now G5's own screen, watch-only (id `G5D`): bare उ / ऊ coaches, the cards ◌ु / ◌ू,
+  the hand carrying each to its coach, and it still hands its train on to G5 (no departure / arrival).
+  Three new lines (Gemini TTS, Leda - to be human-recorded like the other placeholders):
+  `vo_g5d_prompt` «देखिए, मात्रा को उसके सही डिब्बे में कैसे डालते हैं।», `vo_g5d_u` «यह छोटी उ की मात्रा है,
+  इसलिए यह उ वाले डिब्बे में गई।», `vo_g5d_uu` «यह बड़ी ऊ की मात्रा है, इसलिए यह ऊ वाले डिब्बे में गई।»;
+  heading «देखिए, मात्रा को सही डिब्बे में कैसे डालते हैं।»; the outro `vo_g4d_end` is reused.
+  `vo_g4d_prompt`, `vo_g4d_phool`, `vo_g4d_pul` are no longer used; the build's audio sweep removed them,
+  and `1_SPEC/VO_RECORDING_LIST.md` now lists the three new lines.
+- Every screen is otherwise unchanged; the build makes them in their old order and places them by the
+  sequence (`SEQ` in the build script). Phases unchanged (G guided, P practice).
+- Measured: the demo plays itself (◌ु ◌ू read, carried, explained, outro) and moves on to G5 with the
+  same train; G5 → G4 → (phase gate) → P1 when solved by dragging; no console errors.
+
+## r128 — no tap hand on the loading screen
+
+Yasir: "why does a hand nudge come on the loading screen, please remove it". The r122 tap screen is gone
+(markup, styles and the wait): the loading screen clears by itself once the cover's files are in (r126)
+and the cover plays. Where the browser holds sound back until the first touch, the cover's effects are
+silent and the greeting waits: it is started under the held audio and plays in full, from its start,
+the moment the child first touches the screen; the play button turns active when it ends. Measured with
+Chrome's normal autoplay rule: no hand, the cover runs on its own; after a tap the audio opens and the
+greeting runs its 5.5 s, then the button is ready.
+
+## r129 — the demo is G4's again, right before G4
+
+r127 turned the drag demo into a demo of G5 - but G5 has only the two matra cards, so the demo showed
+G5's whole answer. Yasir: "make demo of G4 as it was earlier"; placed right before G4 (asked). The demo
+is the r83/r103 original, restored verbatim from the last commit - «देखिए, शब्द को सही डिब्बे में कैसे डालते
+हैं।», पुल / फूल carried into the उ (ु) / ऊ (ू) coaches, its own recordings (`vo_g4d_prompt`, `vo_g4d_phool`,
+`vo_g4d_pul`, back from git) - and it hands its train on to G4. The three r127 G5-demo clips are gone.
+
+Order of pages 6-17 now: G1, G3, G2, G5, **G4D**, G4, P1, P2, P3, P5, P4, P6.
+Measured: G5 solved → the demo plays itself (पुल, फूल carried and explained, outro) → G4 with the same
+train → solved → phase gate → P1; no console errors.

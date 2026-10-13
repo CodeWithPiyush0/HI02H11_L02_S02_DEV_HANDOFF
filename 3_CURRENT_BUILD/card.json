@@ -729,6 +729,44 @@
    }
   },
   {
+   "id": "G3",
+   "phase": "guided",
+   "eis": "symbolic",
+   "type": "TRAIN_TAP",
+   "prompt_hi": "“उ” की मात्रा वाले शब्द पर टैप कीजिए।",
+   "audio": {
+    "prompt": "vo_tap_prompt_u",
+    "hint1": "vo_tap_h1_u",
+    "hint2": "vo_tap_h2_u",
+    "hint3": "vo_g3_h3",
+    "correct": "vo_g3_correct"
+   },
+   "data": {
+    "target": "सुई",
+    "matra": "ु",
+    "coaches": [
+     {
+      "word": "तरबूज",
+      "correct": false,
+      "audio": "vo_name_tarbooj",
+      "matra": "ू"
+     },
+     {
+      "word": "सुई",
+      "correct": true,
+      "audio": "vo_name_sui",
+      "matra": "ु"
+     },
+     {
+      "word": "कबूतर",
+      "correct": false,
+      "audio": "vo_name_kabootar",
+      "matra": "ू"
+     }
+    ]
+   }
+  },
+  {
    "id": "G2",
    "phase": "guided",
    "eis": "symbolic",
@@ -767,41 +805,49 @@
    }
   },
   {
-   "id": "G3",
+   "id": "G5",
    "phase": "guided",
-   "eis": "symbolic",
-   "type": "TRAIN_TAP",
-   "prompt_hi": "“उ” की मात्रा वाले शब्द पर टैप कीजिए।",
+   "eis": "enactive",
+   "type": "TRAIN_SORT",
+   "prompt_hi": "सही मात्रा को सही डिब्बे में डालिए।",
    "audio": {
-    "prompt": "vo_tap_prompt_u",
-    "hint1": "vo_tap_h1_u",
-    "hint2": "vo_tap_h2_u",
-    "hint3": "vo_g3_h3",
-    "correct": "vo_g3_correct"
+    "prompt": "vo_g5_prompt",
+    "hint1": "vo_g5_h1",
+    "hint2": "vo_g5_h2"
    },
    "data": {
-    "target": "सुई",
-    "matra": "ु",
-    "coaches": [
+    "kind": "matra",
+    "bins": [
      {
-      "word": "तरबूज",
-      "correct": false,
-      "audio": "vo_name_tarbooj",
-      "matra": "ू"
-     },
-     {
-      "word": "सुई",
-      "correct": true,
-      "audio": "vo_name_sui",
+      "key": "ु",
+      "label": "उ",
+      "audio": "vo_letter_u",
       "matra": "ु"
      },
      {
-      "word": "कबूतर",
-      "correct": false,
-      "audio": "vo_name_kabootar",
+      "key": "ू",
+      "label": "ऊ",
+      "audio": "vo_letter_uu",
       "matra": "ू"
      }
-    ]
+    ],
+    "cards": [
+     {
+      "bin": "ु",
+      "word": "◌ु",
+      "audio": "vo_matra_u",
+      "hint3_audio": "vo_g5_h3_u",
+      "correct_audio": "vo_ok_matra_u"
+     },
+     {
+      "bin": "ू",
+      "word": "◌ू",
+      "audio": "vo_matra_uu",
+      "hint3_audio": "vo_g5_h3_uu",
+      "correct_audio": "vo_ok_matra_uu"
+     }
+    ],
+    "single": true
    }
   },
   {
@@ -922,52 +968,6 @@
      }
     ],
     "single": false
-   }
-  },
-  {
-   "id": "G5",
-   "phase": "guided",
-   "eis": "enactive",
-   "type": "TRAIN_SORT",
-   "prompt_hi": "सही मात्रा को सही डिब्बे में डालिए।",
-   "audio": {
-    "prompt": "vo_g5_prompt",
-    "hint1": "vo_g5_h1",
-    "hint2": "vo_g5_h2"
-   },
-   "data": {
-    "kind": "matra",
-    "bins": [
-     {
-      "key": "ु",
-      "label": "उ",
-      "audio": "vo_letter_u",
-      "matra": "ु"
-     },
-     {
-      "key": "ू",
-      "label": "ऊ",
-      "audio": "vo_letter_uu",
-      "matra": "ू"
-     }
-    ],
-    "cards": [
-     {
-      "bin": "ु",
-      "word": "◌ु",
-      "audio": "vo_matra_u",
-      "hint3_audio": "vo_g5_h3_u",
-      "correct_audio": "vo_ok_matra_u"
-     },
-     {
-      "bin": "ू",
-      "word": "◌ू",
-      "audio": "vo_matra_uu",
-      "hint3_audio": "vo_g5_h3_uu",
-      "correct_audio": "vo_ok_matra_uu"
-     }
-    ],
-    "single": true
    }
   },
   {
@@ -1165,6 +1165,61 @@
    }
   },
   {
+   "id": "P5",
+   "phase": "practice",
+   "eis": "symbolic",
+   "type": "SENTENCE_COMPLETE",
+   "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "audio": {
+    "prompt": "vo_sc_prompt",
+    "hint1": "vo_p5_h1",
+    "hint2": "vo_sc_h2",
+    "hint3": "vo_p5_h3",
+    "correct": "vo_p5_correct"
+   },
+   "data": {
+    "scene_img": "scn_bageecha",
+    "scene_emoji": "🌷",
+    "sentence_pre": "बगीचे में सुंदर ",
+    "sentence_post": " खिले हैं।",
+    "answer": "फूल",
+    "options": [
+     {
+      "word": "फूल",
+      "img": "obj_phool",
+      "emoji": "🌻",
+      "audio": "vo_name_phool",
+      "sentence_audio": "vo_p5_try_phool"
+     },
+     {
+      "word": "तरबूज",
+      "img": "obj_tarbooj",
+      "emoji": "🍉",
+      "audio": "vo_name_tarbooj",
+      "sentence_audio": "vo_p5_try_tarbooj"
+     },
+     {
+      "word": "सुबह",
+      "img": "obj_subah",
+      "emoji": "🌅",
+      "audio": "vo_name_subah",
+      "sentence_audio": "vo_p5_try_subah"
+     }
+    ],
+    "opts_text_only": true,
+    "sentence_on_correct": null,
+    "sentence_full": "बगीचे में सुंदर फूल खिले हैं।",
+    "scene_glow": [
+     [
+      0.5,
+      0.835,
+      0.5,
+      0.19
+     ]
+    ]
+   }
+  },
+  {
    "id": "P4",
    "phase": "practice",
    "eis": "symbolic",
@@ -1221,61 +1276,6 @@
       0.675,
       0.115,
       0.14
-     ]
-    ]
-   }
-  },
-  {
-   "id": "P5",
-   "phase": "practice",
-   "eis": "symbolic",
-   "type": "SENTENCE_COMPLETE",
-   "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
-   "audio": {
-    "prompt": "vo_sc_prompt",
-    "hint1": "vo_p5_h1",
-    "hint2": "vo_sc_h2",
-    "hint3": "vo_p5_h3",
-    "correct": "vo_p5_correct"
-   },
-   "data": {
-    "scene_img": "scn_bageecha",
-    "scene_emoji": "🌷",
-    "sentence_pre": "बगीचे में सुंदर ",
-    "sentence_post": " खिले हैं।",
-    "answer": "फूल",
-    "options": [
-     {
-      "word": "फूल",
-      "img": "obj_phool",
-      "emoji": "🌻",
-      "audio": "vo_name_phool",
-      "sentence_audio": "vo_p5_try_phool"
-     },
-     {
-      "word": "तरबूज",
-      "img": "obj_tarbooj",
-      "emoji": "🍉",
-      "audio": "vo_name_tarbooj",
-      "sentence_audio": "vo_p5_try_tarbooj"
-     },
-     {
-      "word": "सुबह",
-      "img": "obj_subah",
-      "emoji": "🌅",
-      "audio": "vo_name_subah",
-      "sentence_audio": "vo_p5_try_subah"
-     }
-    ],
-    "opts_text_only": true,
-    "sentence_on_correct": null,
-    "sentence_full": "बगीचे में सुंदर फूल खिले हैं।",
-    "scene_glow": [
-     [
-      0.5,
-      0.835,
-      0.5,
-      0.19
      ]
     ]
    }

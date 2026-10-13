@@ -811,14 +811,6 @@ body.is-start{background:#47BCFD;}   /* [20a landing] new-blue ground */
 .boot-loader{position:fixed;inset:0;z-index:9999;background:#FFFFFF;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;}
 .boot-loader img{width:150px;height:150px;object-fit:contain;}
 .boot-loader.done{opacity:0;pointer-events:none;transition:opacity .4s ease;}
-/* [r122] sound is held back until a tap: the loading screen asks for one with a pulsing hand */
-.boot-loader.bl-tap{cursor:pointer;}
-.bl-tapcue{position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center;}
-.bl-tapcue .bl-ripple{position:absolute;inset:22px;border-radius:50%;background:rgba(56,106,246,.16);animation:blRipple 1.4s ease-out infinite;}
-.bl-tapcue img{position:relative;width:92px;height:92px;object-fit:contain;transform-origin:30% 20%;animation:blTap 1.4s ease-in-out infinite;}
-@keyframes blRipple{0%{transform:scale(.55);opacity:.95;}100%{transform:scale(1.45);opacity:0;}}
-@keyframes blTap{0%,100%{transform:translate(14px,18px) scale(1);}45%{transform:translate(4px,6px) scale(.9);}60%{transform:translate(4px,6px) scale(.9);}}
-@media (prefers-reduced-motion:reduce){.bl-tapcue .bl-ripple,.bl-tapcue img{animation:none;}}
 
 /* ===== TAP-TO-START GATE — uses provided title-screen art ===== */
 .start-gate{position:absolute;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:transparent;cursor:default;}   /* [20a landing] transparent — the fixed .start-bg is the ground; [21c flag#1] cursor:default — hand-pointer belongs on .sg-btn/.sg-vo only, gate is not tap-anywhere */
@@ -5087,6 +5079,44 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    }
   },
   {
+   "id": "G3",
+   "phase": "guided",
+   "eis": "symbolic",
+   "type": "TRAIN_TAP",
+   "prompt_hi": "“उ” की मात्रा वाले शब्द पर टैप कीजिए।",
+   "audio": {
+    "prompt": "vo_tap_prompt_u",
+    "hint1": "vo_tap_h1_u",
+    "hint2": "vo_tap_h2_u",
+    "hint3": "vo_g3_h3",
+    "correct": "vo_g3_correct"
+   },
+   "data": {
+    "target": "सुई",
+    "matra": "ु",
+    "coaches": [
+     {
+      "word": "तरबूज",
+      "correct": false,
+      "audio": "vo_name_tarbooj",
+      "matra": "ू"
+     },
+     {
+      "word": "सुई",
+      "correct": true,
+      "audio": "vo_name_sui",
+      "matra": "ु"
+     },
+     {
+      "word": "कबूतर",
+      "correct": false,
+      "audio": "vo_name_kabootar",
+      "matra": "ू"
+     }
+    ]
+   }
+  },
+  {
    "id": "G2",
    "phase": "guided",
    "eis": "symbolic",
@@ -5125,41 +5155,49 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    }
   },
   {
-   "id": "G3",
+   "id": "G5",
    "phase": "guided",
-   "eis": "symbolic",
-   "type": "TRAIN_TAP",
-   "prompt_hi": "“उ” की मात्रा वाले शब्द पर टैप कीजिए।",
+   "eis": "enactive",
+   "type": "TRAIN_SORT",
+   "prompt_hi": "सही मात्रा को सही डिब्बे में डालिए।",
    "audio": {
-    "prompt": "vo_tap_prompt_u",
-    "hint1": "vo_tap_h1_u",
-    "hint2": "vo_tap_h2_u",
-    "hint3": "vo_g3_h3",
-    "correct": "vo_g3_correct"
+    "prompt": "vo_g5_prompt",
+    "hint1": "vo_g5_h1",
+    "hint2": "vo_g5_h2"
    },
    "data": {
-    "target": "सुई",
-    "matra": "ु",
-    "coaches": [
+    "kind": "matra",
+    "bins": [
      {
-      "word": "तरबूज",
-      "correct": false,
-      "audio": "vo_name_tarbooj",
-      "matra": "ू"
-     },
-     {
-      "word": "सुई",
-      "correct": true,
-      "audio": "vo_name_sui",
+      "key": "ु",
+      "label": "उ",
+      "audio": "vo_letter_u",
       "matra": "ु"
      },
      {
-      "word": "कबूतर",
-      "correct": false,
-      "audio": "vo_name_kabootar",
+      "key": "ू",
+      "label": "ऊ",
+      "audio": "vo_letter_uu",
       "matra": "ू"
      }
-    ]
+    ],
+    "cards": [
+     {
+      "bin": "ु",
+      "word": "◌ु",
+      "audio": "vo_matra_u",
+      "hint3_audio": "vo_g5_h3_u",
+      "correct_audio": "vo_ok_matra_u"
+     },
+     {
+      "bin": "ू",
+      "word": "◌ू",
+      "audio": "vo_matra_uu",
+      "hint3_audio": "vo_g5_h3_uu",
+      "correct_audio": "vo_ok_matra_uu"
+     }
+    ],
+    "single": true
    }
   },
   {
@@ -5280,52 +5318,6 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
      }
     ],
     "single": false
-   }
-  },
-  {
-   "id": "G5",
-   "phase": "guided",
-   "eis": "enactive",
-   "type": "TRAIN_SORT",
-   "prompt_hi": "सही मात्रा को सही डिब्बे में डालिए।",
-   "audio": {
-    "prompt": "vo_g5_prompt",
-    "hint1": "vo_g5_h1",
-    "hint2": "vo_g5_h2"
-   },
-   "data": {
-    "kind": "matra",
-    "bins": [
-     {
-      "key": "ु",
-      "label": "उ",
-      "audio": "vo_letter_u",
-      "matra": "ु"
-     },
-     {
-      "key": "ू",
-      "label": "ऊ",
-      "audio": "vo_letter_uu",
-      "matra": "ू"
-     }
-    ],
-    "cards": [
-     {
-      "bin": "ु",
-      "word": "◌ु",
-      "audio": "vo_matra_u",
-      "hint3_audio": "vo_g5_h3_u",
-      "correct_audio": "vo_ok_matra_u"
-     },
-     {
-      "bin": "ू",
-      "word": "◌ू",
-      "audio": "vo_matra_uu",
-      "hint3_audio": "vo_g5_h3_uu",
-      "correct_audio": "vo_ok_matra_uu"
-     }
-    ],
-    "single": true
    }
   },
   {
@@ -5523,6 +5515,61 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    }
   },
   {
+   "id": "P5",
+   "phase": "practice",
+   "eis": "symbolic",
+   "type": "SENTENCE_COMPLETE",
+   "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
+   "audio": {
+    "prompt": "vo_sc_prompt",
+    "hint1": "vo_p5_h1",
+    "hint2": "vo_sc_h2",
+    "hint3": "vo_p5_h3",
+    "correct": "vo_p5_correct"
+   },
+   "data": {
+    "scene_img": "scn_bageecha",
+    "scene_emoji": "🌷",
+    "sentence_pre": "बगीचे में सुंदर ",
+    "sentence_post": " खिले हैं।",
+    "answer": "फूल",
+    "options": [
+     {
+      "word": "फूल",
+      "img": "obj_phool",
+      "emoji": "🌻",
+      "audio": "vo_name_phool",
+      "sentence_audio": "vo_p5_try_phool"
+     },
+     {
+      "word": "तरबूज",
+      "img": "obj_tarbooj",
+      "emoji": "🍉",
+      "audio": "vo_name_tarbooj",
+      "sentence_audio": "vo_p5_try_tarbooj"
+     },
+     {
+      "word": "सुबह",
+      "img": "obj_subah",
+      "emoji": "🌅",
+      "audio": "vo_name_subah",
+      "sentence_audio": "vo_p5_try_subah"
+     }
+    ],
+    "opts_text_only": true,
+    "sentence_on_correct": null,
+    "sentence_full": "बगीचे में सुंदर फूल खिले हैं।",
+    "scene_glow": [
+     [
+      0.5,
+      0.835,
+      0.5,
+      0.19
+     ]
+    ]
+   }
+  },
+  {
    "id": "P4",
    "phase": "practice",
    "eis": "symbolic",
@@ -5579,61 +5626,6 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
       0.675,
       0.115,
       0.14
-     ]
-    ]
-   }
-  },
-  {
-   "id": "P5",
-   "phase": "practice",
-   "eis": "symbolic",
-   "type": "SENTENCE_COMPLETE",
-   "prompt_hi": "सही शब्द चुनकर वाक्य पूरा कीजिए।",
-   "audio": {
-    "prompt": "vo_sc_prompt",
-    "hint1": "vo_p5_h1",
-    "hint2": "vo_sc_h2",
-    "hint3": "vo_p5_h3",
-    "correct": "vo_p5_correct"
-   },
-   "data": {
-    "scene_img": "scn_bageecha",
-    "scene_emoji": "🌷",
-    "sentence_pre": "बगीचे में सुंदर ",
-    "sentence_post": " खिले हैं।",
-    "answer": "फूल",
-    "options": [
-     {
-      "word": "फूल",
-      "img": "obj_phool",
-      "emoji": "🌻",
-      "audio": "vo_name_phool",
-      "sentence_audio": "vo_p5_try_phool"
-     },
-     {
-      "word": "तरबूज",
-      "img": "obj_tarbooj",
-      "emoji": "🍉",
-      "audio": "vo_name_tarbooj",
-      "sentence_audio": "vo_p5_try_tarbooj"
-     },
-     {
-      "word": "सुबह",
-      "img": "obj_subah",
-      "emoji": "🌅",
-      "audio": "vo_name_subah",
-      "sentence_audio": "vo_p5_try_subah"
-     }
-    ],
-    "opts_text_only": true,
-    "sentence_on_correct": null,
-    "sentence_full": "बगीचे में सुंदर फूल खिले हैं।",
-    "scene_glow": [
-     [
-      0.5,
-      0.835,
-      0.5,
-      0.19
      ]
     ]
    }
@@ -19722,44 +19714,10 @@ function boot(){
       playLanding();
       setTimeout(()=> bl.remove(), 450);
     };
-    /* [r122] THE COVER WAITS FOR SOUND. Yasir: "in the live version the VO of the cover page does
-       not play, it only plays when we tap anywhere; sometimes some sfx do not play on the cover".
-       A browser keeps a page SILENT until its first tap (autoplay policy) - nothing a page does can
-       get round that. So the cover - train, title and greeting, every one of them a sound - plays
-       out under that rule unheard, and only the greeting got a second chance on the first tap.
-       Now, when the browser is holding sound back, the loading screen stays up with a pulsing
-       hand: the child's tap unlocks the audio, and the cover then plays from the start WITH its
-       sound. Where sound is already allowed (an app's webview, a site the browser trusts, any
-       later visit in the same tab) nothing changes - there is no extra tap. */
-    const audioOpen = (cb)=>{
-      try{
-        if(navigator.userActivation && navigator.userActivation.hasBeenActive){ cb(true); return; }
-        const c = _resumeVoiceAudio();
-        if(!c){ cb(true); return; }              // no Web Audio at all: nothing to wait for
-        if(c.state === "running"){ cb(true); return; }
-        setTimeout(()=> cb(c.state === "running"), 350);   // a resume() the browser allows lands at once
-      }catch(e){ cb(true); }
-    };
-    const tapGate = ()=>{
-      bl.classList.add("bl-tap");
-      const cue = document.createElement("div");
-      cue.className = "bl-tapcue"; cue.setAttribute("role", "button");
-      cue.setAttribute("aria-label", "शुरू करने के लिए टैप करें");
-      cue.innerHTML = '<span class="bl-ripple"></span><img src="assets/UI/nudge_hand_new.svg" alt="">';
-      bl.appendChild(cue);
-      const open = (e)=>{
-        if(e){ e.preventDefault(); e.stopPropagation(); }
-        bl.removeEventListener("click", open, true);
-        bl.removeEventListener("keydown", open, true);
-        const c = _resumeVoiceAudio();          /* the tap's own click, once the audio is actually open */
-        const tick = ()=>{ if(typeof sfxTap === "function") sfxTap(); };
-        try{ (c && c.resume) ? c.resume().then(tick, tick) : tick(); }catch(_){ tick(); }
-        cue.remove(); bl.classList.remove("bl-tap");
-        go();
-      };
-      bl.addEventListener("click", open, true);   /* click, not pointerdown: a touch only counts as the unlocking gesture once the finger lifts */
-      bl.addEventListener("keydown", open, true);
-    };
+    /* [r128] NO TAP SCREEN. r122 held the loading screen behind a pulsing hand when the browser was
+       holding sound back; Yasir: "why does a hand nudge come on the loading screen, please remove it".
+       The cover starts by itself again; where sound is held back until the first tap, the greeting
+       starts on that tap (the pointerdown fallback below). */
     /* [r126] THE COVER'S OWN FILES, BEFORE THE COVER. Yasir, on the live site: "sometimes the train
        and other sfx do not play, sometimes the train does not appear, just its smoke, sometimes sfx or
        VO get delayed". The loading screen used to clear on the page's load event or after 2.5 s, and
@@ -19784,7 +19742,7 @@ function boot(){
       fired = true;
       coverKit().then(()=>{
         if(typeof window.__warmLessonSfx === "function") window.__warmLessonSfx();   // the rest, quietly
-        setTimeout(()=> audioOpen(ok => ok ? go() : tapGate()),
+        setTimeout(go,
                    Math.max(0, MIN_MS - (performance.now() - T0)));
       });
     };

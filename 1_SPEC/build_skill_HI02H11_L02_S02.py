@@ -773,6 +773,15 @@ def build_slides():
     # two of page 9's own would hand the child half of its answers a moment before it is asked):
     # the cards are read out, then a hand carries each one to its coach and a line says why.
     # `demo` makes TRAIN_SORT watch-only - see runDemo in train_modules.js.
+    # [r129] BACK TO THE G4 DEMO, IN FRONT OF G4. r127 turned it into a demo of G5 - but G5 has only
+    # the two matra cards, so the demo was G5's answer shown in full. Yasir: "make demo of G4 as it was
+    # earlier", right before G4. The block below is the r83/r103 original, unchanged.
+    # [r83] Yasir: "Make a copy of page 9 where we'll teach the kid how to drag and drop element in
+    # the coach, here user won't have to do anything ... there will only be two options". The same
+    # screen, in front of it, with its own two words (the lesson's anchor words पुल / फूल - reusing
+    # two of page 9's own would hand the child half of its answers a moment before it is asked):
+    # the cards are read out, then a hand carries each one to its coach and a line says why.
+    # `demo` makes TRAIN_SORT watch-only - see runDemo in train_modules.js.
     S.append({"id": "G4D", "phase": "guided", "eis": "iconic", "type": "TRAIN_SORT",
               "prompt_hi": "देखिए, शब्द को सही डिब्बे में कैसे डालते हैं।",
               "audio": {"prompt": vo("vo_g4d_prompt",
@@ -862,6 +871,20 @@ def build_slides():
                         "मीठा ", " खाना अच्छा लगता है।", "तरबूज", ["तरबूज", "फूल", "खुश"],
                         "शाबाश! मीठा तरबूज खाना अच्छा लगता है।", "बच्चा क्या खा रहा है",
                         text_only=True))
+
+    # [r127] YASIR'S PEDAGOGICAL SEQUENCE (deck "Grade2_U_UU_Matra_Pedagogical_Sequence", 2026-10-13):
+    #   G1 -> G3 -> G2   word recognition: one right word first (पुल, सुई), then more than one (मुकुट, गुड़)
+    #   G5               telling the two matra signs apart
+    #   G4               picture + written word sorted into the two matra coaches (its demo, G4D,
+    #                    just before it - r129)
+    #   P1 -> P2         building words, then sorting from the picture alone
+    #   P3 -> P5 -> P4 -> P6   sentences: खुश -> फूल -> सुबह -> तरबूज
+    # The screens themselves are unchanged; only where they stand. Built in their old order above
+    # (each keeps its id and its recordings) and reordered here, before the game and the celebration.
+    SEQ = ["G1", "G3", "G2", "G5", "G4D", "G4", "P1", "P2", "P3", "P5", "P4", "P6"]   # [r129] G4D before G4
+    _by = {x["id"]: x for x in S}
+    assert set(SEQ) <= set(_by), "sequence names a screen that does not exist"
+    S[:] = [x for x in S if x["id"] not in SEQ] + [_by[i] for i in SEQ]
 
     # ---- screen 17 · MINI GAME (मात्रा रनर) -------------------------------------------
     # [r36] A second, whole game, added at Yasir's request as the last thing before the
