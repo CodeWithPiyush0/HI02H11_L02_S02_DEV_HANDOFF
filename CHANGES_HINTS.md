@@ -1355,3 +1355,14 @@ is the r83/r103 original, restored verbatim from the last commit - «देख�
 Order of pages 6-17 now: G1, G3, G2, G5, **G4D**, G4, P1, P2, P3, P5, P4, P6.
 Measured: G5 solved → the demo plays itself (पुल, फूल carried and explained, outro) → G4 with the same
 train → solved → phase gate → P1; no console errors.
+
+## r130 — the runner's word cards: one height, the same margin round every word
+
+Yasir: "the height of each word card should be the same (some are bigger, some smaller) - width can change
+with the length of the word - and there should be some space from all sides". The card's height and its
+padding were multiples of the font size, and a long word shrank its font to fit, so its card shrank too.
+Now the height (1.85 x the lane's nominal glyph size) and the side padding (0.62 x) come from the lane,
+never from the word; only the width follows the word (up to 1.2x the old orb, then the font steps down
+INSIDE the same card). Every word also sits on one shared baseline - the band from the tallest top matra
+(ि) to the deepest bottom one (ू) is centred in the card - so a word with ू no longer rides higher than
+one without. Measured: pairs गुलाब / नींबू, बुलबुल / तरबूज, भूख, सूरज - equal heights, margin on all sides.

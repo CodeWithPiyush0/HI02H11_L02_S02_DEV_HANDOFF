@@ -4450,14 +4450,22 @@ function drawOrb(g, i, img, p, y){
   const lit = (g.done && w.ok) || reading;
   ctx.save();
   ctx.globalAlpha *= Math.max(0, alpha);
-  /* the word, as big as the lane allows (the card is at most 0.9 of the old orb wide) */
-  let fs = Math.max(8, base*0.33*sc);
+  /* [r130] Yasir: "the height of each word card should be the same - width can change with the length
+     of the word - and there should be some space from all sides". The card's HEIGHT and its PADDING are
+     now fixed by the lane (H0), never by the word: a long word used to shrink its font to fit, and the
+     card shrank with it (height and padding were both multiples of the font size). Now only the width
+     follows the word; a word too long even for the widest card (1.2x the old orb) gets a smaller font
+     inside the SAME card, so every card is the same height with the same margin round its word. */
+  const H0 = base*0.31*sc;                               /* the nominal glyph size for every card */
+  const padX = H0*0.62, ch = H0*1.85;                    /* side padding, fixed card height */
+  const maxW = base*1.2*sc;
+  let fs = Math.max(8, H0);
   ctx.font = "800 " + fs + 'px "Baloo 2","Noto Sans Devanagari",sans-serif';
-  for(let k = 0; k < 14 && ctx.measureText(w.t).width + fs*0.95 > base*0.95*sc; k++){
-    fs *= 0.92; ctx.font = "800 " + fs + 'px "Baloo 2","Noto Sans Devanagari",sans-serif';
+  for(let k = 0; k < 14 && ctx.measureText(w.t).width + padX*2 > maxW; k++){
+    fs *= 0.93; ctx.font = "800 " + fs + 'px "Baloo 2","Noto Sans Devanagari",sans-serif';
   }
   const tw = ctx.measureText(w.t).width;
-  const cw = Math.max(tw + fs*0.95, base*0.62*sc), ch = fs*1.6;
+  const cw = Math.max(tw + padX*2, ch*1.25);
   const ccx = cx0 + dx, ccy = y - 118*S*p + bob, bw = Math.max(1.5, ch*0.10), rr = ch*0.24;
   /* its shadow on the stones below, and a warm glow round it */
   ctx.fillStyle = "rgba(60,30,5,.20)";
@@ -4482,9 +4490,14 @@ function drawOrb(g, i, img, p, y){
   cg.addColorStop(0, "#fff8e8"); cg.addColorStop(1, "#f6e6c6");
   ctx.fillStyle = cg; ctx.fill();
   ctx.lineWidth = Math.max(0.8, bw*0.22); ctx.strokeStyle = "rgba(160,92,36,.55)"; ctx.stroke();
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  /* [r130] ONE BASELINE FOR EVERY CARD: the space between the tallest top matra (ि) and the deepest
+     bottom one (ू) is centred in the card, so a word with ू does not ride higher than one without,
+     and both keep the same margin above and below */
+  ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+  const rm = ctx.measureText("किकू");
+  const asc = rm.actualBoundingBoxAscent || fs*0.95, desc = rm.actualBoundingBoxDescent || fs*0.45;
   ctx.fillStyle = "#5a2a08";
-  ctx.fillText(w.t, ccx, ccy + fs*0.05);
+  ctx.fillText(w.t, ccx, ccy + (asc - desc)/2);
   /* the wrong one she took goes dull */
   if(chosen && !w.ok){
     ctx.save(); ctx.globalCompositeOperation = "multiply";
