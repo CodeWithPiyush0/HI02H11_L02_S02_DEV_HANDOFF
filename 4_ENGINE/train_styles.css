@@ -2068,3 +2068,6 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 .mb-v2 .mb-rtail{ display:inline-block; transition:opacity .32s ease, transform .4s cubic-bezier(.34,1.5,.6,1); }
 .mb-v2 .mb-rtail.mb-tailwait{ opacity:0; transform:translateX(.35em) scale(.85); }
 @media (prefers-reduced-motion:reduce){ .mb-v2 .mb-rtail{ transition:none; } }
+/* [r133] the base layer paints OVER the finished word, so when it is shown again for the «प» beat its
+   orange प covers the प of पुल exactly (they share the grid cell; later-in-DOM would otherwise win) */
+.mb-v2 .mb-rword > .mb-rbase{ position:relative; z-index:1; }

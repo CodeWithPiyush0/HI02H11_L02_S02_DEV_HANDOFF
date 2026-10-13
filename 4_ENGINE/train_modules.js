@@ -1982,16 +1982,23 @@
                   if(!src){ next(); return; }
                   const cues = d.sound_ms, timers = [];
                   const lift = (el, cls)=>{ if(!el) return;
-                    [consEl, resEl].forEach(m => m && m.classList.remove("mb-now", "mb-mnow"));
+                    [consEl, rcons, resEl].forEach(m => m && m.classList.remove("mb-now", "mb-mnow"));
                     void el.offsetWidth; el.classList.add(cls); };
+                  /* [r133] Yasir: "when the VO says प पु पुल, highlight the RIGHT side text" (it lit the
+                     प of the left word). «प» -> the प inside पुल: the right word's own base layer is
+                     shown again for that beat - only its orange प is visible, and it sits exactly on
+                     the प of पुल; «पु» -> the matra pulses; «पुल» -> the whole word lifts. */
+                  const baseOn = (on)=> rbase.classList.toggle("mb-rgone", !on);
                   if(cues && cues.length === 3){
-                    const acts = [()=> lift(consEl, "mb-now"), ()=> lift(resEl, "mb-mnow"),
-                                  ()=> lift(resEl, "mb-now")];
+                    const acts = [()=>{ baseOn(true); lift(rcons, "mb-now"); },
+                                  ()=>{ baseOn(false); lift(resEl, "mb-mnow"); },
+                                  ()=>{ baseOn(false); lift(resEl, "mb-now"); }];
                     cues.forEach((ms, i)=> timers.push(setTimeout(()=>{ if(alive()) acts[i](); },
                                                                   Math.max(0, ms))));
                   } else lift(resEl, "mb-now");
                   say(src, ()=>{ timers.forEach(clearTimeout);
-                                 [consEl, resEl].forEach(m => m && m.classList.remove("mb-now", "mb-mnow"));
+                                 baseOn(false);
+                                 [consEl, rcons, resEl].forEach(m => m && m.classList.remove("mb-now", "mb-mnow"));
                                  setTimeout(next, 300); }); }
       ];
 

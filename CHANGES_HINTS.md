@@ -1395,3 +1395,11 @@ their clips; the demo plays and moves on to G5 with the same train; no console e
 Pages 3 and 5 use `assets/UI/mic_button.svg` (Yasir's, fully vector, 62x60), shown at 83x80. `mic.svg` is no
 longer used and is back to his committed file (r131's redraw of it is withdrawn). Behaviour unchanged:
 faded while the voice speaks, pulsing for the 3 s turn. Checked at 2x zoom: sharp; no console errors.
+
+## r133 — pages 2 / 4: «प। पु। पुल।» lights the RIGHT-hand word
+
+Yasir: "when the VO says प पु पुल, highlight the right side text (currently the left side प is
+highlighted)". All three beats now land on the right word: «प» - the प inside पुल glows (the right
+word's own base layer is shown for that beat, now painted on top, so its orange प covers the प of पुल
+exactly); «पु» - the matra pulses; «पुल» - the whole word lifts. Same on page 4 (फ, फू, फूल). Measured:
+on the «प» beat the right प is rgb(255,138,0) with its glow; no console errors.
