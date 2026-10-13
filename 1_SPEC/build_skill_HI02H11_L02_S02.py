@@ -493,6 +493,12 @@ def s_build(sid, base_word, base_slug, consonant, matra, syllable, result_word, 
                                  else _matra_cue_ms(a["onset"], ONSET_LINE, syllable)),
                      "pic_ms": (RE_RUNS[-1] if len(RE_RUNS) >= 2
                                 else _matra_cue_ms(a["result"], RESULT_LINE, result_word)),
+                     # [r131] the right-hand word is built ONE PIECE AT A TIME: प, then the matra
+                     # (पु, on «पु» - drop_ms), then ल on «ल जुड़ने» - the result line's 2nd phrase when
+                     # it reads as three («अब» · «ल जुड़ने पर» · «पुल बनता है»), else estimated
+                     "tail_ms": (RE_RUNS[1] if len(RE_RUNS) >= 3
+                                 else _matra_cue_ms(a["result"], RESULT_LINE,
+                                                    "%s जुड़ने" % result_word[-1])),
                      "base_img": (pic(bk) if bk else None),
                      "base_emoji": (BASE_OBJ[base_word][1] if base_word in BASE_OBJ
                                    else (OBJ[bk][1] if bk else None)),
@@ -765,7 +771,8 @@ def build_slides():
                            "डिब्बे में डालिए।")
     p2_h1 = vo("vo_p2_h1", "फिर से सुनिए। चित्र का नाम ध्यान से सुनिए और देखिए उसमें कौन-सी "
                            "मात्रा है।")
-    g4_bins = [{"key": m, "label": "%s (%s)" % (LETTER[m], m), "audio": LETTER_VO[m], "matra": m}
+    # [r131] Yasir: "in page 11 remove matra from the top box of coach" - «उ», not «उ (ु)»
+    g4_bins = [{"key": m, "label": LETTER[m], "audio": LETTER_VO[m], "matra": m}
                for m in (U, UU)]
     # [r83] Yasir: "Make a copy of page 9 where we'll teach the kid how to drag and drop element in
     # the coach, here user won't have to do anything ... there will only be two options". The same
@@ -773,26 +780,25 @@ def build_slides():
     # two of page 9's own would hand the child half of its answers a moment before it is asked):
     # the cards are read out, then a hand carries each one to its coach and a line says why.
     # `demo` makes TRAIN_SORT watch-only - see runDemo in train_modules.js.
-    # [r129] BACK TO THE G4 DEMO, IN FRONT OF G4. r127 turned it into a demo of G5 - but G5 has only
-    # the two matra cards, so the demo was G5's answer shown in full. Yasir: "make demo of G4 as it was
-    # earlier", right before G4. The block below is the r83/r103 original, unchanged.
-    # [r83] Yasir: "Make a copy of page 9 where we'll teach the kid how to drag and drop element in
-    # the coach, here user won't have to do anything ... there will only be two options". The same
-    # screen, in front of it, with its own two words (the lesson's anchor words पुल / फूल - reusing
-    # two of page 9's own would hand the child half of its answers a moment before it is asked):
-    # the cards are read out, then a hand carries each one to its coach and a line says why.
-    # `demo` makes TRAIN_SORT watch-only - see runDemo in train_modules.js.
-    S.append({"id": "G4D", "phase": "guided", "eis": "iconic", "type": "TRAIN_SORT",
-              "prompt_hi": "देखिए, शब्द को सही डिब्बे में कैसे डालते हैं।",
-              "audio": {"prompt": vo("vo_g4d_prompt",
-                                     "देखिए, शब्द को उसकी मात्रा वाले डिब्बे में कैसे डालते हैं।"),
+    # [r131] THE DEMO IS G5 REVERSED, IN FRONT OF G5 - AND THE WORD DEMO IS GONE. Yasir: "we need a
+    # demo of G5, and in this demo page the matra will be on the top of the coach and in the options the
+    # letter will be there; and remove the demo page we added later" (G4D). Reversed, it teaches the drag
+    # and the उ-ु / ऊ-ू pairing without being G5's own answer (G5 drags ◌ु / ◌ू onto उ / ऊ coaches; the
+    # demo drags उ / ऊ onto ◌ु / ◌ू coaches). It hands its train on to G5.
+    S.append({"id": "G5D", "phase": "guided", "eis": "iconic", "type": "TRAIN_SORT",
+              "prompt_hi": "देखिए, अक्षर को उसकी मात्रा वाले डिब्बे में कैसे डालते हैं।",
+              "audio": {"prompt": vo("vo_g5d_prompt",
+                                     "देखिए, अक्षर को उसकी मात्रा वाले डिब्बे में कैसे डालते हैं।"),
                         "outro": vo("vo_g4d_end", "अब आप भी ऐसे ही करके देखिए।")},
-              "data": {"kind": "word", "bins": g4_bins, "single": False, "demo": True,
-                       "keep_train_next": True,     # [r103] the activity on page 10 keeps this train
-                       "cards": [sort_card(w, vo("vo_g4d_" + slug(key_of(w)),
-                                                 "%s में %s की मात्रा है, इसलिए %s %s वाले डिब्बे में गया।"
-                                                 % (w, MATRA_NAME[matra_of(w)], w, LETTER[matra_of(w)])))
-                                 for w in ["पुल", "फूल"]]}})
+              "data": {"kind": "matra", "single": True, "demo": True,
+                       "keep_train_next": True,     # the G5 activity keeps this train
+                       "bins": [{"key": m, "label": "◌" + m, "audio": MATRA_VO[m], "matra": m}
+                                for m in (U, UU)],
+                       "cards": [{"bin": m, "word": LETTER[m], "audio": LETTER_VO[m],
+                                  "correct_audio": vo("vo_g5d_%s" % ("u" if m == U else "uu"),
+                                                      "%s की मात्रा इस डिब्बे पर है, इसलिए %s इस डिब्बे में गया।"
+                                                      % (LETTER[m], LETTER[m]))}
+                                 for m in (U, UU)]}})
     S.append(s_sort("G4", "guided", "word",                                    # deck slide 10
                     g4_bins,
                     [sort_hints(sort_card(w, vo("vo_ok_%s" % slug(key_of(w)),
@@ -862,11 +868,12 @@ def build_slides():
                         "शाबाश! सीमा आज बहुत खुश है।", "सीमा कैसी दिख रही है"))
     S.append(s_sentence("P4", "scn_subah_uthna",                               # deck slide 15
                         "मैं ", " जल्दी उठता हूँ।", "सुबह", ["सुबह", "दूध", "मुकुट"],
-                        "शाबाश! सही शब्द चुनकर वाक्य पूरा किया।", "बच्चा कब उठ रहा है"))
+                        "शाबाश! सही शब्द चुनकर वाक्य पूरा किया।", "बच्चा कब उठ रहा है",
+                        text_only=True))      # [r131] page 16 now: words only
     S.append(s_sentence("P5", "scn_bageecha",                                  # deck slide 16
                         "बगीचे में सुंदर ", " खिले हैं।", "फूल", ["फूल", "तरबूज", "सुबह"],
-                        "शाबाश! बगीचे में सुंदर फूल खिले हैं।", "बगीचे में क्या खिले हैं",
-                        text_only=True))
+                        "शाबाश! बगीचे में सुंदर फूल खिले हैं।", "बगीचे में क्या खिले हैं"))
+                        # [r131] page 15 now: pictures on its options again
     S.append(s_sentence("P6", "scn_tarbooj_khana",                             # deck slide 17
                         "मीठा ", " खाना अच्छा लगता है।", "तरबूज", ["तरबूज", "फूल", "खुश"],
                         "शाबाश! मीठा तरबूज खाना अच्छा लगता है।", "बच्चा क्या खा रहा है",
@@ -874,14 +881,13 @@ def build_slides():
 
     # [r127] YASIR'S PEDAGOGICAL SEQUENCE (deck "Grade2_U_UU_Matra_Pedagogical_Sequence", 2026-10-13):
     #   G1 -> G3 -> G2   word recognition: one right word first (पुल, सुई), then more than one (मुकुट, गुड़)
-    #   G5               telling the two matra signs apart
-    #   G4               picture + written word sorted into the two matra coaches (its demo, G4D,
-    #                    just before it - r129)
+    #   G5               telling the two matra signs apart (its demo, G5D, just before it - r131)
+    #   G4               picture + written word sorted into the two matra coaches
     #   P1 -> P2         building words, then sorting from the picture alone
     #   P3 -> P5 -> P4 -> P6   sentences: खुश -> फूल -> सुबह -> तरबूज
     # The screens themselves are unchanged; only where they stand. Built in their old order above
     # (each keeps its id and its recordings) and reordered here, before the game and the celebration.
-    SEQ = ["G1", "G3", "G2", "G5", "G4D", "G4", "P1", "P2", "P3", "P5", "P4", "P6"]   # [r129] G4D before G4
+    SEQ = ["G1", "G3", "G2", "G5D", "G5", "G4", "P1", "P2", "P3", "P5", "P4", "P6"]   # [r131] G5D before G5, no G4D
     _by = {x["id"]: x for x in S}
     assert set(SEQ) <= set(_by), "sequence names a screen that does not exist"
     S[:] = [x for x in S if x["id"] not in SEQ] + [_by[i] for i in SEQ]

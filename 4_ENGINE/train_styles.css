@@ -2014,10 +2014,10 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 .mx-v2 .mx-wordbox .glyph.mx-word{ font-size:96px; }
 /* [r122] smaller, and its turn is shown by the PULSE alone - no ring, no colour change: the same
    blue throughout, only faded while the voice is speaking */
-.mx-mic{ position:relative; flex:0 0 auto; width:80px; height:83px; border:none; padding:0;
+.mx-mic{ position:relative; flex:0 0 auto; width:83px; height:80px; border:none; padding:0;
   background:none; box-shadow:none; display:flex; align-items:center; justify-content:center;
   cursor:pointer; transition:opacity .25s ease; -webkit-tap-highlight-color:transparent; }
-.mx-mic img{ width:100%; height:100%; object-fit:contain; pointer-events:none; }   /* the art: 58x60 */
+.mx-mic img{ width:100%; height:100%; object-fit:contain; pointer-events:none; }   /* [r132] the art: 62x60 */
 .mx-mic:disabled{ opacity:.45; cursor:default; }
 .mx-mic.mx-live{ animation:mxPulse 1s ease-in-out infinite; }
 .mx-mic.mx-press{ animation:mxPress .3s ease; }
@@ -2062,3 +2062,9 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    plate grows with it, and the other two plates are given the same height so the row stays level. */
 .coach-label .tr-slotpic.tr-slot-obj_pul{ width:96px; height:84px; max-width:96px; max-height:84px; }
 .coach-label:has(.tr-slotpic){ height:96px; box-sizing:border-box; }
+
+/* ---- [r131] pages 2 and 4: the right-hand word is built one piece at a time - प, पु, पुल ---- */
+.mb-v2 .mb-rbase .mb-c.mb-tailwait{ opacity:0; }
+.mb-v2 .mb-rtail{ display:inline-block; transition:opacity .32s ease, transform .4s cubic-bezier(.34,1.5,.6,1); }
+.mb-v2 .mb-rtail.mb-tailwait{ opacity:0; transform:translateX(.35em) scale(.85); }
+@media (prefers-reduced-motion:reduce){ .mb-v2 .mb-rtail{ transition:none; } }

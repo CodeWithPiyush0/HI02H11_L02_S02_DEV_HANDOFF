@@ -1209,9 +1209,14 @@
         labels: coachList.map(()=> ""),
         bodies: coachList.map(c => '<span class="tr-word ink-glyph tt-hold">' + c.word + "</span>"),
         dropZone: false,
-        on_enter: ()=> [...host.querySelectorAll(".tt-hold")].forEach((w, i)=>
-          setTimeout(()=> w.classList.add("tt-in"), i * 180))
+        /* [r131] Yasir: "when it reads each word, the word should appear on the coach". The words are no
+           longer put up as the train parks: each one appears on its coach as its own clip is read
+           after the instruction (readOptions, below). */
+        on_enter: ()=>{}
       });
+      const revealWord = (c)=>{ const w = c && c.body.querySelector(".tt-hold");
+                                 if(w && !w.classList.contains("tt-in")) w.classList.add("tt-in"); };
+      const revealAll = ()=> train.coaches.forEach(revealWord);
       state.ownsAudio = true;
       state.replayAudio = ()=> say(A(slide, "prompt"), ()=>{});
       setNavActive(false);
@@ -1307,10 +1312,11 @@
          (hintBusy), so a tap cannot land between two words and be talked over. */
       const readOptions = (done)=> hintHold((fin)=> hintSeq(train.coaches.map((c, i)=> (next)=>{
         const src = coachList[i];
+        revealWord(c);                        /* [r131] the word arrives as it is read */
         if(!src || !src.audio){ next(); return; }
         c.el.classList.add("is-read");
         say(clip(src.audio), ()=> setTimeout(()=>{ c.el.classList.remove("is-read"); next(); }, 220));
-      }), fin), done);
+      }), fin), ()=>{ revealAll(); if(done) done(); });
       state.replayAudio = ()=>{ if(hintBusy) return; say(A(slide, "prompt"), ()=> readOptions(()=>{})); };
       train.whenParked(()=>{ armed = true;
         say(A(slide, "prompt"), ()=> setTimeout(()=> readOptions(()=>{}), 260)); });
@@ -1823,14 +1829,23 @@
       a1.className = "mb-arrow mb-panel mb-hidden"; a1.textContent = "\u2192";
       row.appendChild(a1);
 
+      const resWord = d.result_word || "", sylGiven = d.syllable || "";
+      const splitOk = !!sylGiven && resWord.indexOf(sylGiven) === 0 && resWord.length > sylGiven.length;
+      const sylTxt  = splitOk ? sylGiven : resWord, tailTxt = splitOk ? resWord.slice(sylGiven.length) : "";
       /* the right-hand word starts as the SAME base word and becomes the result in place:
          two layers in one box, the base on top until the matra lands */
       const p3 = document.createElement("div"); p3.className = "mb-panel mb-p3 mb-hidden";
       /* no .ink-glyph on the result: ink-centring would lift पुल (its ु makes the ink taller) off
          the baseline पल sits on, and the word would jump as the one layer hands over to the other */
       p3.innerHTML = '<div class="mb-word mb-rword">' +
+                       /* [r131] Yasir: "first प will appear, then we add the matra, then ल will
+                          appear, with the sync of the VO". So the base layer shows only its consonant,
+                          and the result is two pieces - the syllable (पु, which takes the matra) and the
+                          rest (ल), held back until the line says «ल जुड़ने». Split at the syllable
+                          boundary, so no cluster is broken: पु and ल are shaped exactly as in पुल. */
                        '<span class="mb-rbase">' + chars() + "</span>" +
-                       '<span class="mb-result mb-rwait">' + (d.result_word || "") + "</span>" +
+                       '<span class="mb-result mb-rwait"><span class="mb-rsyl">' + sylTxt + "</span>" +
+                         '<span class="mb-rtail mb-tailwait">' + tailTxt + "</span></span>" +
                      "</div>" +
                      '<div class="mb-pic mb-picwait">' +
                        imgOrEmoji(d.result_img, d.result_emoji, "mb-img", "mb-emoji") + "</div>";
@@ -1842,6 +1857,10 @@
       const rbase   = p3.querySelector(".mb-rbase");
       const rcons   = rbase.querySelector('.mb-c[data-ch="' + (d.consonant || "") + '"]');
       const resEl   = p3.querySelector(".mb-result");
+      const rsyl    = p3.querySelector(".mb-rsyl");
+      const rtail   = p3.querySelector(".mb-rtail");
+      /* only the consonant of the base layer shows: पल is «प» until the matra lands */
+      [...rbase.querySelectorAll(".mb-c")].forEach(c => { if(c !== rcons) c.classList.add("mb-tailwait"); });
       const rpic    = p3.querySelector(".mb-pic");
       const show    = (el)=>{ el.classList.remove("mb-hidden"); el.classList.remove("mb-in");
                               void el.offsetWidth; el.classList.add("mb-in"); };
@@ -1860,12 +1879,17 @@
         if(formed) return; formed = true;
         rbase.classList.add("mb-rgone");
         resEl.classList.remove("mb-rwait");
-        matraHLSoon(resEl, d.matra, { glow:true, pulse:true });
+        matraHLSoon(rsyl, d.matra, { glow:true, pulse:true });
         rword.classList.remove("mb-settle"); void rword.offsetWidth; rword.classList.add("mb-settle");
       };
       const showPic = ()=>{
         if(!rpic.classList.contains("mb-picwait")) return false;
         rpic.classList.remove("mb-picwait"); return true;
+      };
+      /* [r131] ल joins, on «ल जुड़ने» */
+      const showTail = ()=>{
+        if(!rtail || !rtail.classList.contains("mb-tailwait")) return false;
+        rtail.classList.remove("mb-tailwait"); sfxPopSoft(); return true;
       };
       /* ु / ू hang under the consonant, so the mark comes up from BELOW.
          [r122] THE MARK ALONE, NO DOTTED CIRCLE. Yasir: the flier "comes with that dotted circle
@@ -1911,8 +1935,8 @@
         if(finished) return; finished = true;
         state.demoRunning = false;
         [p1, a1, p3].forEach(e => e.classList.remove("mb-hidden"));
-        form(); showPic();
-        matraHLSoon(resEl, d.matra, { glow:true });
+        form(); showTail(); showPic();
+        matraHLSoon(rsyl, d.matra, { glow:true });
         state.replayAudio = ()=> sayAll(
           [A(slide,"base"), A(slide,"onset"), A(slide,"result"), A(slide,"sounds")].filter(Boolean), ()=>{});
         $("navBtn").onclick = ()=> completeSlide(true);
@@ -1942,10 +1966,13 @@
         },
         // 5 · «अब ल जुड़ने पर पुल बनता है।» - its picture, on «पुल»
         (next)=>{
-          const t2 = setTimeout(()=>{ if(alive() && showPic()) fbCorrect(); },
+          const t3 = setTimeout(()=>{ if(alive()) showTail(); },
+                                Math.max(0, d.tail_ms != null ? d.tail_ms : 300));
+          const t2 = setTimeout(()=>{ if(alive()){ showTail(); if(showPic()) fbCorrect(); } },
                                 Math.max(0, d.pic_ms || d.join_ms || 1800));
-          say(A(slide, "result"), ()=>{ clearTimeout(t2);
+          say(A(slide, "result"), ()=>{ clearTimeout(t2); clearTimeout(t3);
             if(!alive()) return;
+            showTail();
             if(showPic()) fbCorrect();
             setTimeout(next, 420); });
         },
@@ -2032,9 +2059,9 @@
           '<div class="meet-pic-box mex-pic mx-pic mp-wait">' +
             imgOrEmoji(ex.img, ex.emoji, "pic-img", "pic-emoji") + "</div>" +
           '<div class="mx-wordrow">' +
-            /* [r122] Yasir's own mic button (assets/UI/mic.svg) */
+            /* [r122] Yasir's own mic button - [r132] his new one, assets/UI/mic_button.svg */
             '<button type="button" class="mx-mic" disabled aria-label="बोलिए">' +
-              '<img src="assets/UI/mic.svg" alt="" draggable="false"></button>' +
+              '<img src="assets/UI/mic_button.svg" alt="" draggable="false"></button>' +
             '<div class="meet-letter-box mx-wordbox">' +
               '<span class="glyph ink-glyph mp-word mx-word">' + ex.word + "</span>" +
             "</div>" +

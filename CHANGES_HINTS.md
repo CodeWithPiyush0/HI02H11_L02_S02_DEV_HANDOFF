@@ -1366,3 +1366,32 @@ never from the word; only the width follows the word (up to 1.2x the old orb, th
 INSIDE the same card). Every word also sits on one shared baseline - the band from the tallest top matra
 (ि) to the deepest bottom one (ू) is centred in the card - so a word with ू no longer rides higher than
 one without. Measured: pairs गुलाब / नींबू, बुलबुल / तरबूज, भूख, सूरज - equal heights, margin on all sides.
+
+## r131 — six changes: पुल built piece by piece, a sharp mic, words appear as read, a reversed G5 demo, page 11's plates, sentence pictures
+
+1. **Pages 2 / 4** — the right-hand word is built one piece at a time with the voice: «प» as «प के साथ…»
+   starts, the matra rises and makes «पु» on «पु» (`drop_ms`), and «ल» joins on «ल जुड़ने» (`tail_ms`:
+   the result line's 2nd phrase, 490 ms for पुल; estimated 277 ms for फूल, whose line reads as two
+   phrases), then the picture on «पुल». The result is split at the syllable (पु | ल), so nothing is
+   re-shaped; the matra highlight sits on the syllable. ल's space is kept while it waits, so nothing jumps.
+2. **Pages 3 / 5** — `assets/UI/mic.svg` redrawn as pure vector: same shape, gradient, white ring and
+   shadow, but the mic is drawn (the delivered file masked a 128 px bitmap) and the edges are smoothed (it
+   used `shape-rendering="crispEdges"`, which is what looked pixelated).
+3. **Pages 6-8** — the coaches arrive empty; after the instruction each word appears on its coach as it
+   is read (and all are up if the read-out is cut short).
+4. **The demo** — Yasir: "we need a demo of G5; in this demo page the matra will be on top of the coach
+   and in the options the letter; remove the demo page we added later". `G5D`: coaches ◌ु / ◌ू, cards
+   उ / ऊ, each carried to its coach with «उ की मात्रा इस डिब्बे पर है, इसलिए उ इस डिब्बे में गया।» (and the
+   ऊ line), prompt/heading «देखिए, अक्षर को उसकी मात्रा वाले डिब्बे में कैसे डालते हैं।», outro reused; it
+   hands its train to G5. The word demo (G4D) is removed. New TTS clips (Leda, to be recorded):
+   `vo_g5d_prompt`, `vo_g5d_u`, `vo_g5d_uu`. Order: G1, G3, G2, G5D, G5, G4, P1, P2, P3, P5, P4, P6.
+5. **Page 11 (G4)** — the coach plates read «उ» / «ऊ», no matra.
+6. **Pages 14-17** — pictures on the options of the first two (P3, P5), words only on the last two (P4, P6).
+Measured in the browser: प → पु → पुल / फ → फू → फूल on their cues; page 6 words appear one by one with
+their clips; the demo plays and moves on to G5 with the same train; no console errors.
+
+## r132 — Yasir's new mic button
+
+Pages 3 and 5 use `assets/UI/mic_button.svg` (Yasir's, fully vector, 62x60), shown at 83x80. `mic.svg` is no
+longer used and is back to his committed file (r131's redraw of it is withdrawn). Behaviour unchanged:
+faded while the voice speaks, pulsing for the 3 s turn. Checked at 2x zoom: sharp; no console errors.
