@@ -1434,3 +1434,24 @@ Voice: originals of every re-cut recording, and the human takes of the two re-wo
 named clips only. The build's stale-audio sweep removes a clip whose text changed - re-run the voice
 prep for edited clips after the build has recorded their new text.
 Measured in the browser: every item above; no console errors.
+
+## r135 — the mic's "listening" animation, taken from HI02H04_L01_S01
+
+Yasir: "for the mic animation extract the same mic animation from this repo"
+(github.com/25606mohnish2020-commits/HI02H04_L01_S01). That lesson's mic chip is the same art as
+`mic_button.svg`, drawn inline with a hidden `.mic-wave` group (five white level bars). Its SVG (`SPK_SVG`)
+is copied verbatim into `MIC_CHIP_SVG`, and its [P2-READ-ALOUD] animation value for value: on the tap the
+white mic glyph fades out (.45 s), the five bars fade in (.35 s, after .2 s) and bounce scaleY .3 → 1 at
+their own speeds (.9 / 1.1 / .8 / 1.2 / .95 s), the chip stays put; afterwards the bars fade, the mic
+returns and the chip is greyed. My r134 bars-and-rings version is removed. Pages 3 and 5; before the tap
+the chip still appears and pulses as in r134. Measured: glyph 1 / wave 0 before, glyph 0 / wave 1 with
+`micWave` running while listening, back after 3 s; no console errors.
+
+## r136 — the mic reminder is the human «इस बटन पर टैप करिए।» from HI02H04_L01_S01
+
+Yasir: "extract the same «इस बटन पर टैप कीजिए» VO from that repo". Its clip `vo_tap_speaker_sentence_story`
+(human, 3.4 s) says «इस बटन पर टैप करिए और वाक्य पढ़िए।» - a sentence, while pages 3 / 5 ask for a word - so
+(Yasir's choice) it is trimmed at the pause after «करिए» (1.93 s, verified by transcription) and levelled
+like every lesson clip: `vo_mic_nudge` = «इस बटन पर टैप करिए।», 1.66 s, replacing the r134 TTS placeholder.
+The original is kept in `1_SPEC/game_art_src/lesson_voice/source_ext/`, the cut in `source_wav/`.
+Measured on page 3: the reminder plays 7.0 s after the mic appears untapped; no console errors.

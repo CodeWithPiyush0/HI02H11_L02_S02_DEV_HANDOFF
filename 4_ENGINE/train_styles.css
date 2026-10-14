@@ -2082,17 +2082,20 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 .mx-mic.mx-hide{ opacity:0 !important; transform:scale(.55); pointer-events:none; }
 .mx-mic{ transition:opacity .3s ease, transform .4s cubic-bezier(.34,1.5,.6,1); }
 .mx-mic.mx-done{ opacity:.45; }
-/* the "listening" wave: five white bars over the mic glyph, rising and falling, with rings going out */
-.mx-mic .mx-wave{ position:absolute; left:50%; top:43%; width:46%; height:44%; transform:translate(-50%,-50%);
-  border-radius:40%; background:#1773F8; display:none; align-items:center; justify-content:center; gap:7%; }
-.mx-mic .mx-wave i{ display:block; width:9%; height:30%; border-radius:99px; background:#fff;
-  animation:mxBar .9s ease-in-out infinite; }
-.mx-mic .mx-wave i:nth-child(2){ animation-delay:-.15s; } .mx-mic .mx-wave i:nth-child(3){ animation-delay:-.45s; }
-.mx-mic .mx-wave i:nth-child(4){ animation-delay:-.3s; }  .mx-mic .mx-wave i:nth-child(5){ animation-delay:-.6s; }
-.mx-mic.mx-rec .mx-wave{ display:flex; }
-.mx-mic.mx-rec::before, .mx-mic.mx-rec::after{ content:""; position:absolute; left:7%; right:7%; top:3%; bottom:17%;
-  border-radius:50%; border:4px solid rgba(23,115,248,.45); animation:mxRing2 1.2s ease-out infinite; pointer-events:none; }
-.mx-mic.mx-rec::after{ animation-delay:.6s; }
-@keyframes mxBar{ 0%,100%{ height:22%; } 50%{ height:88%; } }
-@keyframes mxRing2{ from{ transform:scale(1); opacity:.9; } to{ transform:scale(1.7); opacity:0; } }
-@media (prefers-reduced-motion:reduce){ .mx-mic .mx-wave i, .mx-mic.mx-rec::before, .mx-mic.mx-rec::after{ animation:none; } }
+/* [r135] THE "LISTENING" ANIMATION OF HI02H04_L01_S01 ([P2-READ-ALOUD], value for value): on the tap the
+   white mic glyph dissolves away and the chip's sound wave (.mic-wave: five white level bars, otherwise
+   invisible and still) fades in and bounces like a voice level meter; the chip itself stays put.
+   Afterwards the wave fades, the mic returns and the chip is greyed (.mx-done). */
+.mx-mic svg{ display:block; width:100%; height:100%; pointer-events:none; }
+.mx-mic svg .mic-wave{ opacity:0; transition:opacity .35s ease; }
+.mx-mic svg .mic{ transition:opacity .45s ease; }
+.mx-mic.mx-rec svg .mic{ opacity:0; }
+.mx-mic.mx-rec svg .mic-wave{ opacity:1; transition-delay:.2s; }
+@keyframes micWave{ 0%,100%{ transform:scaleY(.3); } 50%{ transform:scaleY(1); } }
+.mx-mic.mx-rec svg .mic-wave rect{ transform-box:fill-box; transform-origin:50% 50%; animation:micWave 1s ease-in-out infinite; }
+.mx-mic.mx-rec svg .mic-wave rect:nth-child(1){ animation-duration:.9s;  animation-delay:-.2s; }
+.mx-mic.mx-rec svg .mic-wave rect:nth-child(2){ animation-duration:1.1s; animation-delay:-.5s; }
+.mx-mic.mx-rec svg .mic-wave rect:nth-child(3){ animation-duration:.8s;  animation-delay:-.1s; }
+.mx-mic.mx-rec svg .mic-wave rect:nth-child(4){ animation-duration:1.2s; animation-delay:-.7s; }
+.mx-mic.mx-rec svg .mic-wave rect:nth-child(5){ animation-duration:.95s; animation-delay:-.35s; }
+.mx-mic.mx-rec{ cursor:default; }

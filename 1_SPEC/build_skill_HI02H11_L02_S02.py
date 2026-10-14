@@ -551,9 +551,12 @@ def s_pair(sid, words, lead, lines):
             # heading, and the sibling's equivalent shows the word and its picture and nothing else
             "prompt_hi": "",
             "audio": {"prompt": vo("vo_%s_prompt" % sid.lower(), lead)},
-            # [r134] the mic: if it is not tapped for 7 s, this line asks for it (TTS until recorded)
+            # [r134] the mic: if it is not tapped for 7 s, this line asks for it.
+            # [r136] Yasir: "extract the same «इस बटन पर टैप कीजिए» VO from that repo" (HI02H04_L01_S01's
+            # vo_tap_speaker_sentence_story, human voice). It says «… और वाक्य पढ़िए» - a sentence, but the
+            # child reads a WORD here - so it is trimmed after «करिए» (Yasir's choice), at the pause.
             "data": {"examples": ex, "no_heading": True,
-                     "mic_nudge_audio": once("vo_mic_nudge", "इस बटन पर टैप कीजिए और शब्द पढ़िए।")}}
+                     "mic_nudge_audio": once("vo_mic_nudge", "इस बटन पर टैप करिए।")}}
 
 
 def s_tap(sid, words, target, matra, correct_line):

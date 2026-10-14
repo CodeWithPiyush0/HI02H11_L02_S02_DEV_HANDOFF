@@ -61,7 +61,7 @@ The TTS model truncates a clip when an **em-dash precedes a short final word** (
 | `vo_meet_gud` | गुड़, इसमें ग पर छोटी उ की मात्रा लगी है। बोलकर देखिए। |
 | `vo_meet_kabootar` | कबूतर, इसमें ब पर बड़ी ऊ की मात्रा लगी है। बोलकर देखिए। |
 | `vo_mg_prompt` | अब एक खेल! ऊपर दी गई मात्रा वाले शब्द पकड़िए। |
-| `vo_mic_nudge` | इस बटन पर टैप कीजिए और शब्द पढ़िए। |
+| `vo_mic_nudge` | इस बटन पर टैप करिए। |
 | `vo_name_aaloo` | आलू |
 | `vo_name_doodh` | दूध |
 | `vo_name_gud` | गुड़ |

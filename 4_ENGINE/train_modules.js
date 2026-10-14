@@ -2044,6 +2044,10 @@
      pointing at an invisible element, and the sibling's page 3 has no hand either.
 
      data: { examples:[{word, matra, img, emoji, audio_line, matra_audio}] } */
+  /* [r135] Yasir: "for the mic animation extract the same mic animation from this repo"
+     (github.com/25606mohnish2020-commits/HI02H04_L01_S01). Its chip, copied verbatim from that lesson's
+     SPK_SVG; the animation is its [P2-READ-ALOUD] rules - see train_styles.css. */
+  const MIC_CHIP_SVG = '<svg viewBox="0 0 62 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Audio"><g filter="url(#spChipShadow)"><rect x="8" y="4" width="46" height="44" rx="22" fill="url(#spChipGrad)"/><rect x="6" y="2" width="50" height="48" rx="24" stroke="white" stroke-width="4"/><rect class="mic" x="26.75" y="15.05" width="8.5" height="15.85" rx="4.25" fill="white"/><path class="mic" d="M24.5 26V26.7A6.5 6.5 0 0 0 37.5 26.7V26M31 33.2V36.1M27.7 36.8H34.3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><g class="mic-wave" fill="white"><rect x="22.9" y="22" width="2.2" height="8" rx="1.1"/><rect x="26.4" y="19" width="2.2" height="14" rx="1.1"/><rect x="29.9" y="17" width="2.2" height="18" rx="1.1"/><rect x="33.4" y="19" width="2.2" height="14" rx="1.1"/><rect x="36.9" y="22" width="2.2" height="8" rx="1.1"/></g></g><defs><filter id="spChipShadow" x="0" y="0" width="62" height="60" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset dy="4"/><feGaussianBlur stdDeviation="2"/><feComposite in2="hardAlpha" operator="out"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/></filter><linearGradient id="spChipGrad" x1="8" y1="26" x2="54" y2="26" gradientUnits="userSpaceOnUse"><stop stop-color="#1987FC"/><stop offset="1" stop-color="#1565F4"/></linearGradient></defs></svg>';
   SlideModules.MEET_PAIR = {
     mount(host, slide){
       const d = slide.data || {};
@@ -2082,10 +2086,9 @@
             '<div class="meet-letter-box mx-wordbox">' +
               '<span class="glyph ink-glyph mp-word mx-word">' + ex.word + "</span>" +
             "</div>" +
-            /* [r122] Yasir's own mic button - [r132] his new one, assets/UI/mic_button.svg */
-            '<button type="button" class="mx-mic mx-hide" disabled aria-label="बोलिए">' +
-              '<img src="assets/UI/mic_button.svg" alt="" draggable="false">' +
-              '<span class="mx-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' +
+            /* [r135] the mic chip of HI02H04_L01_S01, inline (its SPK_SVG, verbatim): the same chip as
+               assets/UI/mic_button.svg, plus the hidden .mic-wave level bars its tap animation shows */
+            '<button type="button" class="mx-mic mx-hide" disabled aria-label="बोलिए">' + MIC_CHIP_SVG +
             "</button>" +
           "</div>";
         const mic = wrap.querySelector(".mx-mic");
