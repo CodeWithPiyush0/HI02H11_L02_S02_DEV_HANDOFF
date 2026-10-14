@@ -4114,6 +4114,31 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
    orange प covers the प of पुल exactly (they share the grid cell; later-in-DOM would otherwise win) */
 .mb-v2 .mb-rword > .mb-rbase{ position:relative; z-index:1; }
 
+/* ---- [r134] pages 2 / 4: «पु» lights the whole syllable on the right ---- */
+.mb-v2 .mb-rsyl{ transition:color .2s ease; }
+.mb-v2 .mb-rsyl.mb-sylnow{ color:var(--matra-hi,#FF8A00); animation:mbSylNow 760ms ease-in-out; }
+@keyframes mbSylNow{ 0%,100%{ filter:none; } 40%{ filter:drop-shadow(0 0 14px rgba(255,138,0,.75)); } }
+
+/* ---- [r134] pages 3 / 5: the mic appears when the line ends, pulses, and "listens" when tapped ---- */
+.mx-wordrow{ gap:30px; }
+.mx-mic.mx-hide{ opacity:0 !important; transform:scale(.55); pointer-events:none; }
+.mx-mic{ transition:opacity .3s ease, transform .4s cubic-bezier(.34,1.5,.6,1); }
+.mx-mic.mx-done{ opacity:.45; }
+/* the "listening" wave: five white bars over the mic glyph, rising and falling, with rings going out */
+.mx-mic .mx-wave{ position:absolute; left:50%; top:43%; width:46%; height:44%; transform:translate(-50%,-50%);
+  border-radius:40%; background:#1773F8; display:none; align-items:center; justify-content:center; gap:7%; }
+.mx-mic .mx-wave i{ display:block; width:9%; height:30%; border-radius:99px; background:#fff;
+  animation:mxBar .9s ease-in-out infinite; }
+.mx-mic .mx-wave i:nth-child(2){ animation-delay:-.15s; } .mx-mic .mx-wave i:nth-child(3){ animation-delay:-.45s; }
+.mx-mic .mx-wave i:nth-child(4){ animation-delay:-.3s; }  .mx-mic .mx-wave i:nth-child(5){ animation-delay:-.6s; }
+.mx-mic.mx-rec .mx-wave{ display:flex; }
+.mx-mic.mx-rec::before, .mx-mic.mx-rec::after{ content:""; position:absolute; left:7%; right:7%; top:3%; bottom:17%;
+  border-radius:50%; border:4px solid rgba(23,115,248,.45); animation:mxRing2 1.2s ease-out infinite; pointer-events:none; }
+.mx-mic.mx-rec::after{ animation-delay:.6s; }
+@keyframes mxBar{ 0%,100%{ height:22%; } 50%{ height:88%; } }
+@keyframes mxRing2{ from{ transform:scale(1); opacity:.9; } to{ transform:scale(1.7); opacity:0; } }
+@media (prefers-reduced-motion:reduce){ .mx-mic .mx-wave i, .mx-mic.mx-rec::before, .mx-mic.mx-rec::after{ animation:none; } }
+
 
 /* [r111] File5's confetti: the kit's styles (recipe 7) + File5's whole-window layer, copied unchanged */
 /* ===== FLN ANIMATION KIT: confetti BEGIN ===== */
@@ -11052,6 +11077,17 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         if(d.kind === "word"){
           const lbl = tile.querySelector(".tr-cardlbl");
           if(lbl) matraHLSoon(lbl, tile.dataset.bin, { glow:true });
+          /* [r134] Yasir: "when we drop two words in the coach, the top word's matra is not highlighted".
+             The highlight is measured to the word's size at the moment it lands; the first word in a
+             coach is drawn large (it has the panel to itself) and SHRINKS when a second one arrives,
+             leaving its highlight measured for the old size - off the mark. So every word already in the
+             coach is re-highlighted once the new layout has settled. */
+          const face = body.querySelector(".coach-face") || body;
+          requestAnimationFrame(()=> requestAnimationFrame(()=>
+            face.querySelectorAll(".tr-card.snapped .tr-cardlbl").forEach(l => {
+              const t = l.closest(".tr-card");
+              matraClear(l); matraHLSoon(l, t && t.dataset.bin, { glow:true });
+            })));
         } else if(d.kind === "picture" && tile.dataset.word && !tile.querySelector(".tr-cardlbl")){
           /* [r121] Yasir, pages 9, 10 and 13: «when we drag and drop the option card, in the coach
              only word will be dropped so that it's visible properly». The picture round's card has
@@ -11499,7 +11535,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         // 4 · «प के साथ … लगाने पर पु बनता है।» - पल on the right, the matra lands on «पु»
         (next)=>{
           show(p3); sfxPopSoft();
-          if(consEl) consEl.classList.add("lit");
+          /* [r134] Yasir: "remove the highlight of प from the left side of the word" */
           if(rcons) rcons.classList.add("lit");
           const drop = Math.max(0, d.drop_ms || d.syl_ms || 2400);
           /* the flight is ~640 ms, so it leaves early enough to LAND on «पु» */
@@ -11527,7 +11563,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
                   if(!src){ next(); return; }
                   const cues = d.sound_ms, timers = [];
                   const lift = (el, cls)=>{ if(!el) return;
-                    [consEl, rcons, resEl].forEach(m => m && m.classList.remove("mb-now", "mb-mnow"));
+                    [consEl, rcons, resEl, rsyl].forEach(m => m && m.classList.remove("mb-now", "mb-mnow", "mb-sylnow"));
                     void el.offsetWidth; el.classList.add(cls); };
                   /* [r133] Yasir: "when the VO says प पु पुल, highlight the RIGHT side text" (it lit the
                      प of the left word). «प» -> the प inside पुल: the right word's own base layer is
@@ -11536,14 +11572,15 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
                   const baseOn = (on)=> rbase.classList.toggle("mb-rgone", !on);
                   if(cues && cues.length === 3){
                     const acts = [()=>{ baseOn(true); lift(rcons, "mb-now"); },
-                                  ()=>{ baseOn(false); lift(resEl, "mb-mnow"); },
+                                  /* [r134] «पु» -> the whole पु, not only its matra */
+                                  ()=>{ baseOn(false); lift(rsyl, "mb-sylnow"); },
                                   ()=>{ baseOn(false); lift(resEl, "mb-now"); }];
                     cues.forEach((ms, i)=> timers.push(setTimeout(()=>{ if(alive()) acts[i](); },
                                                                   Math.max(0, ms))));
                   } else lift(resEl, "mb-now");
                   say(src, ()=>{ timers.forEach(clearTimeout);
                                  baseOn(false);
-                                 [consEl, rcons, resEl].forEach(m => m && m.classList.remove("mb-now", "mb-mnow"));
+                                 [consEl, rcons, resEl, rsyl].forEach(m => m && m.classList.remove("mb-now", "mb-mnow", "mb-sylnow"));
                                  setTimeout(next, 300); }); }
       ];
 
@@ -11610,26 +11647,50 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         wrap.innerHTML =
           '<div class="meet-pic-box mex-pic mx-pic mp-wait">' +
             imgOrEmoji(ex.img, ex.emoji, "pic-img", "pic-emoji") + "</div>" +
+          /* [r134] Yasir: the word on the LEFT, just below the picture, and the mic on the RIGHT */
           '<div class="mx-wordrow">' +
-            /* [r122] Yasir's own mic button - [r132] his new one, assets/UI/mic_button.svg */
-            '<button type="button" class="mx-mic" disabled aria-label="बोलिए">' +
-              '<img src="assets/UI/mic_button.svg" alt="" draggable="false"></button>' +
             '<div class="meet-letter-box mx-wordbox">' +
               '<span class="glyph ink-glyph mp-word mx-word">' + ex.word + "</span>" +
             "</div>" +
+            /* [r122] Yasir's own mic button - [r132] his new one, assets/UI/mic_button.svg */
+            '<button type="button" class="mx-mic mx-hide" disabled aria-label="बोलिए">' +
+              '<img src="assets/UI/mic_button.svg" alt="" draggable="false">' +
+              '<span class="mx-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>' +
+            "</button>" +
           "</div>";
         const mic = wrap.querySelector(".mx-mic");
-        mic.onclick = ()=>{ mic.classList.remove("mx-press"); void mic.offsetWidth; mic.classList.add("mx-press"); };
         return { card: wrap.querySelector(".mx-wordrow"),
                  word: wrap.querySelector(".mp-word"),
                  pic:  wrap.querySelector(".mex-pic"),
                  mic };
       };
-      /* the child's turn: mic on and pulsing for 3 s, then off again */
+      /* [r134] THE CHILD'S TURN. Yasir: "when VO ends then the mic button will appear and pulse; when
+         the user taps it, it should feel like the voice is being registered (fake) - a wave animation in
+         the mic - for 3 seconds, as we give the user 3 seconds to read the word; and if the user does not
+         tap for 7 seconds the VO plays «इस बटन पर टैप कीजिए और शब्द पढ़िए।»". Nothing is recorded. The
+         lesson waits for the tap; the reminder repeats after every 7 s of nothing. */
       const micTurn = (mic, after)=>{
         if(!mic){ after(); return; }
-        mic.disabled = false; mic.classList.add("mx-live");
-        setTimeout(()=>{ mic.disabled = true; mic.classList.remove("mx-live"); after(); }, 3000);
+        const live = ()=> CARD.slides[state.idx] === slide && myGen === _voGen;
+        let idleT = 0, done = false;
+        const arm = ()=>{ clearTimeout(idleT); idleT = setTimeout(remind, 7000); };
+        const remind = ()=>{ if(done || !live()) return;
+          sayOpt(clip(d.mic_nudge_audio), ()=>{ if(!done && live()) arm(); }); };
+        mic.disabled = false;
+        mic.classList.remove("mx-hide"); mic.classList.add("mx-live");
+        sfxPopSoft();
+        mic.onclick = ()=>{
+          if(done || !live()) return;
+          done = true; clearTimeout(idleT);
+          if(isPlaying && typeof stopAudio === "function") stopAudio();   /* a reminder being spoken */
+          if(typeof sfxTap === "function") sfxTap();
+          mic.classList.remove("mx-live"); mic.classList.add("mx-rec");
+          setTimeout(()=>{
+            mic.classList.remove("mx-rec"); mic.classList.add("mx-done"); mic.disabled = true;
+            if(live()) after();
+          }, 3000);
+        };
+        arm();
       };
 
       const myGen = _voGen;
@@ -11714,8 +11775,9 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
 
       // «आइए, छोटी उ की मात्रा वाले कुछ शब्द देखें।» then the examples, one by one
       say(A(slide, "prompt"), ()=> setTimeout(step, 320));
-      /* FAIL-SAFE: आगे never stays dead if a clip blocks or is missing (+7 s for the two turns) */
-      setTimeout(()=>{ if(CARD.slides[state.idx] === slide) finish(); }, 49000);
+      /* FAIL-SAFE: आगे never stays dead if a clip blocks or is missing. [r134] Long, because the page
+         now waits for the child's two mic taps (and reminds them every 7 s). */
+      setTimeout(()=>{ if(CARD.slides[state.idx] === slide) finish(); }, 180000);
     }
   };
 
@@ -11969,7 +12031,8 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
 
       state.replayAudio = ()=> sayAll(
         [A(slide, "prompt")].concat(pairs.map(p => clip(p.audio))).filter(Boolean), ()=>{});
-      say(A(slide, "prompt"), ()=> setTimeout(step, 350));
+      /* [r134] the opening line moved to the cover; sayOpt skips straight on when there is none */
+      sayOpt(A(slide, "prompt"), ()=> setTimeout(step, 350));
       /* FAIL-SAFE: आगे never stays dead if a clip blocks or is missing */
       setTimeout(()=>{ if(CARD.slides[state.idx] === slide) finish(); }, 30000);
     }
@@ -14077,6 +14140,26 @@ function drawOrb(g, i, img, p, y){
   const asc = rm.actualBoundingBoxAscent || fs*0.95, desc = rm.actualBoundingBoxDescent || fs*0.45;
   ctx.fillStyle = "#5a2a08";
   ctx.fillText(w.t, ccx, ccy + (asc - desc)/2);
+  /* [r134] Yasir: when a missed pair comes back and its words are read aloud, "highlight the matra of
+     both the words". From the first mistake on (g.err >= 1) each card's ु / ू is drawn again in the
+     highlight orange, clipped to the band under the baseline of its own syllable - which holds only the
+     matra (no word in this game has रु / रू, whose matra sits beside the letter) - so the rest of the
+     word, a nukta in the next syllable included, keeps its colour. Every occurrence (बुलबुल has two). */
+  if((g.err || 0) >= 1){
+    const by = ccy + (asc - desc)/2, left = ccx - tw/2;
+    const re = /[ुू]/g; let mt;
+    while((mt = re.exec(w.t))){
+      let cs = mt.index - 1;
+      if(cs > 0 && w.t[cs] === "़") cs--;             /* a nukta belongs to its consonant */
+      const x0 = left + ctx.measureText(w.t.slice(0, cs)).width - fs*0.12;
+      const x1 = left + ctx.measureText(w.t.slice(0, mt.index + 1)).width + fs*0.18;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x0, by + fs*0.03, x1 - x0, ch); ctx.clip();
+      ctx.fillStyle = "#FF8A00";
+      ctx.fillText(w.t, ccx, by);
+      ctx.restore();
+    }
+  }
   /* the wrong one she took goes dull */
   if(chosen && !w.ok){
     ctx.save(); ctx.globalCompositeOperation = "multiply";

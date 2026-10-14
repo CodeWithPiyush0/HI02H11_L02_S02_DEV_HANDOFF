@@ -1909,6 +1909,26 @@ function drawOrb(g, i, img, p, y){
   const asc = rm.actualBoundingBoxAscent || fs*0.95, desc = rm.actualBoundingBoxDescent || fs*0.45;
   ctx.fillStyle = "#5a2a08";
   ctx.fillText(w.t, ccx, ccy + (asc - desc)/2);
+  /* [r134] Yasir: when a missed pair comes back and its words are read aloud, "highlight the matra of
+     both the words". From the first mistake on (g.err >= 1) each card's ु / ू is drawn again in the
+     highlight orange, clipped to the band under the baseline of its own syllable - which holds only the
+     matra (no word in this game has रु / रू, whose matra sits beside the letter) - so the rest of the
+     word, a nukta in the next syllable included, keeps its colour. Every occurrence (बुलबुल has two). */
+  if((g.err || 0) >= 1){
+    const by = ccy + (asc - desc)/2, left = ccx - tw/2;
+    const re = /[ुू]/g; let mt;
+    while((mt = re.exec(w.t))){
+      let cs = mt.index - 1;
+      if(cs > 0 && w.t[cs] === "़") cs--;             /* a nukta belongs to its consonant */
+      const x0 = left + ctx.measureText(w.t.slice(0, cs)).width - fs*0.12;
+      const x1 = left + ctx.measureText(w.t.slice(0, mt.index + 1)).width + fs*0.18;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x0, by + fs*0.03, x1 - x0, ch); ctx.clip();
+      ctx.fillStyle = "#FF8A00";
+      ctx.fillText(w.t, ccx, by);
+      ctx.restore();
+    }
+  }
   /* the wrong one she took goes dull */
   if(chosen && !w.ok){
     ctx.save(); ctx.globalCompositeOperation = "multiply";

@@ -2071,3 +2071,28 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 /* [r133] the base layer paints OVER the finished word, so when it is shown again for the «प» beat its
    orange प covers the प of पुल exactly (they share the grid cell; later-in-DOM would otherwise win) */
 .mb-v2 .mb-rword > .mb-rbase{ position:relative; z-index:1; }
+
+/* ---- [r134] pages 2 / 4: «पु» lights the whole syllable on the right ---- */
+.mb-v2 .mb-rsyl{ transition:color .2s ease; }
+.mb-v2 .mb-rsyl.mb-sylnow{ color:var(--matra-hi,#FF8A00); animation:mbSylNow 760ms ease-in-out; }
+@keyframes mbSylNow{ 0%,100%{ filter:none; } 40%{ filter:drop-shadow(0 0 14px rgba(255,138,0,.75)); } }
+
+/* ---- [r134] pages 3 / 5: the mic appears when the line ends, pulses, and "listens" when tapped ---- */
+.mx-wordrow{ gap:30px; }
+.mx-mic.mx-hide{ opacity:0 !important; transform:scale(.55); pointer-events:none; }
+.mx-mic{ transition:opacity .3s ease, transform .4s cubic-bezier(.34,1.5,.6,1); }
+.mx-mic.mx-done{ opacity:.45; }
+/* the "listening" wave: five white bars over the mic glyph, rising and falling, with rings going out */
+.mx-mic .mx-wave{ position:absolute; left:50%; top:43%; width:46%; height:44%; transform:translate(-50%,-50%);
+  border-radius:40%; background:#1773F8; display:none; align-items:center; justify-content:center; gap:7%; }
+.mx-mic .mx-wave i{ display:block; width:9%; height:30%; border-radius:99px; background:#fff;
+  animation:mxBar .9s ease-in-out infinite; }
+.mx-mic .mx-wave i:nth-child(2){ animation-delay:-.15s; } .mx-mic .mx-wave i:nth-child(3){ animation-delay:-.45s; }
+.mx-mic .mx-wave i:nth-child(4){ animation-delay:-.3s; }  .mx-mic .mx-wave i:nth-child(5){ animation-delay:-.6s; }
+.mx-mic.mx-rec .mx-wave{ display:flex; }
+.mx-mic.mx-rec::before, .mx-mic.mx-rec::after{ content:""; position:absolute; left:7%; right:7%; top:3%; bottom:17%;
+  border-radius:50%; border:4px solid rgba(23,115,248,.45); animation:mxRing2 1.2s ease-out infinite; pointer-events:none; }
+.mx-mic.mx-rec::after{ animation-delay:.6s; }
+@keyframes mxBar{ 0%,100%{ height:22%; } 50%{ height:88%; } }
+@keyframes mxRing2{ from{ transform:scale(1); opacity:.9; } to{ transform:scale(1.7); opacity:0; } }
+@media (prefers-reduced-motion:reduce){ .mx-mic .mx-wave i, .mx-mic.mx-rec::before, .mx-mic.mx-rec::after{ animation:none; } }

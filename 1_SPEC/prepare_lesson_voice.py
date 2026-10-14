@@ -15,7 +15,7 @@ Per clip:
            highlight, pages 2 / 4 sound steps, pages 3 / 5 picture + matra moments) by reading these
            files as WAV, so they must stay WAV.
 
-Run:  PYTHONUTF8=1 python 1_SPEC/prepare_lesson_voice.py   then rebuild
+Run:  PYTHONUTF8=1 python 1_SPEC/prepare_lesson_voice.py [clip_id ...]   then rebuild
 """
 import os, re, subprocess, sys
 
@@ -43,6 +43,9 @@ def measure(path, pre=""):
 
 def main():
     wavs = sorted(f for f in os.listdir(SRC) if f.lower().endswith(".wav"))
+    only = set(sys.argv[1:])                        # [r134] optional: just these clip ids
+    if only:
+        wavs = [f for f in wavs if os.path.splitext(f)[0] in only]
     if not wavs:
         sys.exit("no WAVs in " + SRC)
     for f in wavs:

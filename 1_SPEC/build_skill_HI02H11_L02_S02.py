@@ -428,7 +428,8 @@ def s_intro(sid):
     del heading
     return {"id": sid, "phase": "tutorial", "eis": "enactive", "type": "MATRA_PAIRS",
             "prompt_hi": "",
-            "audio": {"prompt": vo("vo_%s_prompt" % sid.lower(), p)},
+            # [r134] no opening line here any more - it moved to the cover (vo_landing)
+            "audio": {},
             "data": {"pairs": pairs, "phonemes": dict(MATRA_VO), "auto": True,
                      "no_heading": True}}
 
@@ -540,15 +541,19 @@ def s_pair(sid, words, lead, lines):
         # Both offsets are measured off the clip that exists, so a re-record moves them with it.
         ex.append({"word": w, "matra": matra_of(w), "img": pic(k), "emoji": OBJ[k][1],
                    "audio_line": vo(vid, line),
-                   "pic_ms":   _matra_cue_ms(vid, line, "बोलकर"),
-                   "matra_ms": _matra_cue_ms(vid, line, "इसमें"),
+                   # [r134] the line is now «गुड़, | इसमें ग पर छोटी उ की मात्रा लगी है। | बोलकर देखिए।»:
+                   # the picture comes with «इसमें» (the 2nd phrase), the matra lights on «छोटी / बड़ी»
+                   "pic_ms":   ((_voice_runs_ms(vid) + [0, 0])[1] or _matra_cue_ms(vid, line, "इसमें")),
+                   "matra_ms": _matra_cue_ms(vid, line, MATRA_NAME[matra_of(w)].split()[0]),
                    "matra_audio": None})
     return {"id": sid, "phase": "tutorial", "eis": "iconic", "type": "MEET_PAIR",
             # NO HEADING, same reasoning as the build screens: the deck gives this page no
             # heading, and the sibling's equivalent shows the word and its picture and nothing else
             "prompt_hi": "",
             "audio": {"prompt": vo("vo_%s_prompt" % sid.lower(), lead)},
-            "data": {"examples": ex, "no_heading": True}}
+            # [r134] the mic: if it is not tapped for 7 s, this line asks for it (TTS until recorded)
+            "data": {"examples": ex, "no_heading": True,
+                     "mic_nudge_audio": once("vo_mic_nudge", "इस बटन पर टैप कीजिए और शब्द पढ़िए।")}}
 
 
 def s_tap(sid, words, target, matra, correct_line):
@@ -747,13 +752,13 @@ def build_slides():
     S.append(s_build("T2", "पल", "pal", "प", U, "पु", "पुल", "प। पु। पुल।"))   # deck slide 3
     S.append(s_pair("T3", ["गुड़", "धनुष"],                                    # deck slide 4
                     "आइए, छोटी उ की मात्रा वाले कुछ शब्द देखें।",
-                    ["गुड़, बोलकर देखिए। इसमें ग पर छोटी उ की मात्रा लगी है।",
-                     "धनुष, बोलकर देखिए। इसमें न पर छोटी उ की मात्रा लगी है।"]))
+                    ["गुड़, इसमें ग पर छोटी उ की मात्रा लगी है। बोलकर देखिए।",       # [r134]
+                     "धनुष, इसमें न पर छोटी उ की मात्रा लगी है। बोलकर देखिए।"]))
     S.append(s_build("T4", "फल", "phal", "फ", UU, "फू", "फूल", "फ। फू। फूल।"))  # deck slide 5
     S.append(s_pair("T5", ["दूध", "कबूतर"],                                    # deck slide 6
                     "आइए, बड़ी ऊ की मात्रा वाले कुछ शब्द देखें।",
-                    ["दूध, बोलकर देखिए। इसमें द पर बड़ी ऊ की मात्रा लगी है।",
-                     "कबूतर, बोलकर देखिए। इसमें ब पर बड़ी ऊ की मात्रा लगी है।"]))
+                    ["दूध, इसमें द पर बड़ी ऊ की मात्रा लगी है। बोलकर देखिए।",         # [r134]
+                     "कबूतर, इसमें ब पर बड़ी ऊ की मात्रा लगी है। बोलकर देखिए।"]))
     # deck pages 7 and 8 carry no slide and no note -> CONTRAST_PAIR and the third MEET_PAIR are
     # DELETED. See the header.
 
@@ -804,8 +809,8 @@ def build_slides():
                     [sort_hints(sort_card(w, vo("vo_ok_%s" % slug(key_of(w)),
                                      "शाबाश! %s शब्द में %s की मात्रा है।" % (w, LETTER[matra_of(w)]))),
                                 "g4",
-                                "%s में %s की मात्रा है। अब यही मात्रा ऊपर डिब्बों पर खोजिए और "
-                                "शब्द वहीं डालिए।",
+                                # [r134] «अब यही मात्रा ऊपर डिब्बों पर खोजिए …» cut (recordings re-cut)
+                                "%s में %s की मात्रा है।",
                                 "%s को %s की मात्रा वाले डिब्बे में डालिए।")
                      for w in ["आलू", "सूरज", "सुई", "गुड़"]],
                     "हर शब्द को उसकी सही मात्रा वाले डिब्बे में डालिए।",
@@ -854,8 +859,9 @@ def build_slides():
                                 "%s को %s की मात्रा वाली बोगी में डालिए।")
                      for w in ["मुकुट", "पुल", "तरबूज", "कबूतर"]],
                     # [r97] Yasir: the page 13 instruction, on screen and in the VO
-                    "चित्र को सुनिए और उसे सही मात्रा वाले डिब्बे में डालिए।",
-                    "चित्र को सुनिए और उसे सही मात्रा वाले डिब्बे में डालिए।",
+                    # [r134] Yasir: «चित्र का नाम सुनिए …» (TTS until recorded)
+                    "चित्र का नाम सुनिए और उसे सही मात्रा वाले डिब्बे में डालिए।",
+                    "चित्र का नाम सुनिए और उसे सही मात्रा वाले डिब्बे में डालिए।",
                     p2_h1, None))
 
     # Four sentence screens. Sentence 4 is the NOTE's wording, «मीठा ___ खाना अच्छा लगता है।» — the
@@ -887,7 +893,8 @@ def build_slides():
     #   P3 -> P5 -> P4 -> P6   sentences: खुश -> फूल -> सुबह -> तरबूज
     # The screens themselves are unchanged; only where they stand. Built in their old order above
     # (each keeps its id and its recordings) and reordered here, before the game and the celebration.
-    SEQ = ["G1", "G3", "G2", "G5D", "G5", "G4", "P1", "P2", "P3", "P5", "P4", "P6"]   # [r131] G5D before G5, no G4D
+    # [r134] Yasir: "put page 9 and 10 before page 6" - the G5 demo and G5 open the guided block
+    SEQ = ["G5D", "G5", "G1", "G3", "G2", "G4", "P1", "P2", "P3", "P5", "P4", "P6"]
     _by = {x["id"]: x for x in S}
     assert set(SEQ) <= set(_by), "sequence names a screen that does not exist"
     S[:] = [x for x in S if x["id"] not in SEQ] + [_by[i] for i in SEQ]
@@ -898,7 +905,8 @@ def build_slides():
     # matra named at the top. It is the same skill this lesson has taught for sixteen screens,
     # asked for at speed and without scaffolding - which is why it belongs HERE and not earlier.
     # It lives in its own folder and is mounted in an iframe; see the MINI_GAME module.
-    mg_prompt = "अब एक खेल! ऊपर दी गई मात्रा वाले शब्द के द्वार से निकलिए।"
+    # [r134] no portals in the game any more, so no «द्वार»: the child catches the words (TTS until recorded)
+    mg_prompt = "अब एक खेल! ऊपर दी गई मात्रा वाले शब्द पकड़िए।"
     S.append({"id": "MG1", "phase": "practice", "eis": "enactive", "type": "MINI_GAME",
               "prompt_hi": mg_prompt,
               "audio": {"prompt": vo("vo_mg_prompt", mg_prompt)},
@@ -920,7 +928,9 @@ def build_card(slides):
     for vid, text in MATRA_TEXT.items():
         vo(vid, text)
     # the SME's landing line, in their spelling: «स्विफ्टी» in Devanagari, «जानेंगे» not «जानेगें»
-    vo("vo_landing", "हेलो दोस्त! मैं हूँ स्विफ्टी। आज हम मात्राओं के बारे में जानेंगे।")
+    # [r134] Yasir: the cover's «आज हम मात्राओं के बारे में जानेंगे» becomes page 1's line, which page 1
+    # no longer speaks. Re-cut from the two human recordings (1_SPEC/edit_lesson_voice_r134.py).
+    vo("vo_landing", "नमस्ते दोस्त! मैं हूँ स्विफ्टी। आज हम छोटी उ और बड़ी ऊ की मात्रा वाले शब्द पढ़ेंगे।")
     vo("vo_try_again", "एक बार फिर सुनिए।")          # आप, with everything else
 
     counts = {}
@@ -1079,9 +1089,11 @@ def guard_engine(src):
 def guard_flow(slides):
     """The flow must match the deck screen for screen, plus the mini-game: landing + 18."""
     want = ["MATRA_PAIRS", "MATRA_BUILD", "MEET_PAIR", "MATRA_BUILD", "MEET_PAIR",
+            # [r134] Yasir's order: the G5 demo and G5 first, then the three taps, then G4
+            "TRAIN_SORT",         # G5D - the watch-only demo of G5 (r131)
+            "TRAIN_SORT",         # G5
             "TRAIN_TAP", "TRAIN_TAP", "TRAIN_TAP",
-            "TRAIN_SORT",         # [r83] the watch-only copy of the sort screen (G4D) - Yasir
-            "TRAIN_SORT", "TRAIN_SORT",
+            "TRAIN_SORT",         # G4
             "WORD_BUILD", "TRAIN_SORT",
             "SENTENCE_COMPLETE", "SENTENCE_COMPLETE", "SENTENCE_COMPLETE", "SENTENCE_COMPLETE",
             "MINI_GAME",          # [r36] added after the deck was written - see screen 17
@@ -1090,7 +1102,7 @@ def guard_flow(slides):
     if got != want:
         sys.exit("X  flow does not match the SME's round-3 deck.\n     want: %s\n     got:  %s"
                  % (want, got))
-    print("  OK  flow guard: 18 screens (landing + %d slides), same order as the round-3 deck"
+    print("  OK  flow guard: 18 screens (landing + %d slides), in Yasir's r134 order"
           % len(slides))
 
 

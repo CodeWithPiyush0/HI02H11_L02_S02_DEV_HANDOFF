@@ -1403,3 +1403,34 @@ highlighted)". All three beats now land on the right word: «प» - the प ins
 word's own base layer is shown for that beat, now painted on top, so its orange प covers the प of पुल
 exactly); «पु» - the matra pulses; «पुल» - the whole word lifts. Same on page 4 (फ, फू, फूल). Measured:
 on the «प» beat the right प is rgb(255,138,0) with its glow; no console errors.
+
+## r134 — seven changes (cover line, pages 2-5, the order, page 11, page 13, the game)
+
+1. **Cover / page 1** — the cover now says «नमस्ते दोस्त! मैं हूँ स्विफ्टी। आज हम छोटी उ और बड़ी ऊ की मात्रा वाले
+   शब्द पढ़ेंगे।» and page 1 has no opening line (it starts on the उ / ऊ pairs). Re-cut from the two HUMAN
+   recordings (the cover's first two phrases + page 1's whole line, same speaker) by
+   `1_SPEC/edit_lesson_voice_r134.py`; checked by transcription.
+2. **Pages 2 / 4** — the left प is never highlighted; «प। पु। पुल।» lights the right word: the प of पुल,
+   then the WHOLE पु (orange + glow, `mb-sylnow`), then पुल.
+3. **Pages 3 / 5** — the word on the left under the picture, the mic on the right. The line is now
+   «गुड़, इसमें ग पर छोटी उ की मात्रा लगी है। बोलकर देखिए।» - the same human recordings with «बोलकर देखिए»
+   moved to the end (re-cut, transcription-checked); the picture comes with «इसमें», the matra lights on
+   «छोटी / बड़ी». The mic is hidden while the line plays, then appears and pulses; a tap shows a 3 s
+   "listening" wave (nothing is recorded) and the next word follows; with no tap for 7 s it says
+   «इस बटन पर टैप कीजिए और शब्द पढ़िए।» (TTS `vo_mic_nudge`, to be recorded), and again every 7 s idle.
+   The page waits for the taps (fail-safe for आगे: 3 min).
+4. **Order** — the G5 demo and G5 now open the guided block: G5D, G5, G1, G3, G2, G4, P1, P2, P3, P5, P4, P6.
+5. **Page 11 (G4)** — rung 2 ends after its first sentence («आलू में बड़ी ऊ की मात्रा है।»; the four
+   human recordings re-cut before «अब …»). Every word dropped into a coach keeps its matra highlight: the
+   first word is drawn big and shrinks when a second arrives, which left its highlight measured for the
+   old size - every word in the coach is now re-highlighted once the layout settles.
+6. **Page 13** — instruction and VO «चित्र का नाम सुनिए और उसे सही मात्रा वाले डिब्बे में डालिए।» (TTS, to be
+   recorded).
+7. **The game** — the lesson's instruction no longer says «द्वार»: «अब एक खेल! ऊपर दी गई मात्रा वाले शब्द
+   पकड़िए।» (TTS, to be recorded). When a missed pair comes back and its words are read out, the ु / ू of
+   BOTH cards is drawn in orange (only the matra - a nukta beside it keeps its colour).
+Voice: originals of every re-cut recording, and the human takes of the two re-worded lines, are kept in
+`1_SPEC/game_art_src/lesson_voice/source_wav_pre_r134/`; `prepare_lesson_voice.py` can now process
+named clips only. The build's stale-audio sweep removes a clip whose text changed - re-run the voice
+prep for edited clips after the build has recorded their new text.
+Measured in the browser: every item above; no console errors.
