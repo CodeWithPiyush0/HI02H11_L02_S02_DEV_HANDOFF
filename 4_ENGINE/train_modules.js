@@ -1175,10 +1175,15 @@
     return { left:r.left - p, top:r.top - p, right:r.right + p, bottom:r.bottom + p };
   }
 
-  function finishSlide(slide, train, silent, signal){
+  function finishSlide(slide, train, silent, signal, dropped){
     state.locked = true;
     if(typeof stopNudge === "function") stopNudge();
-    fbCorrect();
+    /* [r138] on the drag pages every correct drop has already played the success sound, so the last
+       one is not repeated here (`dropped`); the tap pages keep it */
+    if(!dropped) fbCorrect();
+    /* [r138] Yasir: "after successfully dropping all elements the train moves ahead, so no option should
+       remain below" - whatever is left in the tray (P1's spare पा, the folding gaps) fades away now */
+    document.querySelectorAll(".tr-tray").forEach(t => t.classList.add("tr-tray-out"));
     if(typeof setSwMood === "function") setSwMood("celebrate");
     train.finish();
     SwiftPAL.emit(signal || "train_first_try", {
@@ -1529,6 +1534,7 @@
         placed++;
         train.correct(ci);
         sfxPopSoft();                      /* the DROP, distinct from the pick-up tap */
+        fbCorrect();                       /* [r138] Yasir: the success sound with every confetti, not just the last */
         SwiftPAL.emit("matra_sort_item", { slide_id: slide.id, bin: tile.dataset.bin });
       };
 
@@ -1560,7 +1566,7 @@
             if(placed >= need){
               /* SME: "No extra completion VO required." finishSlide's silent branch skips
                  slide.audio.correct, so the per-card line above is the final word. */
-              sayOpt(clip(okvo), ()=> finishSlide(slide, train, true, "matra_sort_first_try"));
+              sayOpt(clip(okvo), ()=> finishSlide(slide, train, true, "matra_sort_first_try", true));
             } else {
               sayOpt(clip(okvo), ()=>{});
             }
@@ -1637,7 +1643,7 @@
                  activity: no departure here, no arrival there; only the options change */
               if(d.keep_train_next && CARD.slides[state.idx + 1]){
                 state.trainDepart = null; window.__ltKeepTrain = CARD.slides[state.idx + 1].id; }
-              finishSlide(slide, train, true, "sort_demo_done"); });
+              finishSlide(slide, train, true, "sort_demo_done", true); });
           }
           const tile = tiles[k++];
           carry(tile, binIdx(tile.dataset.bin), ()=> sayOpt(clip(tile.dataset.okaudio),
@@ -2044,10 +2050,13 @@
      pointing at an invisible element, and the sibling's page 3 has no hand either.
 
      data: { examples:[{word, matra, img, emoji, audio_line, matra_audio}] } */
-  /* [r135] Yasir: "for the mic animation extract the same mic animation from this repo"
-     (github.com/25606mohnish2020-commits/HI02H04_L01_S01). Its chip, copied verbatim from that lesson's
-     SPK_SVG; the animation is its [P2-READ-ALOUD] rules - see train_styles.css. */
-  const MIC_CHIP_SVG = '<svg viewBox="0 0 62 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Audio"><g filter="url(#spChipShadow)"><rect x="8" y="4" width="46" height="44" rx="22" fill="url(#spChipGrad)"/><rect x="6" y="2" width="50" height="48" rx="24" stroke="white" stroke-width="4"/><rect class="mic" x="26.75" y="15.05" width="8.5" height="15.85" rx="4.25" fill="white"/><path class="mic" d="M24.5 26V26.7A6.5 6.5 0 0 0 37.5 26.7V26M31 33.2V36.1M27.7 36.8H34.3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><g class="mic-wave" fill="white"><rect x="22.9" y="22" width="2.2" height="8" rx="1.1"/><rect x="26.4" y="19" width="2.2" height="14" rx="1.1"/><rect x="29.9" y="17" width="2.2" height="18" rx="1.1"/><rect x="33.4" y="19" width="2.2" height="14" rx="1.1"/><rect x="36.9" y="22" width="2.2" height="8" rx="1.1"/></g></g><defs><filter id="spChipShadow" x="0" y="0" width="62" height="60" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset dy="4"/><feGaussianBlur stdDeviation="2"/><feComposite in2="hardAlpha" operator="out"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/></filter><linearGradient id="spChipGrad" x1="8" y1="26" x2="54" y2="26" gradientUnits="userSpaceOnUse"><stop stop-color="#1987FC"/><stop offset="1" stop-color="#1565F4"/></linearGradient></defs></svg>';
+  /* [r137] Yasir: "extract the mic button and its animation from this repo and replace it with the current
+     one" (github.com/Prashantkumar12345678/Alu_malu_Kalu_HI02H04_L03_S01). Its reading mic, copied verbatim
+     from that lesson's app.js: the yellow pill (the Play button's yellow) with a white ring and a navy mic
+     (READING_MIC_PNG, its alpha mask), and a second layer - the same pill with five navy level bars - that
+     its tap animation fades in. The animation is its CSS (.reading-mic ...), see train_styles.css. */
+  const READING_MIC_PNG = "data:image/png;base64,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";
+  const MIC_CHIP_SVG = '<svg viewBox="0 0 58 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="माइक"><g class="mic"><rect x="8" y="4" width="41.1559" height="44" rx="20.578" fill="url(#readingPillGrad)"/><rect x="6" y="2" width="45.1559" height="48" rx="22.578" stroke="white" stroke-width="4"/><g transform="translate(28.58 26) scale(1.3) translate(-28.58 -26)"><g mask="url(#readingMicMask)"><rect x="17.9111" y="15.3335" width="21.434" height="21.434" fill="#0B3D8C"/></g></g></g><g class="mic-wave"><rect x="8" y="4" width="41.1559" height="44" rx="20.578" fill="url(#readingPillGrad)"/><rect x="6" y="2" width="45.1559" height="48" rx="22.578" stroke="white" stroke-width="4"/><g fill="#0B3D8C" transform="translate(-2.42 0)"><rect x="22.9" y="22" width="2.2" height="8" rx="1.1"/><rect x="26.4" y="19" width="2.2" height="14" rx="1.1"/><rect x="29.9" y="17" width="2.2" height="18" rx="1.1"/><rect x="33.4" y="19" width="2.2" height="14" rx="1.1"/><rect x="36.9" y="22" width="2.2" height="8" rx="1.1"/></g></g><defs><linearGradient id="readingPillGrad" x1="0" y1="4" x2="0" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#FFD24E"/><stop offset=".55" stop-color="#FCB717"/><stop offset="1" stop-color="#F2A80F"/></linearGradient><mask id="readingMicMask" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="20" y="18" width="17" height="16"><image href="' + READING_MIC_PNG + '" x="20.5781" y="18" width="16" height="16" preserveAspectRatio="none"/></mask></defs></svg>';
   SlideModules.MEET_PAIR = {
     mount(host, slide){
       const d = slide.data || {};
@@ -2861,7 +2870,7 @@
             const okvo = quiet ? null : slot.correct_audio;
             if(done >= d.slots.length){
               /* "No extra completion VO required." */
-              sayOpt(clip(okvo), ()=> finishSlide(slide, train, true, "word_build_first_try"));
+              sayOpt(clip(okvo), ()=> finishSlide(slide, train, true, "word_build_first_try", true));
             } else {
               sayOpt(clip(okvo), ()=>{});
             }

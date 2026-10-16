@@ -4124,23 +4124,52 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 .mx-mic.mx-hide{ opacity:0 !important; transform:scale(.55); pointer-events:none; }
 .mx-mic{ transition:opacity .3s ease, transform .4s cubic-bezier(.34,1.5,.6,1); }
 .mx-mic.mx-done{ opacity:.45; }
-/* [r135] THE "LISTENING" ANIMATION OF HI02H04_L01_S01 ([P2-READ-ALOUD], value for value): on the tap the
-   white mic glyph dissolves away and the chip's sound wave (.mic-wave: five white level bars, otherwise
-   invisible and still) fades in and bounces like a voice level meter; the chip itself stays put.
-   Afterwards the wave fades, the mic returns and the chip is greyed (.mx-done). */
-.mx-mic svg{ display:block; width:100%; height:100%; pointer-events:none; }
-.mx-mic svg .mic-wave{ opacity:0; transition:opacity .35s ease; }
+/* [r137] THE MIC OF Alu_malu_Kalu_HI02H04_L03_S01 (its style.css, .reading-mic rules, value for value),
+   replacing r135's: a 64 px yellow chip with a soft drop shadow that pulses (scale 1.08, 1.4 s) while it waits
+   for the tap; on the tap the mic layer (.mic) fades out and the level-bar layer (.mic-wave) fades in, its five
+   navy bars bouncing scaleY .3 -> 1 at their own speeds; afterwards it is greyed (45 %, greyscale). */
+.mx-v2 .mx-mic{ width:88px; height:86px; border:0; padding:0; background:transparent; border-radius:0;
+  box-shadow:none; filter:drop-shadow(0 3px 6px rgba(0,0,0,.22)); animation:none; }
+.mx-v2 .mx-mic svg{ display:block; width:100%; height:100%; overflow:visible; pointer-events:none; }
+.mx-v2 .mx-mic.mx-live:not(.mx-rec):not(.mx-done):not(:disabled){ animation:readingMicPulse 1.4s ease-in-out infinite; }
+@keyframes readingMicPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.08); } }
+.mx-mic svg > g[filter]{ filter:none; }
 .mx-mic svg .mic{ transition:opacity .45s ease; }
+.mx-mic svg .mic-wave{ opacity:0; transition:opacity .35s ease; }
 .mx-mic.mx-rec svg .mic{ opacity:0; }
 .mx-mic.mx-rec svg .mic-wave{ opacity:1; transition-delay:.2s; }
-@keyframes micWave{ 0%,100%{ transform:scaleY(.3); } 50%{ transform:scaleY(1); } }
-.mx-mic.mx-rec svg .mic-wave rect{ transform-box:fill-box; transform-origin:50% 50%; animation:micWave 1s ease-in-out infinite; }
+@keyframes readingReferenceWave{ 0%,100%{ transform:scaleY(.3); } 50%{ transform:scaleY(1); } }
+.mx-mic.mx-rec svg .mic-wave rect{ transform-box:fill-box; transform-origin:50% 50%; animation:readingReferenceWave 1s ease-in-out infinite; }
 .mx-mic.mx-rec svg .mic-wave rect:nth-child(1){ animation-duration:.9s;  animation-delay:-.2s; }
 .mx-mic.mx-rec svg .mic-wave rect:nth-child(2){ animation-duration:1.1s; animation-delay:-.5s; }
 .mx-mic.mx-rec svg .mic-wave rect:nth-child(3){ animation-duration:.8s;  animation-delay:-.1s; }
 .mx-mic.mx-rec svg .mic-wave rect:nth-child(4){ animation-duration:1.2s; animation-delay:-.7s; }
 .mx-mic.mx-rec svg .mic-wave rect:nth-child(5){ animation-duration:.95s; animation-delay:-.35s; }
 .mx-mic.mx-rec{ cursor:default; }
+/* [r138] the two rules of that repo r137 missed: its pill inside .mic-wave stays STILL - only the five bars
+   move (it bounced with them) - and its final size, 88 x 86 */
+.mx-mic svg .mic-wave > rect{ animation:none !important; }
+.mx-v2 .mx-mic.mx-done{ pointer-events:none; cursor:default; opacity:.45; filter:grayscale(1) drop-shadow(0 3px 6px rgba(0,0,0,.22)); }
+
+
+/* ==========================================================================================
+   [r138]
+   ========================================================================================== */
+/* pages 3 / 5: the word is centred under the picture; the mic sits to its right without pushing it off
+   centre (absolutely placed, vertically centred by margin so its pulse's transform stays free) */
+.mx-v2 .mx-wordrow{ position:relative; display:flex; justify-content:center; gap:0; }
+.mx-v2 .mx-wordrow .mx-mic{ position:absolute; left:100%; top:50%; margin:-43px 0 0 22px; }
+.mx-v2 .mx-wordrow{ align-self:center; }
+
+/* only the next button pulses while it pulses */
+body.nav-live .slide-host *, body.nav-live .slide-host *::before, body.nav-live .slide-host *::after{
+  animation:none !important; }
+
+/* the options leave with the train */
+/* an animation, not a transition: P1's tray arrives on an animation that holds it visible (fill: both),
+   and a later animation is the only thing that can take over from it */
+.tr-tray.tr-tray-out{ animation:trTrayOut .45s ease forwards !important; pointer-events:none; }
+@keyframes trTrayOut{ from{ opacity:1; transform:translateY(0); } to{ opacity:0; transform:translateY(24px); } }
 
 
 /* [r111] File5's confetti: the kit's styles (recipe 7) + File5's whole-window layer, copied unchanged */
@@ -5017,6 +5046,10 @@ function setNavActive(on){
   const btn = $("navBtn");
   btn.disabled = !on;
   btn.classList.toggle("active", on);
+  /* [r138] Yasir: "when the next button is pulsating, no other element should pulsate" - while the
+     VISIBLE आगे pulses, every other animation on the page is stopped (see .nav-live in the styles).
+     Not on the pages that move on by themselves: there the button is hidden and the train is leaving. */
+  document.body.classList.toggle("nav-live", !!on && !(typeof autoAdvances === "function" && autoAdvances(state.idx)));
   clearTimeout(state.navNudgeTimer);
   /* [20a nudge-03] no auto-nudge on आगे — buttons are known affordances (ruling); nudge is for learning elements only. */
   if(on && autoAdvances(state.idx)) _autoAdvance(btn);
@@ -10748,10 +10781,15 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
     return { left:r.left - p, top:r.top - p, right:r.right + p, bottom:r.bottom + p };
   }
 
-  function finishSlide(slide, train, silent, signal){
+  function finishSlide(slide, train, silent, signal, dropped){
     state.locked = true;
     if(typeof stopNudge === "function") stopNudge();
-    fbCorrect();
+    /* [r138] on the drag pages every correct drop has already played the success sound, so the last
+       one is not repeated here (`dropped`); the tap pages keep it */
+    if(!dropped) fbCorrect();
+    /* [r138] Yasir: "after successfully dropping all elements the train moves ahead, so no option should
+       remain below" - whatever is left in the tray (P1's spare पा, the folding gaps) fades away now */
+    document.querySelectorAll(".tr-tray").forEach(t => t.classList.add("tr-tray-out"));
     if(typeof setSwMood === "function") setSwMood("celebrate");
     train.finish();
     SwiftPAL.emit(signal || "train_first_try", {
@@ -11102,6 +11140,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
         placed++;
         train.correct(ci);
         sfxPopSoft();                      /* the DROP, distinct from the pick-up tap */
+        fbCorrect();                       /* [r138] Yasir: the success sound with every confetti, not just the last */
         SwiftPAL.emit("matra_sort_item", { slide_id: slide.id, bin: tile.dataset.bin });
       };
 
@@ -11133,7 +11172,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
             if(placed >= need){
               /* SME: "No extra completion VO required." finishSlide's silent branch skips
                  slide.audio.correct, so the per-card line above is the final word. */
-              sayOpt(clip(okvo), ()=> finishSlide(slide, train, true, "matra_sort_first_try"));
+              sayOpt(clip(okvo), ()=> finishSlide(slide, train, true, "matra_sort_first_try", true));
             } else {
               sayOpt(clip(okvo), ()=>{});
             }
@@ -11210,7 +11249,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
                  activity: no departure here, no arrival there; only the options change */
               if(d.keep_train_next && CARD.slides[state.idx + 1]){
                 state.trainDepart = null; window.__ltKeepTrain = CARD.slides[state.idx + 1].id; }
-              finishSlide(slide, train, true, "sort_demo_done"); });
+              finishSlide(slide, train, true, "sort_demo_done", true); });
           }
           const tile = tiles[k++];
           carry(tile, binIdx(tile.dataset.bin), ()=> sayOpt(clip(tile.dataset.okaudio),
@@ -11617,10 +11656,13 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
      pointing at an invisible element, and the sibling's page 3 has no hand either.
 
      data: { examples:[{word, matra, img, emoji, audio_line, matra_audio}] } */
-  /* [r135] Yasir: "for the mic animation extract the same mic animation from this repo"
-     (github.com/25606mohnish2020-commits/HI02H04_L01_S01). Its chip, copied verbatim from that lesson's
-     SPK_SVG; the animation is its [P2-READ-ALOUD] rules - see train_styles.css. */
-  const MIC_CHIP_SVG = '<svg viewBox="0 0 62 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Audio"><g filter="url(#spChipShadow)"><rect x="8" y="4" width="46" height="44" rx="22" fill="url(#spChipGrad)"/><rect x="6" y="2" width="50" height="48" rx="24" stroke="white" stroke-width="4"/><rect class="mic" x="26.75" y="15.05" width="8.5" height="15.85" rx="4.25" fill="white"/><path class="mic" d="M24.5 26V26.7A6.5 6.5 0 0 0 37.5 26.7V26M31 33.2V36.1M27.7 36.8H34.3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/><g class="mic-wave" fill="white"><rect x="22.9" y="22" width="2.2" height="8" rx="1.1"/><rect x="26.4" y="19" width="2.2" height="14" rx="1.1"/><rect x="29.9" y="17" width="2.2" height="18" rx="1.1"/><rect x="33.4" y="19" width="2.2" height="14" rx="1.1"/><rect x="36.9" y="22" width="2.2" height="8" rx="1.1"/></g></g><defs><filter id="spChipShadow" x="0" y="0" width="62" height="60" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/><feOffset dy="4"/><feGaussianBlur stdDeviation="2"/><feComposite in2="hardAlpha" operator="out"/><feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/><feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/><feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/></filter><linearGradient id="spChipGrad" x1="8" y1="26" x2="54" y2="26" gradientUnits="userSpaceOnUse"><stop stop-color="#1987FC"/><stop offset="1" stop-color="#1565F4"/></linearGradient></defs></svg>';
+  /* [r137] Yasir: "extract the mic button and its animation from this repo and replace it with the current
+     one" (github.com/Prashantkumar12345678/Alu_malu_Kalu_HI02H04_L03_S01). Its reading mic, copied verbatim
+     from that lesson's app.js: the yellow pill (the Play button's yellow) with a white ring and a navy mic
+     (READING_MIC_PNG, its alpha mask), and a second layer - the same pill with five navy level bars - that
+     its tap animation fades in. The animation is its CSS (.reading-mic ...), see train_styles.css. */
+  const READING_MIC_PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAACxgAAAsYBJG9eggAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAldSURBVHic7Z17rB5FGYeflx5a2h7ElnspmApIsCm0qTRIpAgWUALaBm8UE0NUVNqg1cQbJbG1RmMETRSa1BQNBC9JwaLQtCJq1HilisXYxoq20pYeqaeQlgKe9rz+MXvg5HDOzux+uzs738yTzF873zu/mfl9e5mZ3RFVpdsRkVnAImABMB2YBkwYkU2B/wJ7gC3AA8BGVT3YoNTGkW41QNbp7wcWAmeWDPMC8AhwP3Cvqr5YkbzW0HUGEJHXAF8ArgeOqjD0TuBWjBEGK4zrla4xgIhMBW4BlvDK03uV/AX4jKpurLGMxugKA4jIXGA95vreFN8Elqnq4QbLrJzgDSAi1wFrgYkeiv8Z8C5V7fdQdiVUeY1sFDF8Cfgufjof4DLgjyIy01P5HRPsGUBEvgh8zreOjL3ABaq6y7eQogRpABFZDNzrW8cINgMXq+rzvoUUIbhLgIjMw1zz28Zc4C7fIooSlAFE5HjM3f4xvrWMwXtFZJlvEUUIygCY5/xTfYuw8HkROcG3CFeCMUA2wneTbx0OvApY7luEK8EYAFhFvSN8VfJREZnhW4QLQRggm9i53reOAowHVvoW4UIQBgAWA+JbREGuFZFJvkXYCMUA7/AtoAQTgSt9i7DRegOIyFnAub51lGShbwE2Wm8A4O2+BXTA1SLS41tEHiEY4FLfAjpgKnC+bxF5hGCAJuf466DV+kMwwDTfAjqk1fpbbQARORo40beODkkG6IBTCe/5fySn+RaQR9sNMMW3gApodR3aboDQ//3Q8jq03QCJmkkGiJxkgMhJBoicZIDISQaInGSAyEkGiJxkgMhJBoicZIDISQaInGSAyEkGiJxkgMhJBoicZIDISQaInGSAyEkGiJxkgMhJBoicZIDISQaInGSAyEkGiJxkgMhJBoicZIDISQaInGSAyEkGiJxkgMhJBoicZIDISQaInGSAyEkGiJxGvmSdbaJ0DrBDVXc3UWaoiMgEYCbwP2Bb3XsT13oGEJFJIrIGeBr4NbBLRB4SkZPrLDdUROR9mF1INwOPA0+IyGW1FqqqtSXgDkBHST8l27XU8vvZY/w+pLTesa0uAQZH+f1BYEZdfVTbGUBEJgMfGePwW4BZdZUdKMsY/auik4EP11VonZeA11vin+cQ40hFWnziWoe5Ocdq+7PUaYADluOnO8Toq0KIZ6x1EJFx5H9W3taWpanTAE9ZjrtsAfs0MFCBFp/scchzMvl9YWvL0tRmAFV9FnghJ4t1IwU1d0d7KxPlBxcD2NqitjaoeyAoT7jrThouDdhmojZA3qnL1QD/rEKIR55wyGNri/AuARl5znXdBn5DFUI8sV1Vtzvk69ozQJ7w8dmW8DY2EO7j4HrHfGdbjgdrANvp27orqKr2A7+qRk7jWA2Q7Sz61pwsB4B9lSkaQd0G+Inl+CLHOD/qVIgH+oDfOeS7BHh1zvGHVXWwGkmvpFYDqOoWYFdOlotFZKpDqHuocTCkJlY7dpxtZ/QHqxAzFk2sB8i7iesBrrEFUNV9wFcqU1Q/fcBtjnnzDKDUfBPchAEeshx3vQzcTo2PQxWzQlUP2jKJyBzgjJwsj6pqrcPhTRjgEeDFnONXiMixtiCqeghYUZmq+tgOfMsx77WW47We/oF61wMMm+veRP6c+QrHOD3Azy2xfKYB4FLHukwB9lviza29bxoywM2Wih4ETnGMdTzwjxZ09mjppgJt8lVLrN04LJoJxQDHAf2WCq8uEO9c4JkWdPjwdGcB/WdgJsry4n2qkb5popCs0rdYKjwAvK5AvCsxCyd9d7xilrj1FNB+tyVeHzCp2wxwLGZEK6/i9xWMOR+zZsBn598NTCig+XzM0HZezGWN9UtTBWWV/7RDgy4oGHMGZgVt0x1/hIKnaWAc8AtL3D3AxG41wOTs9JbXAPuA1xaM2wvc32Dn9wNXl6j/1xxiL220T5osLGuETzg0wuNAb4nYlwN/qrHjn8eMSE4poe0Gh/hPUuByEqoBJgI7HBpjPSUegzBLqxdjZiKrPN1/Bzi9ZJ3fiBkMs5VzQ+P90XSBWYPMc2yQVR2U0QMswLycsqtEpw9g7u6XAtM70DEdM59vK+8HPvpCMpGNIyJLgW84ZL1RVV2HVscqS4ALMIaYjlmBM5QmYzpoz7C0Bdigqvs7LPckYCMwx5L178AbVLX5GU8frhv27/gebv/G24BxPrWWqNtsYKdD3Q4Bs7zp9NxIvcBWRxNsAI7z3bGO9Xon8JxjvRq/7rfGAFljzcTMBbg01lbgbN+ac+oiwEpGf8lztHSXd82+BWQN9x7gsGOj9QOLfGsepQ6nAD90rIMCf6DBAZ9WGyBrwIWY52zXBvwlcGELdPdi1im4nsUUeJgS4xxdbYCsMedTfJZvHQUmkSrUejSwBPvI5sj0fWC877ZupQGyhj0P8yhWpFEHgDubuD/ADGRdh1n5U0SjYh57j/LdxsOTt3GAPERkBmZJ+Vklfr4VeCBLv9cKKph94+gazALOKzAmKMqtqrqqUy1V00oDwEuDKPcBb+ogzF7gx5glaTsxZ5Y+VR3zTaNsfeLQINEczL3JRZiZvDIcAm5W1bUlf18rrTUAvDSCdyPwZfJfnijCIPAfXh71ew5zBz8N875ib0XlgBm7WKKqOyqMWSmtNsAQ2VfFbsdM8oTAbuDjqrrOtxAbQRhgCBG5HFgNnOlbyxgcwUw+LVcf4/olCMoAACJyDGZl0RLgRM9yhlDMzOFnVXWzbzFFCM4AQ4jIeMxd+Ycws3yjfWKtbp4Cvg2sVdUgP2QRrAGGkz02fgCz6sb1yyNlGcQ8VawBHtSaP+VaN11hgCGyz61dhRlRnJ2lEzoMexjYBjwG/BlYp6r/7jBma+gqA4yGiJzGy2aYjTHHSTk/+Q1mXeFjWfqrqua92xg0XW+AkYjI14GP5WSZoqrPNKXHN2m/gMhJBoicZIDISQaInGSAyEkGiJxkgMhJBoicZIDICWokMFsh9EHg3Zg1AWUMPBXztZKxeBIz4VOUZ4FHgZWqurPE770QmgHWYKZ/28wBYJ6qbvMtxIVgDCAiFwK/9a3DkY2q+jbfIlwI6R7gzb4FFOCi7HLVekIyQEhTsgNVvI/QBCEZYBNmcUYIbPItwJVgDKCqfwOWYxZgtpl/AZ/0LcKVYG4ChxCR+Zh3886hXQbej9kh5A51+FR8W/g/+bQMXD5Hz/sAAAAASUVORK5CYII=";
+  const MIC_CHIP_SVG = '<svg viewBox="0 0 58 60" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="माइक"><g class="mic"><rect x="8" y="4" width="41.1559" height="44" rx="20.578" fill="url(#readingPillGrad)"/><rect x="6" y="2" width="45.1559" height="48" rx="22.578" stroke="white" stroke-width="4"/><g transform="translate(28.58 26) scale(1.3) translate(-28.58 -26)"><g mask="url(#readingMicMask)"><rect x="17.9111" y="15.3335" width="21.434" height="21.434" fill="#0B3D8C"/></g></g></g><g class="mic-wave"><rect x="8" y="4" width="41.1559" height="44" rx="20.578" fill="url(#readingPillGrad)"/><rect x="6" y="2" width="45.1559" height="48" rx="22.578" stroke="white" stroke-width="4"/><g fill="#0B3D8C" transform="translate(-2.42 0)"><rect x="22.9" y="22" width="2.2" height="8" rx="1.1"/><rect x="26.4" y="19" width="2.2" height="14" rx="1.1"/><rect x="29.9" y="17" width="2.2" height="18" rx="1.1"/><rect x="33.4" y="19" width="2.2" height="14" rx="1.1"/><rect x="36.9" y="22" width="2.2" height="8" rx="1.1"/></g></g><defs><linearGradient id="readingPillGrad" x1="0" y1="4" x2="0" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#FFD24E"/><stop offset=".55" stop-color="#FCB717"/><stop offset="1" stop-color="#F2A80F"/></linearGradient><mask id="readingMicMask" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="20" y="18" width="17" height="16"><image href="' + READING_MIC_PNG + '" x="20.5781" y="18" width="16" height="16" preserveAspectRatio="none"/></mask></defs></svg>';
   SlideModules.MEET_PAIR = {
     mount(host, slide){
       const d = slide.data || {};
@@ -12434,7 +12476,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
             const okvo = quiet ? null : slot.correct_audio;
             if(done >= d.slots.length){
               /* "No extra completion VO required." */
-              sayOpt(clip(okvo), ()=> finishSlide(slide, train, true, "word_build_first_try"));
+              sayOpt(clip(okvo), ()=> finishSlide(slide, train, true, "word_build_first_try", true));
             } else {
               sayOpt(clip(okvo), ()=>{});
             }

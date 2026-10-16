@@ -2082,20 +2082,49 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 .mx-mic.mx-hide{ opacity:0 !important; transform:scale(.55); pointer-events:none; }
 .mx-mic{ transition:opacity .3s ease, transform .4s cubic-bezier(.34,1.5,.6,1); }
 .mx-mic.mx-done{ opacity:.45; }
-/* [r135] THE "LISTENING" ANIMATION OF HI02H04_L01_S01 ([P2-READ-ALOUD], value for value): on the tap the
-   white mic glyph dissolves away and the chip's sound wave (.mic-wave: five white level bars, otherwise
-   invisible and still) fades in and bounces like a voice level meter; the chip itself stays put.
-   Afterwards the wave fades, the mic returns and the chip is greyed (.mx-done). */
-.mx-mic svg{ display:block; width:100%; height:100%; pointer-events:none; }
-.mx-mic svg .mic-wave{ opacity:0; transition:opacity .35s ease; }
+/* [r137] THE MIC OF Alu_malu_Kalu_HI02H04_L03_S01 (its style.css, .reading-mic rules, value for value),
+   replacing r135's: a 64 px yellow chip with a soft drop shadow that pulses (scale 1.08, 1.4 s) while it waits
+   for the tap; on the tap the mic layer (.mic) fades out and the level-bar layer (.mic-wave) fades in, its five
+   navy bars bouncing scaleY .3 -> 1 at their own speeds; afterwards it is greyed (45 %, greyscale). */
+.mx-v2 .mx-mic{ width:88px; height:86px; border:0; padding:0; background:transparent; border-radius:0;
+  box-shadow:none; filter:drop-shadow(0 3px 6px rgba(0,0,0,.22)); animation:none; }
+.mx-v2 .mx-mic svg{ display:block; width:100%; height:100%; overflow:visible; pointer-events:none; }
+.mx-v2 .mx-mic.mx-live:not(.mx-rec):not(.mx-done):not(:disabled){ animation:readingMicPulse 1.4s ease-in-out infinite; }
+@keyframes readingMicPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.08); } }
+.mx-mic svg > g[filter]{ filter:none; }
 .mx-mic svg .mic{ transition:opacity .45s ease; }
+.mx-mic svg .mic-wave{ opacity:0; transition:opacity .35s ease; }
 .mx-mic.mx-rec svg .mic{ opacity:0; }
 .mx-mic.mx-rec svg .mic-wave{ opacity:1; transition-delay:.2s; }
-@keyframes micWave{ 0%,100%{ transform:scaleY(.3); } 50%{ transform:scaleY(1); } }
-.mx-mic.mx-rec svg .mic-wave rect{ transform-box:fill-box; transform-origin:50% 50%; animation:micWave 1s ease-in-out infinite; }
+@keyframes readingReferenceWave{ 0%,100%{ transform:scaleY(.3); } 50%{ transform:scaleY(1); } }
+.mx-mic.mx-rec svg .mic-wave rect{ transform-box:fill-box; transform-origin:50% 50%; animation:readingReferenceWave 1s ease-in-out infinite; }
 .mx-mic.mx-rec svg .mic-wave rect:nth-child(1){ animation-duration:.9s;  animation-delay:-.2s; }
 .mx-mic.mx-rec svg .mic-wave rect:nth-child(2){ animation-duration:1.1s; animation-delay:-.5s; }
 .mx-mic.mx-rec svg .mic-wave rect:nth-child(3){ animation-duration:.8s;  animation-delay:-.1s; }
 .mx-mic.mx-rec svg .mic-wave rect:nth-child(4){ animation-duration:1.2s; animation-delay:-.7s; }
 .mx-mic.mx-rec svg .mic-wave rect:nth-child(5){ animation-duration:.95s; animation-delay:-.35s; }
 .mx-mic.mx-rec{ cursor:default; }
+/* [r138] the two rules of that repo r137 missed: its pill inside .mic-wave stays STILL - only the five bars
+   move (it bounced with them) - and its final size, 88 x 86 */
+.mx-mic svg .mic-wave > rect{ animation:none !important; }
+.mx-v2 .mx-mic.mx-done{ pointer-events:none; cursor:default; opacity:.45; filter:grayscale(1) drop-shadow(0 3px 6px rgba(0,0,0,.22)); }
+
+
+/* ==========================================================================================
+   [r138]
+   ========================================================================================== */
+/* pages 3 / 5: the word is centred under the picture; the mic sits to its right without pushing it off
+   centre (absolutely placed, vertically centred by margin so its pulse's transform stays free) */
+.mx-v2 .mx-wordrow{ position:relative; display:flex; justify-content:center; gap:0; }
+.mx-v2 .mx-wordrow .mx-mic{ position:absolute; left:100%; top:50%; margin:-43px 0 0 22px; }
+.mx-v2 .mx-wordrow{ align-self:center; }
+
+/* only the next button pulses while it pulses */
+body.nav-live .slide-host *, body.nav-live .slide-host *::before, body.nav-live .slide-host *::after{
+  animation:none !important; }
+
+/* the options leave with the train */
+/* an animation, not a transition: P1's tray arrives on an animation that holds it visible (fill: both),
+   and a later animation is the only thing that can take over from it */
+.tr-tray.tr-tray-out{ animation:trTrayOut .45s ease forwards !important; pointer-events:none; }
+@keyframes trTrayOut{ from{ opacity:1; transform:translateY(0); } to{ opacity:0; transform:translateY(24px); } }

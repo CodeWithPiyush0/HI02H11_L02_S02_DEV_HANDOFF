@@ -1455,3 +1455,33 @@ Yasir: "extract the same «इस बटन पर टैप कीजिए» V
 like every lesson clip: `vo_mic_nudge` = «इस बटन पर टैप करिए।», 1.66 s, replacing the r134 TTS placeholder.
 The original is kept in `1_SPEC/game_art_src/lesson_voice/source_ext/`, the cut in `source_wav/`.
 Measured on page 3: the reminder plays 7.0 s after the mic appears untapped; no console errors.
+
+## r137 — the mic button and animation of Alu_malu_Kalu_HI02H04_L03_S01
+
+Yasir: "extract the mic button and its animation from this repo and replace it with the current one"
+(github.com/Prashantkumar12345678/Alu_malu_Kalu_HI02H04_L03_S01). Copied verbatim from its app.js / style.css:
+the yellow pill (the Play button's yellow, #FFD24E → #F2A80F) with a white ring and a navy mic (its
+READING_MIC_PNG alpha mask), 64 px with a soft drop shadow; while it waits for the tap it pulses (scale 1.08,
+1.4 s); on the tap the mic layer fades out (.45 s) and a second layer - the same pill with five navy level
+bars - fades in and the bars bounce (scaleY .3 → 1, .9 / 1.1 / .8 / 1.2 / .95 s); afterwards greyed (45 %,
+greyscale). Replaces r135's blue chip (HI02H04_L01_S01). Pages 3 and 5; the flow (hidden during the line,
+3 s listening, the 7 s reminder) is unchanged. `assets/UI/mic_button.svg` is no longer used.
+Measured: 64 px, `readingMicPulse` while waiting, mic 0 / bars 1 while listening; no console errors.
+
+## r138 — one pulse at a time, page 3/5 layout + the repo's exact mic, a success sound on every drop, no options left behind
+
+1. **Only the next button pulses.** Measured on pages 1-5: when आगे turned active, page 1's matra glow
+   (`mpGlow` x3) and pages 2/4's «पु» pulse (`mhPulse` x2) were still running beside its pulse. While the
+   visible आगे pulses, `body.nav-live` stops every animation in the page content (the button sits outside
+   it). Not on the pages that move on by themselves (6 on), where the button is hidden and the train leaves.
+   Measured after: nothing else running at +0.05 s, +1 s, +6 s, +15 s.
+2. **Pages 3 / 5** — the word is centred under the picture (centres measured equal, x = 682); the mic sits to
+   its right without pushing it off centre. The mic now matches Alu_malu_Kalu_HI02H04_L03_S01 exactly: two
+   rules r137 missed - its pill inside `.mic-wave` stays still while only the five bars bounce (it bounced with
+   them), and its final size 88 x 86.
+3. **A success sound with every confetti** — on the coach sort pages (G5, G4, P2 and the demo) each correct
+   drop now plays `sfx_fb_correct` with its confetti, as P1 and the sentence pages already did; the extra one
+   the drag pages played at the very end is dropped so the last item does not sound twice (tap pages keep it).
+4. **No options left behind** — when a train page finishes, whatever is left in the tray fades away
+   (P1's spare «पा»); an animation, because P1's tray arrives on one that holds it visible.
+Measured in the browser: all four; no console errors.
