@@ -2128,3 +2128,16 @@ body.nav-live .slide-host *, body.nav-live .slide-host *::before, body.nav-live 
    and a later animation is the only thing that can take over from it */
 .tr-tray.tr-tray-out{ animation:trTrayOut .45s ease forwards !important; pointer-events:none; }
 @keyframes trTrayOut{ from{ opacity:1; transform:translateY(0); } to{ opacity:0; transform:translateY(24px); } }
+
+/* ==========================================================================================
+   [r139] QA round
+   ========================================================================================== */
+/* BUG_04 / BUG_07: the speaker is grey for the whole of a sequence, and after the correct answer
+   (body.spk-busy, kept by the engine) - not only while one clip plays (body.vo-lock, unchanged) */
+body.spk-busy .audio-chip,
+body.spk-busy .tut-audio{ pointer-events:none !important; opacity:.45; filter:grayscale(.75);
+  transition:opacity .18s ease, filter .18s ease; }
+/* BUG_08: after the 3rd wrong attempt only the right coach is left; the others are greyed and take nothing */
+.train-coach.is-off{ pointer-events:none; }
+.train-coach.is-off .coach-body,
+.train-coach.is-off .coach-label{ filter:grayscale(.6) opacity(.45); transition:filter .25s ease; }

@@ -1485,3 +1485,27 @@ Measured: 64 px, `readingMicPulse` while waiting, mic 0 / bars 1 while listening
 4. **No options left behind** — when a train page finishes, whatever is left in the tray fades away
    (P1's spare «पा»); an animation, because P1's tray arrives on one that holds it visible.
 Measured in the browser: all four; no console errors.
+
+## r139 — QA round 1 (sheet 157iaKx…): BUG_01, 02, 03, 04, 06, 07, 08 case 1
+
+Yasir: fix all except BUG_05; BUG_08 case 1 only (cases 2 and 3 ignored).
+- **BUG_01 translation** - `<html translate="no" class="notranslate">` + `<meta name="google" content="notranslate">`:
+  Chrome no longer offers to translate, and nothing can be translated (a translated page lost its Play button).
+- **BUG_02 tab switch / minimise** - a small script at the top of the page (before anything else runs)
+  suspends every AudioContext (the lesson's voice + sound effects, the game's), pauses every playing
+  `<audio>`/`<video>` (the lesson music, the game's valley video), and holds anything that tries to start while
+  hidden; on return everything resumes from where it was. The 9 s fallback in `say()` counts only on-screen
+  time, so a hidden tab no longer skips a chain on past a waiting clip. Measured: hidden mid-line for 12 s -
+  context suspended, music paused, no clip started; back - both resumed, the page carried on.
+- **BUG_03 music** - 0.68 → 0.50, still stepping back under sound effects and voice (measured 0.50 idle,
+  0.16 under the voice).
+- **BUG_04 speaker flicker** - `body.spk-busy` keeps the speaker grey for the WHOLE sequence (any clip, a
+  reveal / read-out / hint, a demo) and releases 700 ms after the last; the per-clip `vo-lock` stays as it was.
+  Measured on G1: grey from the instruction through the three option names, blue once after the last.
+- **BUG_06 Swifty** - the try-again face returns to her normal face 1.8 s after a wrong attempt (measured).
+- **BUG_07 speaker after the answer** - once the answer is right (`state.locked`) the speaker is grey and
+  ignores taps until the next page (measured: taps on the answered page start nothing).
+- **BUG_08 case 1** - after the 3rd wrong attempt, besides the hand showing which coach, every OTHER coach is
+  greyed and takes nothing (a card dropped there springs back, not counted) until that card is in its coach;
+  then all coaches are back. Sort pages (G5, G4, P2) and the word-build page (P1). Measured on G4.
+No console errors.

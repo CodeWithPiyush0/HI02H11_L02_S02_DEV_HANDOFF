@@ -59,6 +59,13 @@
     });
   }
 
+  /* [r139] QA BUG_08: "after the third wrong attempt we show which option goes in which coach - also disable
+     every coach but the correct one, so only one coach is left". The others are greyed and take nothing
+     (a card dropped there springs back, not counted) until the locked card is in its coach. */
+  function coachesOnly(train, keep){ train.coaches.forEach((c, k)=> c.el.classList.toggle("is-off", k !== keep)); }
+  function coachesAll(train){ train.coaches.forEach(c => c.el.classList.remove("is-off")); }
+  const coachOff = (train, k)=> !!(train.coaches[k] && train.coaches[k].el.classList.contains("is-off"));
+
   function hintSeq(steps, done){
     let i = 0;
     (function step(){
@@ -139,7 +146,16 @@
       if(gen !== _voGen) return;                 // the screen moved on; this chain is stale
       if(next) next(); };
     try { play(clip(src) || null, go); } catch(e){ go(); return; }
-    setTimeout(go, 9000);
+    /* [r139] QA BUG_02: the page pauses while it is hidden, and a clip cannot end while it is paused -
+       so this fallback counts only the time the page was actually on screen, or a hidden tab would have
+       skipped the chain on past a clip that is only waiting to resume */
+    const t0 = Date.now(), p0 = window.__pausedMs || 0;
+    (function fb(){
+      const paused = !!window.__lessonPaused;
+      const shown = Date.now() - t0 - ((window.__pausedMs || 0) - p0) - (paused ? Date.now() - (window.__pauseT0 || Date.now()) : 0);
+      if(paused || shown < 9000){ setTimeout(fb, paused ? 500 : Math.max(50, 9000 - shown)); return; }
+      go();
+    })();
   }
   /* say() for an OPTIONAL clip: a null/absent id runs `next` immediately instead of handing
      play() a null source and then sitting out the 9-second fallback timer. Round 3 has
@@ -147,6 +163,25 @@
      the completion line on every sort screen — and each of those is an absent clip, not a
      pause the child should sit through. */
   function sayOpt(src, next){ if(!src){ if(next) next(); return; } say(src, next); }
+
+  /* [r139] QA BUG_04: "the speaker turns blue, then grey, and so on while the options are announced" - its
+     grey state followed each single clip (body.vo-lock), so it turned blue in every gap of a sequence.
+     `body.spk-busy` covers the WHOLE sequence: any clip playing, a reveal / read-out / hint in progress,
+     a watch-only demonstration running - and it lets go only after 700 ms with none of those, which
+     bridges the gaps between the clips of a sequence. QA BUG_07: once the answer is right (state.locked)
+     it stays grey and the speaker ignores taps (the replay guard in the engine) until the next page. */
+  (function speakerState(){
+    let quietSince = 0;
+    const tick = ()=>{
+      const seq = !!((typeof isPlaying !== "undefined" && isPlaying) || state.revealing || state.demoRunning || hintBusy);
+      const now = performance.now();
+      if(seq) quietSince = 0; else if(!quietSince) quietSince = now;
+      const busy = seq || (now - quietSince < 700) || !!state.locked;
+      if(document.body && document.body.classList.contains("spk-busy") !== busy)
+        document.body.classList.toggle("spk-busy", busy);
+    };
+    setInterval(tick, 80);
+  })();
 
   function sayAll(list, next){
     let i = 0;
@@ -1470,7 +1505,7 @@
          screen-wide lock earned by one card would refuse a different card the coach it actually
          belongs in. The drop handler reads `only` and hands the card back without counting it,
          so a child who keeps trying the wrong coach is not punished for it either. */
-      const lockToBin = (tile, want)=>{ tile.dataset.only = String(want); };
+      const lockToBin = (tile, want)=>{ tile.dataset.only = String(want); coachesOnly(train, want); };
 
       /* [r83] a card that has gone into its RIGHT coach - shared by the child's drop and the
          demonstration's, so the watch-first page shows exactly what a real drop does */
@@ -1493,6 +1528,7 @@
           tile._ghost = g;
           requestAnimationFrame(()=> closeGap(g));         /* [r96] and folds away */
         }
+        if(tile.dataset.only != null) coachesAll(train);      /* [r139] the locked card is home: all coaches back */
         tile.classList.add("snapped");
         /* the card belongs on the coach's painted CREAM PANEL, not loose in the coach body.
            `body` is the drop target (it is what carries .dd-zone); `.coach-face` is the panel
@@ -1550,7 +1586,7 @@
           const ci = parseInt(body.dataset.idx, 10);
           /* rung 3 has already named this card's coach: every other one simply will not take it,
              and refusing is NOT a wrong attempt - the child has run out of ladder. */
-          if(tile.dataset.only != null && String(ci) !== tile.dataset.only){
+          if(coachOff(train, ci) || (tile.dataset.only != null && String(ci) !== tile.dataset.only)){   /* [r139] greyed coaches take nothing */
             tile.style.transform = "";
             tile.classList.remove("tr-cshake"); void tile.offsetWidth;
             tile.classList.add("tr-cshake");
@@ -2836,7 +2872,7 @@
           if(blank.classList.contains("filled")) return;
           const i = parseInt(blank.dataset.idx, 10);
           /* rung 3 has already named this letter's coach - see lockToBin's twin in TRAIN_SORT */
-          if(tile.dataset.only != null && String(i) !== tile.dataset.only){
+          if(coachOff(train, i) || (tile.dataset.only != null && String(i) !== tile.dataset.only)){   /* [r139] greyed coaches take nothing */
             tile.style.transform = "";
             tile.classList.remove("tr-cshake"); void tile.offsetWidth;
             tile.classList.add("tr-cshake");
@@ -2846,6 +2882,7 @@
           const slot = d.slots[i];
           tile.style.transform = "";
           if(tile.dataset.akshar + slot.tail === slot.word){
+            if(tile.dataset.only != null) coachesAll(train);    /* [r139] the locked letter is home: all coaches back */
             const quiet = (perCard.get(tile) || 0) >= maxTries() - 1;
             blank.classList.add("filled");
             blank.innerHTML = '<span class="ink-glyph wb-inakshar">' + tile.dataset.akshar + "</span>";
@@ -2915,7 +2952,7 @@
               const at = want >= 0 ? want : i;
               const bl = train.coaches[at].body.querySelector(".wb-blank");
               /* the letter now goes to that blank and nowhere else */
-              if(from && want >= 0) from.dataset.only = String(want);
+              if(from && want >= 0){ from.dataset.only = String(want); coachesOnly(train, want); }   /* [r139] */
               withHand3(()=> train.nudgeTo(at, (want >= 0 ? from : null), slide,
                                            (want >= 0 ? bl : null)));
               if(bl && want >= 0) bl.classList.add("wb-pulse");
@@ -7009,7 +7046,7 @@ if(document.fonts && document.fonts.load){
      [r100] Yasir: "the bg music should only play when we click on the play button" - so it starts
      with that tap, and nothing else starts it (not the cover, not another touch). */
   const BGM = (function(){
-    const BASE = 0.68, SFX = 0.32, VO = 0.16;
+    const BASE = 0.50, SFX = 0.32, VO = 0.16;   /* [r139] QA BUG_03: 0.68 -> 0.50; the ducking under SFX / VO is unchanged */
     const src = (typeof _av === "function") ? _av("assets/Audio/bgm_lesson.ogg") : "assets/Audio/bgm_lesson.ogg";
     let el = null, vol = 0, started = false, sfxUntil = 0;
     const live = new Set();
