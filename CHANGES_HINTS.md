@@ -1551,3 +1551,14 @@ replace ours; our voice lines, the words on screen and where the third screen st
 Measured (1382×850): all three screens show the bird centred at 369 px, the line at 271 px (above his crest),
 whoosh at open; the real cover → T1 path is whoosh, then `vo_pt_tutorial`, then sink, then T1. At 740×360 the line
 scales and sits above the bird. One fetch of the peek art; no console errors.
+
+### r142 addendum — the same CSS change in `4_ENGINE/train_styles.css`
+r142 took the old gate styles out of the engine copy only. `inject_train.py` re-copies `train_styles.css`
+into the engine, so a later run would have brought them back and dropped the new screen's styles. The
+source file now has the same change; a re-inject gives a byte-identical engine (checked). The built lesson
+is unchanged.
+
+## r143 — background music 40 %
+
+QA: the music "still feels loud" at 50 %. Its level is now 0.40 (was 0.50). It still steps back under
+sound effects and the voice, unchanged. Measured: 0.40 with no voice, 0.16 under the voice.
