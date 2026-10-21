@@ -1610,3 +1610,14 @@ with sfx will play after completing all options correctly". On the sort pages an
 correct drop now plays the success sound (with the coach's glow), no confetti; the drop that completes the
 screen plays the confetti with the success sound - once, not twice. Measured in both files: G5 2 drops ->
 2 success sounds, 1 confetti (on the last); word build 3 letters -> 3 success sounds, 1 confetti.
+
+## r148 — a wrong attempt: the shake and the wrong sound, then the hint
+
+Yasir, still on BUG_09: "in case of a wrong attempt the coach shakes and the sfx plays, then the VO should
+play". r146 waited only for the shake (520 ms) and only on the tap pages - but the wrong sound is audible for
+0.67 s (sfx_fb_incorrect; silent from 0.669 s), so the line still came in over it, and the sort, word-build and
+sentence pages did not wait at all. Every wrong attempt now plays the shake and the wrong sound on their own,
+and its hint (line, read-out, hand) starts 750 ms later; no tap or drop is taken in between. Swifty's sad face
+(r146) still lasts until the hint line is over.
+Measured in both files, wrong sound -> hint voice: tap page 754-763 ms, sort 757-761, word build 757-765,
+sentence 752-766; Swifty normal 0.3-0.4 s after the line ends; no console errors.

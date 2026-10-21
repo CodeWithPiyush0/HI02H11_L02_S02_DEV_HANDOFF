@@ -9775,6 +9775,18 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
   function coachesAll(train){ train.coaches.forEach(c => c.el.classList.remove("is-off")); }
   const coachOff = (train, k)=> !!(train.coaches[k] && train.coaches[k].el.classList.contains("is-off"));
 
+  /* [r148] A WRONG ATTEMPT: THE SHAKE AND THE WRONG SOUND, THEN THE HINT. Yasir (BUG_09 pages): "in case of a
+     wrong attempt the coach shakes and the sfx plays, then the VO should play". r146 waited for the shake
+     only (520 ms) and only on the tap pages; the wrong sound is audible for 0.67 s (sfx_fb_incorrect, measured:
+     silence from 0.669 s), so the line still came in over its tail, and the drag and sentence pages did not
+     wait at all. Every wrong attempt now holds its hint until both are over - 750 ms - and takes no tap or
+     drop in between (hintBusy). A page left in the meantime runs nothing. */
+  const WRONG_GAP_MS = 750;
+  function afterWrong(run){
+    const g = _voGen;
+    hintHold(fin => setTimeout(fin, WRONG_GAP_MS), ()=>{ if(g === _voGen) run(); });
+  }
+
   /* [r146] the end of a drag activity: the confetti and the success sound, together, once */
   function celebrateOnce(){
     fbCorrect();
@@ -10900,9 +10912,8 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
          plays at the same time - when the animation ends, then the VO should start". The shake (and the
          wrong sound with it) now plays on its own; the rung - its line, read-out or hand - starts when the
          shake is over (520 ms, the shake's own length). The coaches take no tap in between (hintBusy). */
-      const n = tries, g = _voGen;
-      const rung = ()=>{ if(g !== _voGen) return; rungFor(n); };
-      if(coachIdx != null) hintHold(fin => setTimeout(fin, 520), rung); else rung();
+      const n = tries;
+      afterWrong(()=> rungFor(n));          /* [r148] the shake AND the wrong sound first */
       return tries;
     };
     function rungFor(tries){
@@ -11379,6 +11390,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
             setTimeout(()=> tile.classList.remove("tr-cshake"), 560);
             SwiftPAL.emit("answer_wrong", { slide_id: slide.id, attempts: state.attempts });
             const want = binIdx(tile.dataset.bin);
+            afterWrong(()=>{                  /* [r148] the shake and the wrong sound first */
             if(n === 1){
               say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
             } else if(n === 2 && hintLevels() >= 3){
@@ -11396,6 +11408,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
               say(clip(tile.dataset.h3) || A(slide, "hint3") || A(slide, "hint2")
                   || A(slide, "hint") || A(slide, "try_again"), ()=>{});
             }
+            });
           }
         }, { onPick: ()=>{ if(typeof sfxTap === "function") sfxTap(); } });
       });
@@ -12706,6 +12719,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
             tile.classList.add("tr-cshake");
             setTimeout(()=> tile.classList.remove("tr-cshake"), 560);
             SwiftPAL.emit("answer_wrong", { slide_id: slide.id, attempts: state.attempts });
+            afterWrong(()=>{                  /* [r148] the shake and the wrong sound first */
             if(n === 1){
               /* RUNG 1: "No hand nudge. Only VO." */
               say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
@@ -12744,6 +12758,7 @@ SlideModules.MATCH_VACHAN_PAIRS    = SlideModules.MATCH_GENDER_PAIRS;
               say(clip(sl3 && sl3.hint3_audio) || A(slide, "hint3") || A(slide, "hint2")
                   || A(slide, "hint") || A(slide, "try_again"), ()=>{});
             }
+            });
           }
         }, { onPick: ()=>{ if(typeof sfxTap === "function") sfxTap(); } });
       });
@@ -16226,10 +16241,12 @@ if(document.fonts && document.fonts.load){
           setTimeout(()=> b.classList.remove("sc-shake"), 560);
         }
         SwiftPAL.emit("answer_wrong", { slide_id: slide.id, phase: slide.phase, attempts: tries });
-        if(tries === 1){
+        const t = tries;
+        afterWrong(()=>{                      /* [r148] the shake and the wrong sound first */
+        if(t === 1){
           /* RUNG 1: shake, no highlight, one line */
           say(A(slide, "hint1") || A(slide, "try_again"), ()=>{});
-        } else if(tries === 2 && hintLevels() >= 3){
+        } else if(t === 2 && hintLevels() >= 3){
           /* RUNG 2: the three sentences, then the line that tells the child what to do with them */
           state.scaffoldLevel = 2; state.hintUsed = true;
           SwiftPAL.emit("hint_shown", { slide_id: slide.id, level: 2 });
@@ -16253,6 +16270,7 @@ if(document.fonts && document.fonts.load){
           say(A(slide, "hint3") || A(slide, "hint2") || A(slide, "hint") || A(slide, "try_again"),
               ()=>{});
         }
+        });
       }
 
       /* [r29] THE CARD CAN BE CARRIED TO THE BLANK, not only tapped.
