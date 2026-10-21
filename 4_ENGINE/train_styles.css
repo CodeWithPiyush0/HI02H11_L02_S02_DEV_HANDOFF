@@ -2116,7 +2116,9 @@ body.vo-lock .sg-vo{ pointer-events:none !important; opacity:.45; filter:graysca
 /* pages 3 / 5: the word is centred under the picture; the mic sits to its right without pushing it off
    centre (absolutely placed, vertically centred by margin so its pulse's transform stays free) */
 .mx-v2 .mx-wordrow{ position:relative; display:flex; justify-content:center; gap:0; }
-.mx-v2 .mx-wordrow .mx-mic{ position:absolute; left:100%; top:50%; margin:-43px 0 0 22px; }
+.mx-v2 .mx-wordrow .mx-mic{ position:absolute; left:100%; top:50%; margin:-31px 0 0 22px; }
+/* [r141] Yasir: "align the mic button with the word, centred with respect to the word" - -43 -> -31: measured, the
+   mic's centre sat 11 screen px (12 design px) above the centre of the word's ink on all four words */
 .mx-v2 .mx-wordrow{ align-self:center; }
 
 /* only the next button pulses while it pulses */

@@ -113,7 +113,8 @@ COPY_AUDIO = ["vo_pt_tutorial", "vo_pt_guided", "vo_pt_practice",
               "sfx_celebrate", "sfx_correct", "sfx_wrong", "sfx_tap", "sfx_pop",
               "sfx_fb_correct", "sfx_fb_incorrect",   # [r73] Yasir's feedback sounds
               "sfx_play_button", "sfx_next_button",   # [r84] Yasir's play / next button sounds
-              "sfx_train_arrive", "sfx_train_move", "sfx_whistle"]
+              "sfx_train_arrive", "sfx_train_move", "sfx_whistle",
+              "sfx_whoosh"]                           # [r142] the transition screen's swish
 
 U, UU = "ु", "ू"
 
@@ -989,7 +990,10 @@ def build_card(slides):
         "ui_sfx": {"play": "sfx_play_button", "next": "sfx_next_button"},
         # [r106] Yasir: "first she should seek from the bottom, then start speaking - the VO should start
         # when she starts speaking": back to her first speaking frame (r105 had made it 0)
-        "gate": {"img": "assets/UI/swifty_gate_seek.webp", "talk_at_ms": 1960,
+        # [r142] the transition screen is Hindi-game-gender-identify's (engine phaseBlurTransition):
+        # its Swifty (assets/UI/peeking_talk_up.webp) and animation replace the seeking bird and her
+        # lip-sync, so `img`, `talk_at_ms`, `title_dur_ms` and the lip-sync sheet step are gone.
+        "gate": {
                  # [r83] Yasir: the third transition «अब आपकी बारी!» after page 17, i.e. just before
                  # the runner game - not in front of the first practice page (engine: CARD.gate.at)
                  "at": {"round3": "MG1"},
@@ -999,9 +1003,7 @@ def build_card(slides):
                  # [r109] re-measured on the recorded transition lines (25 ms envelope, the phrase
                  # after the last long pause): «चलिए, शुरू करें!» 3075-4225 ms of 4.32 s, «चलिए, साथ
                  # में करें!» 3575-4900 of 5.01 s, «अब आपकी बारी।» 925-1775 of 1.87 s
-                 "title_cue_ms": {"tutorial": 3075, "guided": 3575, "practice": 925},
-                 # [r104] ...and how long Swiftee takes to say it: the typewriter runs over this
-                 "title_dur_ms": {"tutorial": 1150, "guided": 1325, "practice": 850}},
+                 "title_cue_ms": {"tutorial": 3075, "guided": 3575, "practice": 925}},
         # REVIEW-1 LADDER — three rungs on every test screen:
         #   wrong 1 = rung-1 VO, nothing else moves and nothing is highlighted
         #   wrong 2 = rung-2 VO plus a DEMONSTRATION (words read out, matras glowed, sentences
@@ -1556,92 +1558,6 @@ def celebration_anim(slides):
     return {"base": "assets/UI/celebration/", "vo": vo_id, "meta": meta, "track": track}
 
 
-# ---------------------------------------------------------------- [r107] the gate bird speaks the line
-# Yasir: "when «चलिए शुरू करें» plays Swifty stays static, no mouth movement - same on transitions 2
-# and 3". The gate art is a fixed animation: its talking part (1.96-6.3 s) opens the beak only 7 times
-# whatever the clip says, then it blinks and holds a still frame for 1.2 s - exactly where «चलिए, शुरू
-# करें!» falls (6.0-7.2 s into the gate). So the rise stays the animation, and from her first speaking
-# frame she is drawn from a sheet of the SAME art's own frames (37-67: rest, blinks, the 7 open beaks
-# and the closed beak beside each), lip-synced to THIS transition's clip: the beak opens on each
-# syllable of the track the celebration kit's make_lipsync.py measures (run as it ships), blinks in
-# the pauses, and shuts when the line ends. Engine: CARD.gate.talk + CARD.gate.lips.
-GATE_TALK_FIRST, GATE_TALK_LAST, GATE_TALK_COLS = 37, 67, 8
-GATE_TALK_SHEET = "assets/UI/swifty_gate_talk.webp"
-
-
-def gate_talk(card):
-    import subprocess, tempfile
-    from PIL import Image
-    g = card["gate"]
-    src = os.path.join(BUNDLE, g["img"])
-    out = os.path.join(BUNDLE, GATE_TALK_SHEET)
-    if not os.path.isfile(src):
-        print("  !!  gate lip-sync skipped (%s missing) - the gate keeps its own animation" % g["img"])
-        return
-    im = Image.open(src)
-    fw, fh = im.size
-    n = GATE_TALK_LAST - GATE_TALK_FIRST + 1
-    if not os.path.isfile(out) or os.path.getmtime(out) < os.path.getmtime(src):
-        rows = (n + GATE_TALK_COLS - 1) // GATE_TALK_COLS
-        sheet = Image.new("RGBA", (fw * GATE_TALK_COLS, fh * rows), (0, 0, 0, 0))
-        for k in range(n):
-            im.seek(GATE_TALK_FIRST + k)
-            sheet.paste(im.convert("RGBA"), ((k % GATE_TALK_COLS) * fw, (k // GATE_TALK_COLS) * fh))
-        sheet.save(out, "WEBP", quality=90, method=6)
-    lips = {}
-    for phase, vo in (("tutorial", "vo_pt_tutorial"), ("guided", "vo_pt_guided"), ("practice", "vo_pt_practice")):
-        vp = os.path.join(AUD_DIR, vo + ".ogg")
-        if not os.path.isfile(vp):
-            continue
-        tmp = os.path.join(tempfile.gettempdir(), "gate_track_%s_%s.json" % (CODE, phase))
-        subprocess.run([sys.executable, os.path.join(KIT, "make_lipsync.py"), vp, "--json", tmp],
-                       check=True, capture_output=True)
-        tr = json.load(open(tmp, encoding="utf-8"))
-        if "1" not in tr["bits"]:
-            sys.exit("X  the %s gate VO measured silent - no lip-sync track" % phase)
-        lips[phase] = {"bits": tr["bits"], "step_ms": tr["step_ms"]}
-    g["talk"] = {"src": GATE_TALK_SHEET, "first": GATE_TALK_FIRST, "cols": GATE_TALK_COLS, "fw": fw, "fh": fh,
-                 "rest": 37, "blink": [38, 39, 40],
-                 # each open beak with the closed beak drawn right after it in the art
-                 "open": [[42, 43], [44, 45], [51, 52], [53, 54], [55, 56], [58, 59], [60, 61]]}
-    g["lips"] = lips
-    # [r108] WHEN EACH WORD OF THE ON-SCREEN PHRASE IS SPOKEN. Yasir: "in the first transition the
-    # «चलिए, शुरू करें» VO plays but its text does not complete - not in sync with the VO". The typewriter
-    # spread the letters evenly over the whole phrase, so «शु» typed in the pause after «चलिए,» and the
-    # rest ran on timers of its own. Measured here from the clip (25 ms RMS, voice = above -42 dBFS,
-    # gaps under 150 ms bridged): the voiced stretches inside the phrase. The engine types the letters
-    # only while the voice is sounding, on the clip's own clock (CARD.gate.title_voice_ms).
-    import array
-    voice = {}
-    for phase, vo in (("tutorial", "vo_pt_tutorial"), ("guided", "vo_pt_guided"), ("practice", "vo_pt_practice")):
-        vp = os.path.join(AUD_DIR, vo + ".ogg")
-        cue, dur = g["title_cue_ms"].get(phase), g["title_dur_ms"].get(phase)
-        if not os.path.isfile(vp) or cue is None or dur is None:
-            continue
-        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", vp, "-ac", "1", "-ar", "16000", "-f", "s16le", "-"],
-                             capture_output=True, check=True).stdout
-        a = array.array("h"); a.frombytes(raw[: len(raw) // 2 * 2])
-        segs = []
-        for i in range(0, len(a) - 400, 400):
-            ms = i // 16
-            if not (cue - 150 <= ms <= cue + dur + 200):
-                continue
-            r = (sum(x * x for x in a[i:i + 400]) / 400) ** 0.5
-            if r > 32768 * 10 ** (-42 / 20):
-                if segs and ms - segs[-1][1] < 150:
-                    segs[-1][1] = ms + 25
-                else:
-                    segs.append([ms, ms + 25])
-        segs = [x for x in segs if x[1] - x[0] >= 50]
-        if not segs:
-            sys.exit("X  no voice measured inside the %s phrase window" % phase)
-        voice[phase] = segs
-    g["title_voice_ms"] = voice
-    print("  OK  transition phrases, voiced (ms in clip): %s" % voice)
-    print("  OK  gate lip-sync: %s (%d frames, %d KB), tracks for %s"
-          % (GATE_TALK_SHEET, n, os.path.getsize(out) // 1024, sorted(lips)))
-
-
 CEL_WRAP = r"""
 /* [r85] THE CELEBRATION SWIFTIE - the kit's README wrapper, verbatim in intent. The engine's
    CELEBRATION module is wrapped, not edited: it still does everything it did (sfx, sunburst, stars,
@@ -1806,7 +1722,6 @@ def main():
     if img_orphan:
         print("  !!  images no longer used by the card (delete before packaging): %s" % img_orphan)
 
-    gate_talk(card)                                      # [r107]
     card["end_anim"] = celebration_anim(slides)          # [r85]
     if not card["end_anim"]:
         del card["end_anim"]

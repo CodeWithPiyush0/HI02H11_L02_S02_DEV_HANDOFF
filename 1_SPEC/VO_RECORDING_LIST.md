@@ -167,3 +167,4 @@ The TTS model truncates a clip when an **em-dash precedes a short final word** (
 - `sfx_train_arrive`
 - `sfx_train_move`
 - `sfx_whistle`
+- `sfx_whoosh`

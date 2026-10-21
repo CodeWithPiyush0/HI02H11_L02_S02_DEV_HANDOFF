@@ -1509,3 +1509,45 @@ Yasir: fix all except BUG_05; BUG_08 case 1 only (cases 2 and 3 ignored).
   greyed and takes nothing (a card dropped there springs back, not counted) until that card is in its coach;
   then all coaches are back. Sort pages (G5, G4, P2) and the word-build page (P1). Measured on G4.
 No console errors.
+
+## r140 — QA BUG_05 (pages 3 / 5), Yasir's fix
+
+- When «इस बटन पर टैप करिए» plays, the hand points at the MIC (so «इस बटन» can only mean that button); it
+  stays until the mic is tapped.
+- While the mic waits for the child, the speaker is live (blue) and replays the whole line of the word on
+  screen - «गुड़, इसमें ग पर छोटी उ की मात्रा लगी है। बोलकर देखिए।» - and the 7 s reminder count starts again
+  after it. During the lines themselves and the 3 s listening the speaker stays grey (r139); after the last
+  word it replays the page as before.
+Measured on page 3: speaker blue while waiting; tap → the line replays (speaker grey); reminder 7 s after its
+end with the hand under the mic (centres equal); mic tap → hand gone, listening; no console errors.
+
+## r141 — pages 3 / 5: the mic centred on the word
+
+Yasir: "align the mic button with the word, it should be centre with respect to the word". Measured from the
+rendered pixels: the mic's centre sat 10-12 px above the centre of the word's ink (letters + matra) on all
+four words. Its offset moves 12 design px down (margin-top -43 → -31). Measured after: within ±1 px on
+गुड़, धनुष, दूध, कबूतर.
+
+## r142 — the three transition screens, from Hindi-game-gender-identify
+
+Yasir: "extract and replace the exact same all three transition screens and their animation from this repo"
+(github.com/Prashantkumar12345678/Hindi-game-gender-identify, HI02H11_L03_S02). Its screen and animation
+replace ours; our voice lines, the words on screen and where the third screen stands (before the runner) stay.
+- **Swifty** - that repo's `peeking_talk_up.webp` (900×900, already up and talking), copied to `assets/UI/`.
+  Bottom-anchored, square, 52.8 % of the window height (max 624 px, never wider than the screen); a .3 s lift
+  in (`pgUpIn`); on the first screen he sinks out (`pgPeekDown`, .34 s) before the tutorial mounts. A fresh
+  blob URL per screen, so he starts from frame 0 and the 1.5 MB file is downloaded once (after the cover).
+- **Sound** - its `sfx_whoosh` as the screen opens (copied as `assets/Audio/sfx_whoosh.ogg`, WAV data like our
+  other clips).
+- **Headline** - its magenta `#CD0FD5` line with the white stroke, sized by `--pgf`, 271 px down; blank until
+  Swifty says the phrase (our measured `title_cue_ms`, counted from when the clip is heard), then it wipes in
+  left to right (`pgWipe`, .9 s). Its `_fitGateTitle` keeps the line off his head on small screens.
+- **Timing** - the screen lets go when the line ends (its `PEEK_MS` 1200), with its 12 s watchdog, the next
+  button off while it is up, and no remount if the child has moved on.
+- **One addition of ours:** our third clip is only 1.9 s, so the .9 s wipe ended just as the screen closed. The
+  screen now also stays until the line has been whole for 0.7 s. The other two clips already end later.
+- **Removed:** the seeking bird (`swifty_gate_seek.webp`), her lip-sync canvas and sheet (`swifty_gate_talk.webp`,
+  the build's `gate_talk()`), and the letter-by-letter typewriter. Both old art files are still on disk, unused.
+Measured (1382×850): all three screens show the bird centred at 369 px, the line at 271 px (above his crest),
+whoosh at open; the real cover → T1 path is whoosh, then `vo_pt_tutorial`, then sink, then T1. At 740×360 the line
+scales and sits above the bird. One fetch of the peek art; no console errors.

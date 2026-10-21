@@ -2147,20 +2147,33 @@
          the mic - for 3 seconds, as we give the user 3 seconds to read the word; and if the user does not
          tap for 7 seconds the VO plays «इस बटन पर टैप कीजिए और शब्द पढ़िए।»". Nothing is recorded. The
          lesson waits for the tap; the reminder repeats after every 7 s of nothing. */
-      const micTurn = (mic, after)=>{
+      /* [r140] QA BUG_05, Yasir's fix: (1) the reminder «इस बटन पर टैप करिए» now comes with the hand pointing at
+         the MIC, so "इस बटन" can only mean that button; it stays until the mic is tapped. (2) While the mic
+         waits, the speaker is live and replays the whole line of the word on screen («गुड़, इसमें ग पर छोटी उ
+         की मात्रा लगी है। बोलकर देखिए।»); the 7 s reminder count starts again after it. */
+      const micTurn = (mic, ex, after)=>{
         if(!mic){ after(); return; }
         const live = ()=> CARD.slides[state.idx] === slide && myGen === _voGen;
         let idleT = 0, done = false;
         const arm = ()=>{ clearTimeout(idleT); idleT = setTimeout(remind, 7000); };
         const remind = ()=>{ if(done || !live()) return;
+          pointNudgeAt(mic);
           sayOpt(clip(d.mic_nudge_audio), ()=>{ if(!done && live()) arm(); }); };
+        state.demoRunning = false;            /* the child's turn: the speaker is live */
+        state.replayAudio = ()=>{
+          if(done || !live()) return;
+          clearTimeout(idleT);
+          say(clip(ex.audio_line), ()=>{ if(!done && live()) arm(); });
+        };
         mic.disabled = false;
         mic.classList.remove("mx-hide"); mic.classList.add("mx-live");
         sfxPopSoft();
         mic.onclick = ()=>{
           if(done || !live()) return;
           done = true; clearTimeout(idleT);
-          if(isPlaying && typeof stopAudio === "function") stopAudio();   /* a reminder being spoken */
+          if(typeof stopNudge === "function") stopNudge();
+          state.replayAudio = null; state.demoRunning = true;             /* the turn is over: back to the page's sequence */
+          if(isPlaying && typeof stopAudio === "function") stopAudio();   /* a reminder (or a replay) being spoken */
           if(typeof sfxTap === "function") sfxTap();
           mic.classList.remove("mx-live"); mic.classList.add("mx-rec");
           setTimeout(()=>{
@@ -2230,7 +2243,7 @@
             matraHLSoon(word, ex.matra);
             word.classList.remove("mh-pulse");
             /* [r121] then 3 s for the child to say it, mic live */
-            sayOpt(clip(ex.matra_audio), ()=> micTurn(mic, ()=>{ if(alive()) setTimeout(after, 420); }));
+            sayOpt(clip(ex.matra_audio), ()=> micTurn(mic, ex, ()=>{ if(alive()) setTimeout(after, 420); }));
           });
         }, 260));
       };
