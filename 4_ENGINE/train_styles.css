@@ -2161,3 +2161,6 @@ body.spk-busy .tut-audio{ pointer-events:none !important; opacity:.45; filter:gr
 .train-coach.is-off{ pointer-events:none; }
 .train-coach.is-off .coach-body,
 .train-coach.is-off .coach-label{ filter:grayscale(.6) opacity(.45); transition:filter .25s ease; }
+
+/* [r145] QA BUG_10: the mic while the speaker replays its word - greyed like a finished mic, no pulse */
+.mx-v2 .mx-mic.mx-wait{ filter:grayscale(1); cursor:default; }
