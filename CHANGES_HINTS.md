@@ -1562,3 +1562,10 @@ is unchanged.
 
 QA: the music "still feels loud" at 50 %. Its level is now 0.40 (was 0.50). It still steps back under
 sound effects and the voice, unchanged. Measured: 0.40 with no voice, 0.16 under the voice.
+
+## r144 — background music 30 %
+
+QA still finds the music loud at 40 %. Its level is now 0.30. The old level under a sound effect (0.32)
+would now have been LOUDER than the music itself, so both dips scale down with it: 0.15 under an effect,
+0.08 under the voice (the r99 proportions, about a half and a quarter). Measured: 0.30 with no voice, 0.08
+under the voice. The runner game's own music (MatraRunner, 80 % by Yasir's ruling) is not touched.
