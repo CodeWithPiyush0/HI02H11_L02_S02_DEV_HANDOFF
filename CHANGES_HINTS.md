@@ -1634,3 +1634,14 @@ Measured with real pointer taps / drags, reminder already used, then a wrong ans
 7.0-7.6 s after the hint ends on the tap pages (G1, G2), the sort page (G4) and the sentence page; after one
 correct drop of four (G4) 6.9-7.1 s; untouched, it plays once and not again in 30 s; nothing after a correct
 answer.
+
+## r150 — the 7 s reminder repeats every 7 s while the child stays inactive
+
+Yasir: "the VO replays only 1 time - it should play after each 7 seconds, not just once, if the user remains
+inactive". The idle reminder keeps going now: after each reminder the 7 s count starts again when it has
+finished speaking, so a child who stays inactive hears the question every 7 s of silence - until they act, the
+page is answered, or they leave it. Same pages as before (every page where the child has to do something; not the
+watch-only pages or the runner game; the mic pages keep their own 7 s reminder).
+Measured, 40 s untouched, silence before each repeat: tap page G1 7.3-7.4 s (3 reminders - each also reads the
+options), sort page G4 7.0-7.2 s (4), sentence page 7.0-7.1 s (4), in both files; nothing after a correct
+answer; no console errors.
