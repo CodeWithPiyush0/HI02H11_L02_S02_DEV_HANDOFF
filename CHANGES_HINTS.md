@@ -1645,3 +1645,12 @@ watch-only pages or the runner game; the mic pages keep their own 7 s reminder).
 Measured, 40 s untouched, silence before each repeat: tap page G1 7.3-7.4 s (3 reminders - each also reads the
 options), sort page G4 7.0-7.2 s (4), sentence page 7.0-7.1 s (4), in both files; nothing after a correct
 answer; no console errors.
+
+## r151 — pages 3 / 5: the mic hand + «इस बटन पर टैप करिए» right after the word's line
+
+Yasir, pages 3 / 5: "when the VO «बोलकर देखिए» ends, «इस बटन पर टैप कीजिए» plays and the hand nudge appears -
+currently only in case of 7 s inactivity". The reminder now opens the child's turn: 0.35 s after the line ends
+(the mic's pop-in), the hand goes to the mic and «इस बटन पर टैप करिए» is said; after that, as before, it repeats
+after every 7 s of nothing until the mic is tapped. Same in File3 and File5.
+Measured on both words of both pages, in both files: hand + line 0.36-0.37 s after «…बोलकर देखिए» ends; the
+repeat 7.0 s after it finishes; no console errors.
