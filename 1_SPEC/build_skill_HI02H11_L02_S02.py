@@ -557,7 +557,11 @@ def s_pair(sid, words, lead, lines):
             # vo_tap_speaker_sentence_story, human voice). It says «… और वाक्य पढ़िए» - a sentence, but the
             # child reads a WORD here - so it is trimmed after «करिए» (Yasir's choice), at the pause.
             "data": {"examples": ex, "no_heading": True,
-                     "mic_nudge_audio": once("vo_mic_nudge", "इस बटन पर टैप करिए।")}}
+                     "mic_nudge_audio": once("vo_mic_nudge", "इस बटन पर टैप करिए।"),
+                     # [r152] as HI02H11_L02_S03 (the user's friend's build): the hand + «इस बटन पर टैप करिए» come
+                     # at once only after page 3's FIRST word - the child's first mic; page 3's second word and
+                     # page 5 wait for 7 s of inactivity (engine: MEET_PAIR micTurn)
+                     "mic_nudge_now": sid == "T3"}}
 
 
 def s_tap(sid, words, target, matra, correct_line):
